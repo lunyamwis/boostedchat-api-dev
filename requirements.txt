@@ -1,0 +1,11 @@
+asgiref
+numpy
+Django
+djangorestframework
+django-allauth
+django-softdelete
+djangorestframework-simplejwt
+PyJWT
+pytz
+sqlparse
+coverage
