@@ -3,6 +3,7 @@ numpy
 Django
 djangorestframework
 django-allauth
+django-cors-headers
 dj-rest-auth
 django-softdelete
 django-role-permissions
