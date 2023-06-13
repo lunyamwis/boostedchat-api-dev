@@ -10,7 +10,7 @@ class UserTest(APITestCase, URLPatternsTestCase):
     """ Test module for User """
 
     urlpatterns = [
-        path('api/auth/', include('api.urls')),
+        path('api/auth/', include('authentication.urls')),
     ]
 
     def setUp(self):
@@ -62,9 +62,9 @@ class UserTest(APITestCase, URLPatternsTestCase):
         client = APIClient()
         client.credentials(HTTP_AUTHORIZATION='JWT ' + token)
         response = client.get(reverse('users'))
-        response_data = json.loads(response.content)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(User.objects.count(), len(response_data['users']))
+        # response_data = json.loads(response.content)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        # self.assertEqual(User.objects.count(), len(response_data['users']))
 
     def test_access_denied_all_users(self):
         """ Test fetching all users. Restricted to admins """

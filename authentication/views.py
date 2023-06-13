@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
 
 from .serializers import (
     UserRegistrationSerializer,
@@ -10,6 +11,7 @@ from .serializers import (
     UserListSerializer
 )
 
+from roles.models import Role
 from .models import User
 
 
@@ -65,11 +67,13 @@ class AuthUserLoginView(APIView):
 
 class UserListView(APIView):
     serializer_class = UserListSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (AllowAny,)
 
     def get(self, request):
+        admin,_ = Role.objects.update_or_create(name='admin')
         user = request.user
-        if user.role != 'admin':
+
+        if user.is_anonymous or user.role != admin:
             response = {
                 'success': False,
                 'status_code': status.HTTP_403_FORBIDDEN,

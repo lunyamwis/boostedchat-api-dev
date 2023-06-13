@@ -50,12 +50,11 @@ class UserLoginSerializer(serializers.Serializer):
                 'access': access_token,
                 'refresh': refresh_token,
                 'email': user.email,
-                'full_name': user.get_full_name(),
-                'role': user.role,
+                'full_name': user.get_full_name,
+                'role': user.role.name if user.role else None,
             }
-
             return validation
-        except AuthUser.DoesNotExist:
+        except User.DoesNotExist:
             raise serializers.ValidationError("Invalid login credentials")
 
 
@@ -68,3 +67,4 @@ class UserListSerializer(serializers.ModelSerializer):
             'email',
             'role'
         )
+    
