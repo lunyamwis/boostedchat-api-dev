@@ -8,6 +8,8 @@ dj-rest-auth
 django-softdelete
 django-role-permissions
 djangorestframework-simplejwt
+gunicorn
+pre-commit
 PyJWT
 pytz
 sqlparse

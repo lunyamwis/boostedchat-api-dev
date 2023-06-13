@@ -20,11 +20,18 @@ $ pip install -r requirements.txt
 3.  Set up the initial migration for our custom user models in users and build the database.
 
 ```
-(drfx) $ python manage.py makemigrations 
+(drfx) $ python manage.py makemigrations
 (drfx) $ python manage.py migrate
 (drfx) $ python manage.py createsuperuser
 (drfx) $ python manage.py runserver
 ```
+
+## Docker Setup
+OS X Instructions
+- Build images - docker-compose build
+- Start services - docker-compose up -d
+- Create migrations - docker-compose run web /usr/local/bin/python manage.py migrate
+- Grab IP - docker-machine ip dev - and view in your browser
 
 ## Endpoints
 4. Endpoints available in this api are as follows:
