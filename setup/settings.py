@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'rolepermissions',
     'softdelete',
     'authentication.apps.AuthenticationConfig',
@@ -45,6 +46,7 @@ INSTALLED_APPS = [
     'base.apps.BaseConfig',
     'allauth',
     'allauth.account',
+    'dj_rest_auth',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.facebook',
@@ -127,6 +129,8 @@ USE_L10N = True
 
 USE_TZ = True
 
+# REST_USE_JWT = True
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
@@ -146,9 +150,14 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': (
-#         'rest_framework.authentication.TokenAuthentication'
-#     ),
-#     'PAGE_SIZE': 10
-# }
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',
+    ),
+    'PAGE_SIZE': 10
+}
+
+REST_AUTH = {
+
+    'USE_JWT': True,
+}

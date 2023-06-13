@@ -3,6 +3,7 @@ numpy
 Django
 djangorestframework
 django-allauth
+dj-rest-auth
 django-softdelete
 django-role-permissions
 djangorestframework-simplejwt

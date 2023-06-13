@@ -23,6 +23,7 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, email, password, **extra_fields):
         admin,_ = Group.objects.get_or_create(name='admin')
         extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('is_superuser',True)
         extra_fields.setdefault('role', admin)
         
         if extra_fields.get('role') != admin:
