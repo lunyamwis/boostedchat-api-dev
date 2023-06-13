@@ -4,6 +4,7 @@ clean:
 	find . -type f -name '*.log' -delete
 
 
+
 makemigrations:
 	@ echo 'creating migrations...'
 	python manage.py makemigrations
@@ -15,6 +16,10 @@ migrate:
 install:
 	@ echo 'Installing dependencies...'
 	python -m pip install -r requirements.txt
+
+roles:
+	@ echo 'Synchronizing roles'
+	python manage.py sync_roles
 
 test:
 	coverage run --source=setup manage.py test --verbosity=2  && coverage report -m

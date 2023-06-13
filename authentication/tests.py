@@ -2,6 +2,7 @@ import json
 from django.urls import include, path, reverse
 from rest_framework import status
 from rest_framework.test import APITestCase, APIClient, URLPatternsTestCase
+from django.contrib.auth.models import Group
 
 from .models import User
 
@@ -13,6 +14,7 @@ class UserTest(APITestCase, URLPatternsTestCase):
         path('api/auth/', include('authentication.urls')),
     ]
 
+    
     def setUp(self):
         self.user1 = User.objects.create_user(
             email='test1@test.com',

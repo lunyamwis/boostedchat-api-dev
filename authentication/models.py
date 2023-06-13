@@ -1,10 +1,9 @@
 import uuid
 
 from django.db import models
-from django.contrib.auth.models import PermissionsMixin
+from django.contrib.auth.models import Group,PermissionsMixin
 from django.contrib.auth.base_user import AbstractBaseUser
 from django.utils import timezone
-from roles.models import Role
 from base.models import BaseModel
 
 from .managers import CustomUserManager
@@ -21,7 +20,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30, blank=True)
     last_name = models.CharField(max_length=50, blank=True)
-    role = models.ForeignKey(Role, on_delete=models.CASCADE, blank=True, null=True)
+    role = models.ForeignKey(Group, related_name='role',on_delete=models.CASCADE, blank=True, null=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)

@@ -1,6 +1,6 @@
 from django.contrib.auth.base_user import BaseUserManager
 from django.utils.translation import gettext_lazy as _
-from roles.models import Role
+from django.contrib.auth.models import Group
 
 
 class CustomUserManager(BaseUserManager):
@@ -21,10 +21,10 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password, **extra_fields):
-        admin,_ = Role.objects.update_or_create(name='admin')
+        admin,_ = Group.objects.get_or_create(name='admin')
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('role', admin)
-
+        
         if extra_fields.get('role') != admin:
             raise ValueError('Superuser must have role of Global Admin')
         return self.create_user(email, password, **extra_fields)

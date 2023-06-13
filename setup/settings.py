@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rolepermissions',
     'softdelete',
     'authentication.apps.AuthenticationConfig',
     'roles.apps.RolesConfig',
@@ -80,6 +81,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'setup.wsgi.application'
 
+ROLEPERMISSIONS_MODULE = 'roles.roles'
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
