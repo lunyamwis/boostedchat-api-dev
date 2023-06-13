@@ -69,3 +69,4 @@ class UserListSerializer(serializers.ModelSerializer):
             'role'
         )
     
+    
