@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "softdelete",
     "authentication.apps.AuthenticationConfig",
     "roles.apps.RolesConfig",
+    "instagram.apps.InstagramConfig",
     "base.apps.BaseConfig",
     "allauth",
     "allauth.account",
