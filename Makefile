@@ -17,12 +17,16 @@ install:
 	@ echo 'Installing dependencies...'
 	python -m pip install -r requirements.txt
 
+upgrade:
+	@ echo 'Upgrading dependencies'
+	pre-commit run django-upgrade --all-files
+
 roles:
 	@ echo 'Synchronizing roles'
 	python manage.py sync_roles
 
 test:
-	coverage run --source=setup manage.py test --verbosity=2  && coverage report -m
+	coverage run --source=. manage.py test --verbosity=2  && coverage report -m
 
 run:
 	@ echo 'starting server...'
