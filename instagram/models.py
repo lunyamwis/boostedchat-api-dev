@@ -7,8 +7,8 @@ from base.models import BaseModel
 
 class Account(BaseModel):
     igname = models.CharField(max_length=255)
-    email = models.EmailField()
-    phone_number = models.CharField(max_length=255)
+    email = models.EmailField(null=True, blank=True)
+    phone_number = models.CharField(max_length=255, null=True, blank=True)
 
 
 class HashTag(BaseModel):

@@ -26,6 +26,15 @@ class AccountViewSet(viewsets.ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
 
+    @action(detail=True, methods=["get"], url_path="extract-followers")
+    def extract_followers(self, request, pk=None):
+        account = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        user_info = cl.user_info_by_username(account.igname).dict()
+        followers = cl.user_followers(user_info["pk"])
+        return Response(followers)
+
 
 class HashTagViewSet(viewsets.ModelViewSet):
     """
@@ -62,6 +71,15 @@ class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
 
+    @action(detail=True, methods=["get"], url_path="retrieve-likers")
+    def retrieve_likers(self, request, pk=None):
+        video = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        media_pk = cl.media_pk_from_url(video.link)
+        likers = cl.media_likers(media_pk)
+        return Response(likers)
+
 
 class ReelViewSet(viewsets.ModelViewSet):
     """
@@ -70,6 +88,15 @@ class ReelViewSet(viewsets.ModelViewSet):
 
     queryset = Reel.objects.all()
     serializer_class = ReelSerializer
+
+    @action(detail=True, methods=["get"], url_path="retrieve-likers")
+    def retrieve_likers(self, request, pk=None):
+        reel = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        media_pk = cl.media_pk_from_url(reel.link)
+        likers = cl.media_likers(media_pk)
+        return Response(likers)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -88,3 +115,12 @@ class StoryViewSet(viewsets.ModelViewSet):
 
     queryset = Story.objects.all()
     serializer_class = StorySerializer
+
+    @action(detail=True, methods=["get"], url_path="retrieve-viewers")
+    def retrieve_viewers(self, request, pk=None):
+        photo = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        media_pk = cl.story_pk_from_url(photo.link)
+        likers = cl.story_viewers(media_pk)
+        return Response(likers)
