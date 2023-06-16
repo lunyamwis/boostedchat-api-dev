@@ -42,4 +42,4 @@ class ReelSerializer(serializers.ModelSerializer):
 class StorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Story
-        fields = ["hashtag"]
+        fields = ["link"]

@@ -118,9 +118,9 @@ class StoryViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"], url_path="retrieve-viewers")
     def retrieve_viewers(self, request, pk=None):
-        photo = self.get_object()
+        story = self.get_object()
         cl = Client()
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
-        media_pk = cl.story_pk_from_url(photo.link)
-        likers = cl.story_viewers(media_pk)
-        return Response(likers)
+        story_pk = cl.story_pk_from_url(story.link)
+        viewers = cl.story_viewers(story_pk)
+        return Response(viewers)

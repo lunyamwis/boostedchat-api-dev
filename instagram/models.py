@@ -16,7 +16,8 @@ class HashTag(BaseModel):
 
 
 class Story(BaseModel):
-    hashtag = models.ForeignKey(HashTag, on_delete=models.CASCADE, null=True, blank=True)
+    story_id = models.CharField(max_length=50, null=True, blank=True)
+    link = models.URLField()
 
 
 class Photo(BaseModel):
