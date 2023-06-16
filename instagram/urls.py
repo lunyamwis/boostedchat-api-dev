@@ -12,3 +12,13 @@ router.register(r"reel", ReelViewSet, basename="reel")
 router.register(r"story", StoryViewSet, basename="story")
 
 urlpatterns = router.urls
+
+# [
+#     path("instagram/", include(router.urls)),
+#     # path(
+#     #     'retrieve',
+#     #     PhotoViewSet.as_view({'post': 'retrieve_photo'}),
+#     #     name='Create Foo',
+#     # ),
+
+# ]

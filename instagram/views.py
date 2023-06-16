@@ -1,5 +1,10 @@
 # Create your views here.
+import os
+
+from instagrapi import Client
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
 from .serializers import (
@@ -38,6 +43,15 @@ class PhotoViewSet(viewsets.ModelViewSet):
 
     queryset = Photo.objects.all()
     serializer_class = PhotoSerializer
+
+    @action(detail=True, methods=["get"], url_path="retrieve-likers")
+    def retrieve_likers(self, request, pk=None):
+        photo = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        media_pk = cl.media_pk_from_url(photo.link)
+        likers = cl.media_likers(media_pk)
+        return Response(likers)
 
 
 class VideoViewSet(viewsets.ModelViewSet):
