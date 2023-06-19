@@ -9,9 +9,10 @@ class Setup(object):
     def __init__(self, name: str) -> None:
         self.name = name
         self.gmaps_url = "https://www.google.com/maps"
-        self.driver = webdriver.Chrome(os.getenv("CHROMEDRIVER_PATH"))
+        self.driver = webdriver.Chrome()
 
     def derive_gmap_config(self):
+        print(os.getenv("CHROMEDRIVER_PATH"))
         soup = None
         if "gmaps" in self.name:
             response = requests.get(self.gmaps_url)

@@ -19,3 +19,4 @@ requests
 selenium
 sqlparse
 coverage
+webdriver-manager
