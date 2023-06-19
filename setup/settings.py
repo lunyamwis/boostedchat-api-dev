@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "softdelete",
     "authentication.apps.AuthenticationConfig",
     "roles.apps.RolesConfig",
+    "instagram.apps.InstagramConfig",
     "base.apps.BaseConfig",
     "allauth",
     "allauth.account",
@@ -154,10 +155,7 @@ REST_AUTH = {
 }
 
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8080",
-    "http://127.0.0.1:9000",
-]
+CORS_ALLOWED_ORIGINS = ["http://localhost:8080", "http://127.0.0.1:9000", "http://localhost:5173"]
 
 CORS_ALLOW_HEADERS = (
     "accept",

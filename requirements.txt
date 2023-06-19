@@ -9,6 +9,8 @@ django-softdelete
 django-role-permissions
 djangorestframework-simplejwt
 gunicorn
+instagrapi
+Pillow
 pre-commit
 PyJWT
 pytz
