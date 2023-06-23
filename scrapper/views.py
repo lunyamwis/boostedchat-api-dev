@@ -112,7 +112,9 @@ class StyleSeatScrapperProfiles(viewsets.ViewSet):
 
     def create(self, request):
         links = Links.objects.all()
-
+        response = None
+        status_code = None
+        success = None
         for link in links:
             _, driver = Setup("styleseat").derive_styleseat_config()
             driver.get(link.url)
@@ -128,8 +130,12 @@ class StyleSeatScrapperProfiles(viewsets.ViewSet):
                 time.sleep(2)
             except NoSuchElementException:
                 print("Did not find that element moving on to next")
+            status_code = status.HTTP_200_OK
+            success = True
             account.save()
-        return Response(request.data)
+
+        response = {"success": success, "status": status_code}
+        return Response(response)
 
     def retrieve(self, request, pk=None):
         queryset = Links.objects.all()
