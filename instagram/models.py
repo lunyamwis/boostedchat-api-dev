@@ -6,9 +6,11 @@ from base.models import BaseModel
 
 
 class Account(BaseModel):
-    igname = models.CharField(max_length=255)
+    igname = models.CharField(max_length=255, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=255, null=True, blank=True)
+    is_from_styleseat = models.BooleanField(default=False)
+    styleseat_review = models.FloatField(null=True, blank=True)
 
 
 class HashTag(BaseModel):
