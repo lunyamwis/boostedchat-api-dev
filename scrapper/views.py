@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
@@ -24,20 +25,53 @@ class GmapScrapper(APIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
+        results = []
         if valid:
             _, driver = Setup("gmaps").derive_gmap_config()
             driver.get(Setup("gmaps").gmaps_url)
             time.sleep(serializer.data.get("delay"))  # Wait for the page to load dynamically
             search_box = driver.find_element(By.CSS_SELECTOR, serializer.data.get("css_selector_search_box"))
             search_box.send_keys(serializer.data.get("area_of_search"))  # Perform a search
-            search_box.submit()
+            search = driver.find_element(By.XPATH, serializer.data.get("search_button"))
+            search.click()
             time.sleep(serializer.data.get("delay"))  # Wait for the search results to load
             time.sleep(serializer.data.get("delay"))  # Wait for the search results to load
 
-            result_elements = driver.find_elements(By.CSS_SELECTOR, serializer.data.get("specific_element"))
-            results = [element.text.strip() for element in result_elements]
+            divSideBar = None
+            try:
+                divSideBar = driver.find_element(
+                    By.CSS_SELECTOR, f"div[aria-label='Matokeo ya {serializer.data.get('area_of_search')}']"
+                )
+            except NoSuchElementException as err:
+                print(err)
+                try:
+                    divSideBar = driver.find_element(
+                        By.CSS_SELECTOR, f"div[aria-label='Results of {serializer.data.get('area_of_search')}']"
+                    )
+                except NoSuchElementException as err:
+                    print(err)
 
-            # Close the browser
+            keepScrolling = True
+            while keepScrolling:
+                divSideBar.send_keys(Keys.PAGE_DOWN)
+                time.sleep(3)
+                divSideBar.send_keys(Keys.PAGE_DOWN)
+                time.sleep(3)
+                html = driver.find_element(By.TAG_NAME, "html").get_attribute("outerHTML")
+                links = divSideBar.find_elements(By.TAG_NAME, "a")
+                for element in links:
+
+                    results.append(element.get_attribute("href"))
+                    link = Links()
+                    link.url = element.get_attribute("href")
+                    link.source = 1
+                    link.save()
+
+                if html.find("You've reached the end of the list.") != -1:
+                    keepScrolling = False
+                elif html.find("Umefikia mwisho wa orodha.") != -1:
+                    keepScrolling = False
+
             driver.quit()
             status_code = status.HTTP_200_OK
 
@@ -97,6 +131,7 @@ class StyleseatScrapper(APIView):
                 url_list.append(driver.current_url)
                 link = Links()
                 link.url = driver.current_url
+                link.source = 2
                 link.save()
 
             driver.switch_to.window(driver.window_handles[0])
