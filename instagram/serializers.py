@@ -24,7 +24,7 @@ class HashTagSerializer(serializers.ModelSerializer):
 class PhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Photo
-        fields = ["photo_id", "link", "name"]
+        fields = ["id", "photo_id", "link", "name"]
 
 
 class VideoSerializer(serializers.ModelSerializer):
