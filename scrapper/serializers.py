@@ -24,3 +24,8 @@ class StyleseatSerializer(serializers.Serializer):
 class StyleseatProfileSerializer(serializers.Serializer):
     xpath_ig_username = serializers.CharField(max_length=255)
     xpath_review = serializers.CharField(max_length=255)
+
+
+class GmapsProfileSerializer(serializers.Serializer):
+    xpath_business = serializers.CharField(max_length=255)
+    xpath_review = serializers.CharField(max_length=255)

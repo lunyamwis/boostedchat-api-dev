@@ -14,7 +14,7 @@ from instagram.models import Account
 
 from .helpers.setup import Setup
 from .models import Links
-from .serializers import GmapSerializer, StyleseatProfileSerializer, StyleseatSerializer
+from .serializers import GmapSerializer, GmapsProfileSerializer, StyleseatProfileSerializer, StyleseatSerializer
 
 # Create your views here.
 
@@ -77,6 +77,38 @@ class GmapScrapper(APIView):
 
             response = {"success": True, "statusCode": status_code, "results": results}
             return Response(response, status=status_code)
+
+
+class GmapsProfiles(viewsets.ViewSet):
+    serializer_class = GmapsProfileSerializer
+
+    def create(self, request):
+        links = Links.objects.filter(source=1)
+        response = None
+        status_code = None
+        success = None
+        for link in links:
+            _, driver = Setup("gmaps").derive_styleseat_config()
+            driver.get(link.url)
+            time.sleep(4)
+            account = Account()
+            try:
+                account.gmaps_business_name = driver.find_element(By.XPATH, request.data.get("xpath_business")).text
+                time.sleep(2)
+            except NoSuchElementException:
+                print("Did not find that element moving on to next")
+            try:
+                account.review = float(driver.find_element(By.XPATH, request.data.get("xpath_review")).text)
+                time.sleep(2)
+            except NoSuchElementException:
+                print("Did not find that element moving on to next")
+            status_code = status.HTTP_200_OK
+            success = True
+            account.is_from_styleseat = False
+            account.save()
+
+        response = {"success": success, "status": status_code}
+        return Response(response)
 
 
 class StyleseatScrapper(APIView):
@@ -146,7 +178,7 @@ class StyleSeatScrapperProfiles(viewsets.ViewSet):
     serializer_class = StyleseatProfileSerializer
 
     def create(self, request):
-        links = Links.objects.all()
+        links = Links.objects.filter(source=1)
         response = None
         status_code = None
         success = None
@@ -161,7 +193,7 @@ class StyleSeatScrapperProfiles(viewsets.ViewSet):
             except NoSuchElementException:
                 print("Did not find that element moving on to next")
             try:
-                account.styleseat_review = float(driver.find_element(By.XPATH, request.data.get("xpath_review")).text)
+                account.review = float(driver.find_element(By.XPATH, request.data.get("xpath_review")).text)
                 time.sleep(2)
             except NoSuchElementException:
                 print("Did not find that element moving on to next")

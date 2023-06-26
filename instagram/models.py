@@ -10,7 +10,8 @@ class Account(BaseModel):
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=255, null=True, blank=True)
     is_from_styleseat = models.BooleanField(default=False)
-    styleseat_review = models.FloatField(null=True, blank=True)
+    review = models.FloatField(null=True, blank=True)
+    gmaps_business_name = models.CharField(max_length=255, null=True, blank=True)
 
 
 class HashTag(BaseModel):
