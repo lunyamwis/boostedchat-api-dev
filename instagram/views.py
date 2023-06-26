@@ -45,15 +45,6 @@ class AccountViewSet(viewsets.ModelViewSet):
         followers = cl.user_followers(user_info["pk"])
         return Response(followers)
 
-    @action(detail=True, methods=["get"], url_path="extract-followers")
-    def extract_user_information(self, request, pk=None):
-        account = self.get_object()
-        cl = Client()
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
-        user_info = cl.user_info_by_username(account.igname).dict()
-        followers = cl.user_followers(user_info["pk"])
-        return Response(followers)
-
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
         serializer = UploadSerializer(data=request.data)
