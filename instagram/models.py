@@ -16,6 +16,7 @@ class Account(BaseModel):
 
 class HashTag(BaseModel):
     hashtag_id = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, null=True, blank=True)
 
 
 class Story(BaseModel):

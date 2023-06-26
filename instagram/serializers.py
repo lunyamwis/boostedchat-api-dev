@@ -43,3 +43,10 @@ class StorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Story
         fields = ["link"]
+
+
+class UploadSerializer(serializers.Serializer):
+    file_uploaded = serializers.FileField()
+
+    class Meta:
+        fields = ["file_uploaded"]

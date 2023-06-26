@@ -1,10 +1,14 @@
 # Create your views here.
+import csv
+import io
 import os
 
 from instagrapi import Client
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from base.helpers.push_id import PushID
 
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
 from .serializers import (
@@ -14,6 +18,7 @@ from .serializers import (
     PhotoSerializer,
     ReelSerializer,
     StorySerializer,
+    UploadSerializer,
     VideoSerializer,
 )
 
@@ -26,6 +31,11 @@ class AccountViewSet(viewsets.ModelViewSet):
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
 
+    def get_serializer_class(self):
+        if self.action == "batch_uploads":
+            return UploadSerializer
+        return self.serializer_class
+
     @action(detail=True, methods=["get"], url_path="extract-followers")
     def extract_followers(self, request, pk=None):
         account = self.get_object()
@@ -34,6 +44,38 @@ class AccountViewSet(viewsets.ModelViewSet):
         user_info = cl.user_info_by_username(account.igname).dict()
         followers = cl.user_followers(user_info["pk"])
         return Response(followers)
+
+    @action(detail=True, methods=["get"], url_path="extract-followers")
+    def extract_user_information(self, request, pk=None):
+        account = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        user_info = cl.user_info_by_username(account.igname).dict()
+        followers = cl.user_followers(user_info["pk"])
+        return Response(followers)
+
+    @action(detail=False, methods=["post"], url_path="batch-uploads")
+    def batch_uploads(self, request):
+        serializer = UploadSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+
+        if valid:
+            paramFile = io.TextIOWrapper(request.FILES["file_uploaded"].file)
+            portfolio1 = csv.DictReader(paramFile)
+            list_of_dict = list(portfolio1)
+            objs = [Account(id=PushID().next_id(), igname=row["username"]) for row in list_of_dict]
+            try:
+                msg = Account.objects.bulk_create(objs)
+                returnmsg = {"status_code": 200}
+                print(f"imported {msg} successfully")
+            except Exception as e:
+                print("Error While Importing Data: ", e)
+                returnmsg = {"status_code": 500}
+
+            return Response(returnmsg)
+
+        else:
+            return Response({"status_code": 500})
 
 
 class HashTagViewSet(viewsets.ModelViewSet):
@@ -44,6 +86,34 @@ class HashTagViewSet(viewsets.ModelViewSet):
     queryset = HashTag.objects.all()
     serializer_class = HashTagSerializer
 
+    def get_serializer_class(self):
+        if self.action == "batch_uploads":
+            return UploadSerializer
+        return self.serializer_class
+
+    @action(detail=False, methods=["post"], url_path="batch-uploads")
+    def batch_uploads(self, request):
+        serializer = UploadSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+
+        if valid:
+            paramFile = io.TextIOWrapper(request.FILES["file_uploaded"].file)
+            portfolio1 = csv.DictReader(paramFile)
+            list_of_dict = list(portfolio1)
+            objs = [HashTag(id=PushID().next_id(), name=row["name"]) for row in list_of_dict]
+            try:
+                msg = HashTag.objects.bulk_create(objs)
+                returnmsg = {"status_code": 200}
+                print(f"imported {msg} successfully")
+            except Exception as e:
+                print("Error While Importing Data: ", e)
+                returnmsg = {"status_code": 500}
+
+            return Response(returnmsg)
+
+        else:
+            return Response({"status_code": 500})
+
 
 class PhotoViewSet(viewsets.ModelViewSet):
     """
@@ -52,6 +122,11 @@ class PhotoViewSet(viewsets.ModelViewSet):
 
     queryset = Photo.objects.all()
     serializer_class = PhotoSerializer
+
+    def get_serializer_class(self):
+        if self.action == "batch_uploads":
+            return UploadSerializer
+        return self.serializer_class
 
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
@@ -62,6 +137,29 @@ class PhotoViewSet(viewsets.ModelViewSet):
         likers = cl.media_likers(media_pk)
         return Response(likers)
 
+    @action(detail=False, methods=["post"], url_path="batch-uploads")
+    def batch_uploads(self, request):
+        serializer = UploadSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+
+        if valid:
+            paramFile = io.TextIOWrapper(request.FILES["file_uploaded"].file)
+            portfolio1 = csv.DictReader(paramFile)
+            list_of_dict = list(portfolio1)
+            objs = [Photo(id=PushID().next_id(), link=row["link"]) for row in list_of_dict]
+            try:
+                msg = Photo.objects.bulk_create(objs)
+                returnmsg = {"status_code": 200}
+                print(f"imported {msg} successfully")
+            except Exception as e:
+                print("Error While Importing Data: ", e)
+                returnmsg = {"status_code": 500}
+
+            return Response(returnmsg)
+
+        else:
+            return Response({"status_code": 500})
+
 
 class VideoViewSet(viewsets.ModelViewSet):
     """
@@ -70,6 +168,11 @@ class VideoViewSet(viewsets.ModelViewSet):
 
     queryset = Video.objects.all()
     serializer_class = VideoSerializer
+
+    def get_serializer_class(self):
+        if self.action == "batch_uploads":
+            return UploadSerializer
+        return self.serializer_class
 
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
@@ -80,6 +183,29 @@ class VideoViewSet(viewsets.ModelViewSet):
         likers = cl.media_likers(media_pk)
         return Response(likers)
 
+    @action(detail=False, methods=["post"], url_path="batch-uploads")
+    def batch_uploads(self, request):
+        serializer = UploadSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+
+        if valid:
+            paramFile = io.TextIOWrapper(request.FILES["file_uploaded"].file)
+            portfolio1 = csv.DictReader(paramFile)
+            list_of_dict = list(portfolio1)
+            objs = [Video(id=PushID().next_id(), link=row["link"]) for row in list_of_dict]
+            try:
+                msg = Video.objects.bulk_create(objs)
+                returnmsg = {"status_code": 200}
+                print(f"imported {msg} successfully")
+            except Exception as e:
+                print("Error While Importing Data: ", e)
+                returnmsg = {"status_code": 500}
+
+            return Response(returnmsg)
+
+        else:
+            return Response({"status_code": 500})
+
 
 class ReelViewSet(viewsets.ModelViewSet):
     """
@@ -89,6 +215,11 @@ class ReelViewSet(viewsets.ModelViewSet):
     queryset = Reel.objects.all()
     serializer_class = ReelSerializer
 
+    def get_serializer_class(self):
+        if self.action == "batch_uploads":
+            return UploadSerializer
+        return self.serializer_class
+
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
         reel = self.get_object()
@@ -97,6 +228,29 @@ class ReelViewSet(viewsets.ModelViewSet):
         media_pk = cl.media_pk_from_url(reel.link)
         likers = cl.media_likers(media_pk)
         return Response(likers)
+
+    @action(detail=False, methods=["post"], url_path="batch-uploads")
+    def batch_uploads(self, request):
+        serializer = UploadSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+
+        if valid:
+            paramFile = io.TextIOWrapper(request.FILES["file_uploaded"].file)
+            portfolio1 = csv.DictReader(paramFile)
+            list_of_dict = list(portfolio1)
+            objs = [Reel(id=PushID().next_id(), link=row["link"]) for row in list_of_dict]
+            try:
+                msg = Reel.objects.bulk_create(objs)
+                returnmsg = {"status_code": 200}
+                print(f"imported {msg} successfully")
+            except Exception as e:
+                print("Error While Importing Data: ", e)
+                returnmsg = {"status_code": 500}
+
+            return Response(returnmsg)
+
+        else:
+            return Response({"status_code": 500})
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -116,6 +270,11 @@ class StoryViewSet(viewsets.ModelViewSet):
     queryset = Story.objects.all()
     serializer_class = StorySerializer
 
+    def get_serializer_class(self):
+        if self.action == "batch_uploads":
+            return UploadSerializer
+        return self.serializer_class
+
     @action(detail=True, methods=["get"], url_path="retrieve-viewers")
     def retrieve_viewers(self, request, pk=None):
         story = self.get_object()
@@ -124,3 +283,26 @@ class StoryViewSet(viewsets.ModelViewSet):
         story_pk = cl.story_pk_from_url(story.link)
         viewers = cl.story_viewers(story_pk)
         return Response(viewers)
+
+    @action(detail=False, methods=["post"], url_path="batch-uploads")
+    def batch_uploads(self, request):
+        serializer = UploadSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+
+        if valid:
+            paramFile = io.TextIOWrapper(request.FILES["file_uploaded"].file)
+            portfolio1 = csv.DictReader(paramFile)
+            list_of_dict = list(portfolio1)
+            objs = [Story(id=PushID().next_id(), link=row["link"]) for row in list_of_dict]
+            try:
+                msg = Story.objects.bulk_create(objs)
+                returnmsg = {"status_code": 200}
+                print(f"imported {msg} successfully")
+            except Exception as e:
+                print("Error While Importing Data: ", e)
+                returnmsg = {"status_code": 500}
+
+            return Response(returnmsg)
+
+        else:
+            return Response({"status_code": 500})
