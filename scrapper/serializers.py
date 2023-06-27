@@ -29,3 +29,7 @@ class StyleseatProfileSerializer(serializers.Serializer):
 class GmapsProfileSerializer(serializers.Serializer):
     xpath_business = serializers.CharField(max_length=255)
     xpath_review = serializers.CharField(max_length=255)
+
+
+class InstagramSerializer(serializers.Serializer):
+    xpath_search = serializers.CharField(max_length=255)

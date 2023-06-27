@@ -14,7 +14,13 @@ from instagram.models import Account
 
 from .helpers.setup import Setup
 from .models import Links
-from .serializers import GmapSerializer, GmapsProfileSerializer, StyleseatProfileSerializer, StyleseatSerializer
+from .serializers import (
+    GmapSerializer,
+    GmapsProfileSerializer,
+    InstagramSerializer,
+    StyleseatProfileSerializer,
+    StyleseatSerializer,
+)
 
 # Create your views here.
 
@@ -210,3 +216,44 @@ class StyleSeatScrapperProfiles(viewsets.ViewSet):
         status_code = status.HTTP_200_OK
         response = {"link": link.url, "status": status_code}
         return Response(response, status=status_code)
+
+
+class InstagramScrapper(viewsets.ViewSet):
+    serializer_class = InstagramSerializer
+
+    def retrieve_gmap_users(self, request, *args, **kwargs):
+        accounts = Account.objects.all()
+        links = []
+        status_code = 0
+
+        time.sleep(2)
+        driver = Setup("instagram").instagram_login()
+        time.sleep(5)
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Not Now']"))).click()
+        time.sleep(8)
+        for account in accounts:
+            if account.gmaps_business_name:
+                driver.find_elements(By.XPATH, "//a[contains(@class,'x1i10hfl')]")[2].click()
+                time.sleep(3)
+
+                searchbox = WebDriverWait(driver, 10).until(
+                    EC.visibility_of_element_located((By.XPATH, "//input[@placeholder='Search']"))
+                )
+
+                # send search into input
+
+                searchbox.send_keys(account.gmaps_business_name)
+                time.sleep(2)
+                # searchbox.submit()
+
+                searchbox.send_keys(Keys.ENTER)
+                time.sleep(1)
+                searchbox.send_keys(Keys.ENTER)
+                time.sleep(7)
+                account.igname = driver.current_url.split("/")[-2:][0]
+                account.profile_url = driver.current_url
+                links.append(driver.current_url)
+                account.save()
+                status_code = 200
+
+        return Response({"status_code": status_code, "links": links})

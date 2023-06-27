@@ -45,6 +45,9 @@ class Setup(object):
         time.sleep(4)
 
         self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[1]/div/label/input').send_keys(username)
+        time.sleep(4)
         self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[2]/div/label/input').send_keys(password)
+        time.sleep(4)
         self.driver.find_element(By.XPATH, '//*[@id="loginForm"]/div/div[3]/button').click()
+        time.sleep(3)
         return self.driver
