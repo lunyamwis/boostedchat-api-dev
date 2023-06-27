@@ -64,11 +64,11 @@ class GmapScrapper(APIView):
                 divSideBar.send_keys(Keys.PAGE_DOWN)
                 time.sleep(3)
                 html = driver.find_element(By.TAG_NAME, "html").get_attribute("outerHTML")
+                Links.objects.all().delete()
                 links = divSideBar.find_elements(By.TAG_NAME, "a")
                 for element in links:
 
                     results.append(element.get_attribute("href"))
-                    Links.objects.all().delete()
                     link = Links()
                     link.url = element.get_attribute("href")
                     link.source = 1
@@ -161,6 +161,7 @@ class StyleseatScrapper(APIView):
                     name.click()
                     time.sleep(4)
 
+            Links.objects.all().delete()
             for window in range(1, len(driver.window_handles)):
                 try:
                     driver.switch_to.window(driver.window_handles[window])
@@ -168,7 +169,6 @@ class StyleseatScrapper(APIView):
                     print(f"{err}")
 
                 url_list.append(driver.current_url)
-                Links.objects.all().delete()
                 link = Links()
                 link.url = driver.current_url
                 link.source = 2
