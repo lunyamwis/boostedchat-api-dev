@@ -29,6 +29,7 @@ class GmapScrapper(APIView):
     serializer_class = GmapSerializer
 
     def post(self, request, *args, **kwargs):
+        Links.objects.all().delete()
         serializer = self.serializer_class(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         results = []
@@ -64,7 +65,6 @@ class GmapScrapper(APIView):
                 divSideBar.send_keys(Keys.PAGE_DOWN)
                 time.sleep(3)
                 html = driver.find_element(By.TAG_NAME, "html").get_attribute("outerHTML")
-                Links.objects.all().delete()
                 links = divSideBar.find_elements(By.TAG_NAME, "a")
                 for element in links:
 
@@ -122,6 +122,7 @@ class StyleseatScrapper(APIView):
     serializer_class = StyleseatSerializer
 
     def post(self, request, *args, **kwargs):
+        Links.objects.all().delete()
         serializer = self.serializer_class(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         if valid:
@@ -161,7 +162,6 @@ class StyleseatScrapper(APIView):
                     name.click()
                     time.sleep(4)
 
-            Links.objects.all().delete()
             for window in range(1, len(driver.window_handles)):
                 try:
                     driver.switch_to.window(driver.window_handles[window])
