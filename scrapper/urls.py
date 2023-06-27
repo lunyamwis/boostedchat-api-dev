@@ -13,6 +13,6 @@ urlpatterns = router.urls
 urlpatterns = [
     path("gmaps/", GmapScrapper.as_view(), name="gmaps_scrapper"),
     path("styleseat/", StyleseatScrapper.as_view(), name="styleseat_scrapper"),
-    path("search/", InstagramScrapper.as_view({"post": "retrieve_gmap_users"})),
+    path("instagram/search/", InstagramScrapper.as_view({"post": "search_users"})),
     path("profiles/", include(router.urls)),
 ]

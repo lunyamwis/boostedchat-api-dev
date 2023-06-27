@@ -68,6 +68,7 @@ class GmapScrapper(APIView):
                 for element in links:
 
                     results.append(element.get_attribute("href"))
+                    Links.objects.all().delete()
                     link = Links()
                     link.url = element.get_attribute("href")
                     link.source = 1
@@ -167,6 +168,7 @@ class StyleseatScrapper(APIView):
                     print(f"{err}")
 
                 url_list.append(driver.current_url)
+                Links.objects.all().delete()
                 link = Links()
                 link.url = driver.current_url
                 link.source = 2
@@ -221,7 +223,7 @@ class StyleSeatScrapperProfiles(viewsets.ViewSet):
 class InstagramScrapper(viewsets.ViewSet):
     serializer_class = InstagramSerializer
 
-    def retrieve_gmap_users(self, request, *args, **kwargs):
+    def search_users(self, request, *args, **kwargs):
         accounts = Account.objects.all()
         links = []
         status_code = 0
