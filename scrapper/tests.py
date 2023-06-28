@@ -1,6 +1,7 @@
 from django.urls import include, path
-from helpers.setup import Setup
 from rest_framework.test import APITestCase, URLPatternsTestCase
+
+from .helpers.setup import Setup
 
 
 class UserTest(APITestCase, URLPatternsTestCase):

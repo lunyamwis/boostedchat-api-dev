@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "instagram.apps.InstagramConfig",
     "base.apps.BaseConfig",
     "scrapper.apps.ScrapperConfig",
+    "settings.apps.SettingsConfig",
     "allauth",
     "allauth.account",
     "dj_rest_auth",
