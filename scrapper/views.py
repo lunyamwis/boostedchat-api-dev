@@ -13,8 +13,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from instagram.models import Account
 
 from .helpers.setup import Setup
-from .models import Links
-from .serializers import GmapSerializer, GmapsProfileSerializer, StyleseatProfileSerializer, StyleseatSerializer
+from .models import GmapsConfig, Links, StyleSeatConfig
+from .serializers import GmapSerializer, StyleseatSerializer
 
 # Create your views here.
 
@@ -23,30 +23,32 @@ class GmapScrapper(APIView):
     serializer_class = GmapSerializer
 
     def post(self, request, *args, **kwargs):
+        Links.objects.all().delete()
+        gmaps_config = GmapsConfig.objects.last()
         serializer = self.serializer_class(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         results = []
         if valid:
             _, driver = Setup("gmaps").derive_gmap_config()
             driver.get(Setup("gmaps").gmaps_url)
-            time.sleep(serializer.data.get("delay"))  # Wait for the page to load dynamically
-            search_box = driver.find_element(By.CSS_SELECTOR, serializer.data.get("css_selector_search_box"))
+            time.sleep(gmaps_config.delay)  # Wait for the page to load dynamically
+            search_box = driver.find_element(By.CSS_SELECTOR, gmaps_config.css_selector_search_box)
             search_box.send_keys(serializer.data.get("area_of_search"))  # Perform a search
-            search = driver.find_element(By.XPATH, serializer.data.get("search_button"))
+            search = driver.find_element(By.XPATH, gmaps_config.search_button)
             search.click()
-            time.sleep(serializer.data.get("delay"))  # Wait for the search results to load
-            time.sleep(serializer.data.get("delay"))  # Wait for the search results to load
+            time.sleep(gmaps_config.delay)  # Wait for the search results to load
+            time.sleep(gmaps_config.delay)  # Wait for the search results to load
 
             divSideBar = None
             try:
                 divSideBar = driver.find_element(
-                    By.CSS_SELECTOR, f"div[aria-label='Matokeo ya {serializer.data.get('area_of_search')}']"
+                    By.CSS_SELECTOR, f"div[aria-label='Matokeo ya {gmaps_config.area_of_search}']"
                 )
             except NoSuchElementException as err:
                 print(err)
                 try:
                     divSideBar = driver.find_element(
-                        By.CSS_SELECTOR, f"div[aria-label='Results of {serializer.data.get('area_of_search')}']"
+                        By.CSS_SELECTOR, f"div[aria-label='Results of {gmaps_config.area_of_search}']"
                     )
                 except NoSuchElementException as err:
                     print(err)
@@ -80,10 +82,12 @@ class GmapScrapper(APIView):
 
 
 class GmapsProfiles(viewsets.ViewSet):
-    serializer_class = GmapsProfileSerializer
+    serializer_class = None
 
-    def create(self, request):
+    def list(self, request):
+
         links = Links.objects.filter(source=1)
+        gmaps_config = GmapsConfig.objects.last()
         response = None
         status_code = None
         success = None
@@ -93,12 +97,12 @@ class GmapsProfiles(viewsets.ViewSet):
             time.sleep(4)
             account = Account()
             try:
-                account.gmaps_business_name = driver.find_element(By.XPATH, request.data.get("xpath_business")).text
+                account.gmaps_business_name = driver.find_element(By.XPATH, gmaps_config.xpath_business).text
                 time.sleep(2)
             except NoSuchElementException:
                 print("Did not find that element moving on to next")
             try:
-                account.review = float(driver.find_element(By.XPATH, request.data.get("xpath_review")).text)
+                account.review = float(driver.find_element(By.XPATH, gmaps_config.xpath_review).text)
                 time.sleep(2)
             except NoSuchElementException:
                 print("Did not find that element moving on to next")
@@ -115,44 +119,58 @@ class StyleseatScrapper(APIView):
     serializer_class = StyleseatSerializer
 
     def post(self, request, *args, **kwargs):
+        Links.objects.all().delete()
+        styleseat_config = StyleSeatConfig.objects.last()
         serializer = self.serializer_class(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         if valid:
             _, driver = Setup("styleseat").derive_styleseat_config()
             driver.get(Setup("styleseat").styleseat_url)
             driver.implicitly_wait(20)
-            time.sleep(serializer.data.get("delay"))  # Wait for the page to load dynamically
-            service_box = driver.find_element(By.XPATH, serializer.data.get("css_selector_service_box"))
+            time.sleep(styleseat_config.delay)  # Wait for the page to load dynamically
+            service_box = driver.find_element(By.XPATH, styleseat_config.css_selector_service_box)
             service_box.send_keys(serializer.data.get("service"))
-            time.sleep(serializer.data.get("delay"))  # Wait for the search results to load
-            area_box = driver.find_element(By.XPATH, serializer.data.get("css_selector_area_box"))
+            time.sleep(styleseat_config.delay)  # Wait for the search results to load
+            area_box = driver.find_element(By.XPATH, styleseat_config.css_selector_area_box)
             area_box.clear()
             area_box.send_keys(serializer.data.get("area"))  # Perform a search
-            time.sleep(serializer.data.get("delay"))
+            time.sleep(styleseat_config.delay)
             button = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, serializer.data.get("css_selector_submit_btn")))
+                EC.element_to_be_clickable((By.XPATH, styleseat_config.css_selector_submit_btn))
             )
             button.click()
-            time.sleep(serializer.data.get("delay"))  # Wait for the search results to load
-            time.sleep(serializer.data.get("delay"))  # Wait for the search results to load
-            time.sleep(serializer.data.get("delay"))  # Wait for the search results to load
+            time.sleep(styleseat_config.delay)  # Wait for the search results to load
+            time.sleep(styleseat_config.delay)  # Wait for the search results to load
+            time.sleep(styleseat_config.delay)  # Wait for the search results to load
             url_list = []
+
             list_of_seats = None
             try:
-                list_of_seats = driver.find_elements(By.XPATH, serializer.data.get("css_selector_seats"))
+                list_of_seats = driver.find_element(By.XPATH, "//div[contains(@class,'search-results-list-component')]")
             except TimeoutException:
                 print("No popup...")
 
-            for seat in list_of_seats:
+            while True:
 
-                names = None
                 try:
-                    names = seat.find_elements(By.TAG_NAME, "h3")
-                except NoSuchElementException:
-                    print("escape")
-                for name in names:
-                    name.click()
+                    loadMoreButton = list_of_seats.find_element(
+                        By.XPATH, "//li[contains(@class,'load-more-wrapper')]/button"
+                    )
                     time.sleep(4)
+                    loadMoreButton.click()
+                    time.sleep(4)
+
+                except Exception as e:
+                    print(e)
+                    break
+
+            try:
+                names = list_of_seats.find_elements(By.TAG_NAME, "h3")
+            except NoSuchElementException:
+                print("escape")
+            for name in names:
+                name.click()
+                time.sleep(5)
 
             for window in range(1, len(driver.window_handles)):
                 try:
@@ -175,10 +193,11 @@ class StyleseatScrapper(APIView):
 
 
 class StyleSeatScrapperProfiles(viewsets.ViewSet):
-    serializer_class = StyleseatProfileSerializer
+    serializer_class = None
 
-    def create(self, request):
-        links = Links.objects.filter(source=1)
+    def list(self, request):
+        links = Links.objects.filter(source=2)
+        styleseat_config = StyleSeatConfig.objects.last()
         response = None
         status_code = None
         success = None
@@ -188,12 +207,12 @@ class StyleSeatScrapperProfiles(viewsets.ViewSet):
             time.sleep(7)
             account = Account()
             try:
-                account.igname = driver.find_element(By.XPATH, request.data.get("xpath_ig_username")).text
+                account.igname = driver.find_element(By.XPATH, styleseat_config.xpath_ig_username).text
                 time.sleep(2)
             except NoSuchElementException:
                 print("Did not find that element moving on to next")
             try:
-                account.review = float(driver.find_element(By.XPATH, request.data.get("xpath_review")).text)
+                account.review = float(driver.find_element(By.XPATH, styleseat_config.xpath_review).text)
                 time.sleep(2)
             except NoSuchElementException:
                 print("Did not find that element moving on to next")
@@ -210,3 +229,45 @@ class StyleSeatScrapperProfiles(viewsets.ViewSet):
         status_code = status.HTTP_200_OK
         response = {"link": link.url, "status": status_code}
         return Response(response, status=status_code)
+
+
+class InstagramScrapper(viewsets.ViewSet):
+    serializer_class = None
+
+    def search_users(self, request, *args, **kwargs):
+        accounts = Account.objects.all()
+        # instagram_config = InstagramConfig.objects.last()
+        links = []
+        status_code = 0
+
+        time.sleep(2)
+        driver = Setup("instagram").instagram_login()
+        time.sleep(5)
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "//button[text()='Not Now']"))).click()
+        time.sleep(8)
+        for account in accounts:
+            if account.gmaps_business_name:
+                driver.find_elements(By.XPATH, "//a[contains(@class,'x1i10hfl')]")[2].click()
+                time.sleep(3)
+
+                searchbox = WebDriverWait(driver, 10).until(
+                    EC.visibility_of_element_located((By.XPATH, "//input[@placeholder='Search']"))
+                )
+
+                # send search into input
+
+                searchbox.send_keys(account.gmaps_business_name)
+                time.sleep(2)
+                # searchbox.submit()
+
+                searchbox.send_keys(Keys.ENTER)
+                time.sleep(1)
+                searchbox.send_keys(Keys.ENTER)
+                time.sleep(7)
+                account.igname = driver.current_url.split("/")[-2:][0]
+                account.profile_url = driver.current_url
+                links.append(driver.current_url)
+                account.save()
+                status_code = 200
+
+        return Response({"status_code": status_code, "links": links})
