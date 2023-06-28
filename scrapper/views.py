@@ -156,7 +156,7 @@ class StyleseatScrapper(APIView):
                     loadMoreButton = list_of_seats.find_element(
                         By.XPATH, "//li[contains(@class,'load-more-wrapper')]/button"
                     )
-                    time.sleep(2)
+                    time.sleep(4)
                     loadMoreButton.click()
                     time.sleep(4)
 
