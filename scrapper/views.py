@@ -93,8 +93,9 @@ class GmapsProfiles(viewsets.ViewSet):
         success = None
         for link in links:
             _, driver = Setup("gmaps").derive_styleseat_config()
-            driver.get(link.url)
-            time.sleep(4)
+            if "google" in link.url:
+                driver.get(link.url)
+                time.sleep(4)
             account = Account()
             try:
                 account.gmaps_business_name = driver.find_element(By.XPATH, gmaps_config.xpath_business).text
@@ -207,7 +208,9 @@ class StyleSeatScrapperProfiles(viewsets.ViewSet):
             time.sleep(7)
             account = Account()
             try:
-                account.igname = driver.find_element(By.XPATH, styleseat_config.xpath_ig_username).text
+                account.igname = str(driver.find_element(By.XPATH, styleseat_config.xpath_ig_username).text).replace(
+                    "@", ""
+                )
                 time.sleep(2)
             except NoSuchElementException:
                 print("Did not find that element moving on to next")

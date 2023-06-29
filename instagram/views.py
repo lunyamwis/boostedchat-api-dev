@@ -45,7 +45,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         followers = cl.user_followers(user_info["pk"])
         for follower in followers:
             account_ = Account()
-            account_.igname = follower["userName"]
+            account_.igname = followers[follower].username
             account_.save()
         return Response(followers)
 
@@ -132,7 +132,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
         likers = cl.media_likers(media_pk)
         for liker in likers:
             account = Account()
-            account.igname = liker["userName"]
+            account.igname = likers[liker].username
             account.save()
         return Response(likers)
 
@@ -182,7 +182,7 @@ class VideoViewSet(viewsets.ModelViewSet):
         likers = cl.media_likers(media_pk)
         for liker in likers:
             account = Account()
-            account.igname = liker["userName"]
+            account.igname = likers[liker].username
             account.save()
         return Response(likers)
 
@@ -232,7 +232,7 @@ class ReelViewSet(viewsets.ModelViewSet):
         likers = cl.media_likers(media_pk)
         for liker in likers:
             account = Account()
-            account.igname = liker["userName"]
+            account.igname = likers[liker].username
             account.save()
         return Response(likers)
 
@@ -291,7 +291,7 @@ class StoryViewSet(viewsets.ModelViewSet):
         viewers = cl.story_viewers(story_pk)
         for viewer in viewers:
             account = Account()
-            account.igname = viewer["userName"]
+            account.igname = viewers[viewer].username
             account.save()
         return Response(viewers)
 
