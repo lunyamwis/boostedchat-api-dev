@@ -7,42 +7,49 @@ class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
         fields = ["id", "igname"]
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comment
-        fields = ["comment_id", "text"]
+        fields = ["id", "comment_id", "text"]
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 
 class HashTagSerializer(serializers.ModelSerializer):
     class Meta:
         model = HashTag
-        fields = ["hashtag_id"]
+        fields = ["id", "hashtag_id"]
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 
 class PhotoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Photo
         fields = ["id", "photo_id", "link", "name"]
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 
 class VideoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Video
-        fields = ["video_id", "link", "name"]
+        fields = ["id", "video_id", "link", "name"]
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 
 class ReelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reel
-        fields = ["reel_id", "link", "name"]
+        fields = ["id", "reel_id", "link", "name"]
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 
 class StorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Story
-        fields = ["link"]
+        fields = ["id", "link"]
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 
 class UploadSerializer(serializers.Serializer):
