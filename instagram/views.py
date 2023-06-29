@@ -43,6 +43,10 @@ class AccountViewSet(viewsets.ModelViewSet):
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         user_info = cl.user_info_by_username(account.igname).dict()
         followers = cl.user_followers(user_info["pk"])
+        for follower in followers:
+            account_ = Account()
+            account_.igname = follower["userName"]
+            account_.save()
         return Response(followers)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")
@@ -126,6 +130,10 @@ class PhotoViewSet(viewsets.ModelViewSet):
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         media_pk = cl.media_pk_from_url(photo.link)
         likers = cl.media_likers(media_pk)
+        for liker in likers:
+            account = Account()
+            account.igname = liker["userName"]
+            account.save()
         return Response(likers)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")
@@ -172,6 +180,10 @@ class VideoViewSet(viewsets.ModelViewSet):
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         media_pk = cl.media_pk_from_url(video.link)
         likers = cl.media_likers(media_pk)
+        for liker in likers:
+            account = Account()
+            account.igname = liker["userName"]
+            account.save()
         return Response(likers)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")
@@ -218,6 +230,10 @@ class ReelViewSet(viewsets.ModelViewSet):
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         media_pk = cl.media_pk_from_url(reel.link)
         likers = cl.media_likers(media_pk)
+        for liker in likers:
+            account = Account()
+            account.igname = liker["userName"]
+            account.save()
         return Response(likers)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")
@@ -273,6 +289,10 @@ class StoryViewSet(viewsets.ModelViewSet):
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         story_pk = cl.story_pk_from_url(story.link)
         viewers = cl.story_viewers(story_pk)
+        for viewer in viewers:
+            account = Account()
+            account.igname = viewer["userName"]
+            account.save()
         return Response(viewers)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")

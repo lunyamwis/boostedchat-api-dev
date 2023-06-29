@@ -42,13 +42,13 @@ class GmapScrapper(APIView):
             divSideBar = None
             try:
                 divSideBar = driver.find_element(
-                    By.CSS_SELECTOR, f"div[aria-label='Matokeo ya {gmaps_config.area_of_search}']"
+                    By.CSS_SELECTOR, f"div[aria-label='Matokeo ya {serializer.data.get('area_of_search')}']"
                 )
             except NoSuchElementException as err:
                 print(err)
                 try:
                     divSideBar = driver.find_element(
-                        By.CSS_SELECTOR, f"div[aria-label='Results of {gmaps_config.area_of_search}']"
+                        By.CSS_SELECTOR, f"div[aria-label='Results of {serializer.data.get('area_of_search')}']"
                     )
                 except NoSuchElementException as err:
                     print(err)

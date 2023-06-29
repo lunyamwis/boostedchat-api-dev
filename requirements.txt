@@ -1,9 +1,11 @@
 asgiref
 beautifulsoup4
+celery
 numpy
 Django
 djangorestframework
 django-allauth
+django-celery-beat
 django-cors-headers
 dj-rest-auth
 django-softdelete
@@ -11,11 +13,13 @@ django-role-permissions
 djangorestframework-simplejwt
 gunicorn
 instagrapi
+mailchimp-marketing
 pandas
 Pillow
 pre-commit
 PyJWT
 pytz
+redis
 requests
 selenium
 sqlparse

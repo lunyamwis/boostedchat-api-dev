@@ -6,7 +6,7 @@ from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ["igname"]
+        fields = ["id", "igname"]
 
 
 class CommentSerializer(serializers.ModelSerializer):
