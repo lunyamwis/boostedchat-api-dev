@@ -132,9 +132,22 @@ class PhotoViewSet(viewsets.ModelViewSet):
         likers = cl.media_likers(media_pk)
         for liker in likers:
             account = Account()
-            account.igname = likers[liker].username
+            account.igname = liker.username
             account.save()
         return Response(likers)
+
+    @action(detail=True, methods=["get"], url_path="retrieve-commenters")
+    def retrieve_comments(self, request, pk=None):
+        photo = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        media_pk = cl.media_pk_from_url(photo.link)
+        comments = cl.media_comments(media_pk)
+        for comment in comments:
+            account = Account()
+            account.igname = comment.user.username
+            account.save()
+        return Response(comments)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
@@ -182,7 +195,7 @@ class VideoViewSet(viewsets.ModelViewSet):
         likers = cl.media_likers(media_pk)
         for liker in likers:
             account = Account()
-            account.igname = likers[liker].username
+            account.igname = liker.username
             account.save()
         return Response(likers)
 
@@ -232,7 +245,7 @@ class ReelViewSet(viewsets.ModelViewSet):
         likers = cl.media_likers(media_pk)
         for liker in likers:
             account = Account()
-            account.igname = likers[liker].username
+            account.igname = liker.username
             account.save()
         return Response(likers)
 
