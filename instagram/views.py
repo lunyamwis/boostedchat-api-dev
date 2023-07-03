@@ -137,7 +137,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
         return Response(likers)
 
     @action(detail=True, methods=["get"], url_path="retrieve-commenters")
-    def retrieve_comments(self, request, pk=None):
+    def retrieve_commenters(self, request, pk=None):
         photo = self.get_object()
         cl = Client()
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
@@ -199,6 +199,19 @@ class VideoViewSet(viewsets.ModelViewSet):
             account.save()
         return Response(likers)
 
+    @action(detail=True, methods=["get"], url_path="retrieve-commenters")
+    def retrieve_commenters(self, request, pk=None):
+        video = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        media_pk = cl.media_pk_from_url(video.link)
+        comments = cl.media_comments(media_pk)
+        for comment in comments:
+            account = Account()
+            account.igname = comment.user.username
+            account.save()
+        return Response(comments)
+
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
         serializer = UploadSerializer(data=request.data)
@@ -248,6 +261,19 @@ class ReelViewSet(viewsets.ModelViewSet):
             account.igname = liker.username
             account.save()
         return Response(likers)
+
+    @action(detail=True, methods=["get"], url_path="retrieve-commenters")
+    def retrieve_commenters(self, request, pk=None):
+        reel = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        media_pk = cl.media_pk_from_url(reel.link)
+        comments = cl.media_comments(media_pk)
+        for comment in comments:
+            account = Account()
+            account.igname = comment.user.username
+            account.save()
+        return Response(comments)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
