@@ -43,6 +43,10 @@ class AccountViewSet(viewsets.ModelViewSet):
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         user_info = cl.user_info_by_username(account.igname).dict()
         followers = cl.user_followers(user_info["pk"])
+        for follower in followers:
+            account_ = Account()
+            account_.igname = followers[follower].username
+            account_.save()
         return Response(followers)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")
@@ -126,7 +130,24 @@ class PhotoViewSet(viewsets.ModelViewSet):
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         media_pk = cl.media_pk_from_url(photo.link)
         likers = cl.media_likers(media_pk)
+        for liker in likers:
+            account = Account()
+            account.igname = liker.username
+            account.save()
         return Response(likers)
+
+    @action(detail=True, methods=["get"], url_path="retrieve-commenters")
+    def retrieve_commenters(self, request, pk=None):
+        photo = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        media_pk = cl.media_pk_from_url(photo.link)
+        comments = cl.media_comments(media_pk)
+        for comment in comments:
+            account = Account()
+            account.igname = comment.user.username
+            account.save()
+        return Response(comments)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
@@ -172,7 +193,24 @@ class VideoViewSet(viewsets.ModelViewSet):
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         media_pk = cl.media_pk_from_url(video.link)
         likers = cl.media_likers(media_pk)
+        for liker in likers:
+            account = Account()
+            account.igname = liker.username
+            account.save()
         return Response(likers)
+
+    @action(detail=True, methods=["get"], url_path="retrieve-commenters")
+    def retrieve_commenters(self, request, pk=None):
+        video = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        media_pk = cl.media_pk_from_url(video.link)
+        comments = cl.media_comments(media_pk)
+        for comment in comments:
+            account = Account()
+            account.igname = comment.user.username
+            account.save()
+        return Response(comments)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
@@ -218,7 +256,24 @@ class ReelViewSet(viewsets.ModelViewSet):
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         media_pk = cl.media_pk_from_url(reel.link)
         likers = cl.media_likers(media_pk)
+        for liker in likers:
+            account = Account()
+            account.igname = liker.username
+            account.save()
         return Response(likers)
+
+    @action(detail=True, methods=["get"], url_path="retrieve-commenters")
+    def retrieve_commenters(self, request, pk=None):
+        reel = self.get_object()
+        cl = Client()
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        media_pk = cl.media_pk_from_url(reel.link)
+        comments = cl.media_comments(media_pk)
+        for comment in comments:
+            account = Account()
+            account.igname = comment.user.username
+            account.save()
+        return Response(comments)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
@@ -273,6 +328,10 @@ class StoryViewSet(viewsets.ModelViewSet):
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         story_pk = cl.story_pk_from_url(story.link)
         viewers = cl.story_viewers(story_pk)
+        for viewer in viewers:
+            account = Account()
+            account.igname = viewers[viewer].username
+            account.save()
         return Response(viewers)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")

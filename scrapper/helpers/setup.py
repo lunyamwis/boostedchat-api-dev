@@ -1,3 +1,4 @@
+import os
 import time
 
 import requests
@@ -11,7 +12,7 @@ class Setup(object):
         self.name = name
         self.gmaps_url = "https://www.google.com/maps"
         self.styleseat_url = "https://www.styleseat.com"
-        self.instagram_url = "https://www.instagram.com/martinlunyamwi"
+        self.instagram_url = "https://www.instagram.com/"
         self.driver = webdriver.Chrome()
 
     def derive_gmap_config(self):
@@ -35,8 +36,8 @@ class Setup(object):
         return soup, self.driver
 
     def instagram_login(self):
-        username = "martinlunyamwi"
-        password = "luther1996-"
+        username = os.getenv("IG_USERNAME")
+        password = os.getenv("IG_PASSWORD")
 
         getdriver = "https://www.instagram.com/accounts/login/"
 
