@@ -328,19 +328,15 @@ class StoryViewSet(viewsets.ModelViewSet):
             return UploadSerializer
         return self.serializer_class
 
-    @action(detail=True, methods=["get"], url_path="retrieve-viewers")
-    def retrieve_viewers(self, request, pk=None):
+    @action(detail=True, methods=["get"], url_path="retrieve-info")
+    def retrieve_info(self, request, pk=None):
         story = self.get_object()
         cl = Client()
         cl.delay_range = [1, 3]
         cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         story_pk = cl.story_pk_from_url(story.link)
-        viewers = cl.story_viewers(story_pk)
-        for viewer in viewers:
-            account = Account()
-            account.igname = viewers[viewer].username
-            account.save()
-        return Response(viewers)
+        info = cl.story_info(story_pk).dict()
+        return Response(info)
 
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
