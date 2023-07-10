@@ -274,3 +274,37 @@ class InstagramScrapper(viewsets.ViewSet):
                 status_code = 200
 
         return Response({"status_code": status_code, "links": links})
+
+    def extract_similar_accounts(self, request, *args, **kwargs):
+        status_code = 0
+        similar_accounts = []
+        time.sleep(2)
+        driver = Setup("instagram").instagram_login()
+        time.sleep(8)
+        driver.get("https://www.instagram.com/darwin_okuku/")
+        WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable(
+                (
+                    By.XPATH,
+                    "/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/div[2]/\
+                        section/main/div/div[2]/article/div[2]/div/div[1]/a/span",
+                )
+            )
+        ).click()
+        time.sleep(7)
+        xpath_scroll = (
+            "/html/body/div[2]/div/div/div[3]/div/div/div[1]/div/div[2]/div/div/div/div/div[2]/div/div[2]/div"
+        )
+        fBody = driver.find_element(By.XPATH, xpath_scroll)
+
+        scroll = 0
+        while scroll < 5:  # scroll 5 times
+
+            time.sleep(2)
+            for a in fBody.find_elements(By.TAG_NAME, "a"):
+                time.sleep(2)
+                similar_accounts.append(a.get_attribute("href"))
+            driver.execute_script("arguments[0].scrollTop = arguments[0].scrollTop + arguments[0].offsetHeight;", fBody)
+            scroll += 1
+
+        return Response({"status_code": status_code, "similar_accounts": similar_accounts})
