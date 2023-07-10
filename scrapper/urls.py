@@ -14,5 +14,10 @@ urlpatterns = [
     path("gmaps/", GmapScrapper.as_view(), name="gmaps_scrapper"),
     path("styleseat/", StyleseatScrapper.as_view(), name="styleseat_scrapper"),
     path("instagram/search/", InstagramScrapper.as_view({"get": "search_users"})),
+    path(
+        "instagram/extract-similar-accounts/",
+        InstagramScrapper.as_view({"get": "extract_similar_accounts"}),
+        name="extract_similar_accounts",
+    ),
     path("profiles/", include(router.urls)),
 ]
