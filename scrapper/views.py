@@ -282,12 +282,13 @@ class InstagramScrapper(viewsets.ViewSet):
         driver = Setup("instagram").instagram_login()
         time.sleep(8)
         driver.get("https://www.instagram.com/darwin_okuku/")
+        xpath_see_all = "/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/div[2]/"
+        xpath_see_all += "section/main/div/div[2]/article/div[2]/div/div[1]/a/span"
         WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable(
                 (
                     By.XPATH,
-                    "/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/div[2]/\
-                        section/main/div/div[2]/article/div[2]/div/div[1]/a/span",
+                    xpath_see_all,
                 )
             )
         ).click()
