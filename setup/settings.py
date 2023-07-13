@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "base.apps.BaseConfig",
     "scrapper.apps.ScrapperConfig",
     "settings.apps.SettingsConfig",
+    "sales_rep.apps.SalesRepConfig",
     "allauth",
     "allauth.account",
     "dj_rest_auth",
