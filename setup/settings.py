@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "scrapper.apps.ScrapperConfig",
     "settings.apps.SettingsConfig",
     "sales_rep.apps.SalesRepConfig",
+    "leads.apps.LeadsConfig",
     "allauth",
     "allauth.account",
     "dj_rest_auth",

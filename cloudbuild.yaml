@@ -1,0 +1,4 @@
+steps:
+  # running docker-compose
+  - name: 'docker/compose:2.20.0'
+    args: ['up', '-d']
