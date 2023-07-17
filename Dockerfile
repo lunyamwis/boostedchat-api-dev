@@ -7,4 +7,4 @@ RUN python -m pip install -r requirements.txt
 
 COPY . .
 
-RUN ["/bin/bash", "+x", "/entrypoint.sh"]
+CMD ["/bin/bash", "+x", "/entrypoint.sh"]
