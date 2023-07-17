@@ -19,7 +19,7 @@ echo " "
 echo "<<<<<<<<<<<<<<<<<<<< START Celery >>>>>>>>>>>>>>>>>>>>>>>>"
 
 # # start Celery worker
-celery -A setup worker -l info --pool=gevent --concurrency=1000 &
+celery -A setup worker -l info --concurrency=1000 &
 
 # # start celery beat
 # celery -A celery_conf.celery_periodic_scheduler beat --loglevel=info &
