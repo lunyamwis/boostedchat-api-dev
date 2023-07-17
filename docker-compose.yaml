@@ -14,7 +14,7 @@ services:
     env_file: .env
     environment:
       DEBUG: 'true'
-    entrypoint: ["/bin/bash", "-c", "/entrypoint.sh"]
+    entrypoint: ["/bin/bash", "+x", "/entrypoint.sh"]
 
   nginx:
     restart: always
