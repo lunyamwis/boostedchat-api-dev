@@ -3,13 +3,13 @@
 # source /root/.local/share/virtualenvs/brooks-insurance-*/bin/activate
 
 echo "<<<<<<<< Collect Staticfiles>>>>>>>>>"
-python manage.py collectstatic --noinput
+python3 manage.py collectstatic --noinput
 
 
 sleep 14
 echo "<<<<<<<< Database Setup and Migrations Starts >>>>>>>>>"
 # Run database migrations
-python manage.py migrate &
+python3 manage.py migrate &
 
 sleep 5
 echo "<<<<<<< Database Setup and Migrations Complete >>>>>>>>>>"
