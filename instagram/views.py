@@ -36,6 +36,39 @@ class AccountViewSet(viewsets.ModelViewSet):
             return UploadSerializer
         return self.serializer_class
 
+    @action(detail=True, methods=["get"], url_path="potential-buy")
+    def potential_buy(self, request, pk=None):
+        account = self.get_object()
+        status_code = 0
+        cl = Client()
+        cl.delay_range = [1, 3]
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        user_info = cl.user_info_by_username(account.igname).dict()
+        potential_buy = 0
+        l1 = ["hello", "hi"]
+        l2 = user_info["biography"].split("")
+        for i in l1:
+            print(f"{l2.count(i)}: {i}")
+            status_code = 200
+
+        return Response({"status_code": status_code, "potential_buy": potential_buy})
+
+    @action(detail=True, methods=["get"], url_path="potential-promote")
+    def potential_promote(self, request, pk=None):
+        account = self.get_object()
+        cl = Client()
+        cl.delay_range = [1, 3]
+        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        user_info = cl.user_info_by_username(account.igname).dict()
+        l1 = ["hello", "hi"]
+        l2 = user_info["biography"].split("")
+        potential_promote = 0
+        for i in l1:
+            print(f"{l2.count(i)}: {i}")
+            status_code = 200
+
+        return Response({"status_code": status_code, "potential_promote": potential_promote})
+
     @action(detail=True, methods=["get"], url_path="extract-followers")
     def extract_followers(self, request, pk=None):
         account = self.get_object()
