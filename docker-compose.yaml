@@ -14,7 +14,7 @@ services:
     env_file: .env
     environment:
       DEBUG: 'true'
-    command: /usr/bin/gunicorn setup.wsgi:application -w 2 -b :8000 && python3 manage.py migrate
+    entrypoint: ["/bin/bash", "-c", "entrypoint.sh"]
 
   nginx:
     restart: always
