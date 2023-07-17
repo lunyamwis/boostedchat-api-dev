@@ -1,4 +1,5 @@
 FROM ubuntu:22.04
+WORKDIR /
 RUN DEBIAN_FRONTEND=noninteractive \
   apt-get update \
   && apt-get install -y python3  python3-pip \
@@ -12,4 +13,4 @@ COPY requirements.txt requirements.txt
 RUN python3 -m pip install -r requirements.txt
 
 COPY . .
-CMD ["/bin/bash", "-c", "entrypoint.sh"]
+CMD ["/bin/bash", "-c", "/entrypoint.sh"]
