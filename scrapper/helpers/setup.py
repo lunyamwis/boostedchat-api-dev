@@ -14,6 +14,7 @@ class Setup(object):
         self.styleseat_url = "https://www.styleseat.com"
         self.instagram_url = "https://www.instagram.com/"
         self.options = webdriver.ChromeOptions()
+        self.options.add_argument("--headless")
         self.options.add_argument("start-maximized")  # open Browser in maximized mode
         self.options.add_argument("disable-infobars")  # disabling infobars
         self.options.add_argument("--disable-extensions")  # disabling extensions
