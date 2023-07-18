@@ -6,7 +6,7 @@ echo "<<<<<<<< Collect Staticfiles>>>>>>>>>"
 # python3 manage.py collectstatic --noinput
 
 
-sleep 14
+sleep 5
 echo "<<<<<<<< Database Setup and Migrations Starts >>>>>>>>>"
 # Run database migrations
 python3 manage.py migrate &
@@ -19,7 +19,7 @@ echo " "
 echo "<<<<<<<<<<<<<<<<<<<< START Celery >>>>>>>>>>>>>>>>>>>>>>>>"
 
 # # start Celery worker
-celery -A setup worker -1 info &
+# celery -A setup worker -1 info --concurrency=1000 &
 
 # # start celery beat
 # celery -A celery_conf.celery_periodic_scheduler beat --loglevel=info &
