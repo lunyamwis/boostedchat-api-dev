@@ -48,7 +48,9 @@ class AccountViewSet(viewsets.ModelViewSet):
         l1 = ["hello", "hi"]
         l2 = user_info["biography"].split("")
         for i in l1:
-            print(f"{l2.count(i)}: {i}")
+            if l2.count(i) >= 0:
+                potential_buy = 50
+                break
             status_code = 200
 
         return Response({"status_code": status_code, "potential_buy": potential_buy})
@@ -64,7 +66,9 @@ class AccountViewSet(viewsets.ModelViewSet):
         l2 = user_info["biography"].split("")
         potential_promote = 0
         for i in l1:
-            print(f"{l2.count(i)}: {i}")
+            if l2.count(i) >= 0:
+                potential_promote = 50
+                break
             status_code = 200
 
         return Response({"status_code": status_code, "potential_promote": potential_promote})
