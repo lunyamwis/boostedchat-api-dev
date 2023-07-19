@@ -6,10 +6,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 
+
 class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+            'first_name',
+            'last_name',
             'email',
             'password',
             'role',
@@ -18,6 +21,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         auth_user = User.objects.create_user(**validated_data)
         return auth_user
+
 
 class UserLoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -59,14 +63,13 @@ class UserLoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid login credentials")
 
 
-    
-
 class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+            'id',
             'email',
+            'first_name',
+            'last_name',
             'role'
         )
-    
-    

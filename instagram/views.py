@@ -2,6 +2,7 @@
 import csv
 import io
 import os
+from instagram.helpers.login import login_user
 
 from instagrapi import Client
 from rest_framework import viewsets
@@ -40,15 +41,14 @@ class AccountViewSet(viewsets.ModelViewSet):
     def potential_buy(self, request, pk=None):
         account = self.get_object()
         status_code = 0
-        cl = Client()
+        cl = login_user()
         cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         user_info = cl.user_info_by_username(account.igname).dict()
         potential_buy = 0
         l1 = ["hello", "hi"]
-        l2 = user_info["biography"].split("")
+        l2 = user_info["biography"].split(" ")
         for i in l1:
-            if l2.count(i) >= 0:
+            if l2.count(i) > 0:
                 potential_buy = 50
                 break
             status_code = 200
@@ -58,15 +58,15 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="potential-promote")
     def potential_promote(self, request, pk=None):
         account = self.get_object()
-        cl = Client()
+        status_code = 0
+        cl = login_user()
         cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
         user_info = cl.user_info_by_username(account.igname).dict()
         l1 = ["hello", "hi"]
-        l2 = user_info["biography"].split("")
+        l2 = user_info["biography"].split(" ")
         potential_promote = 0
         for i in l1:
-            if l2.count(i) >= 0:
+            if l2.count(i) > 0:
                 potential_promote = 50
                 break
             status_code = 200

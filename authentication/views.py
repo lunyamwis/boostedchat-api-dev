@@ -1,4 +1,4 @@
-from django.shortcuts import render,get_object_or_404
+from django.shortcuts import render, get_object_or_404
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -20,15 +20,17 @@ from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from dj_rest_auth.registration.views import SocialLoginView
 from dj_rest_auth.social_serializers import TwitterLoginSerializer
 
+
 class TwitterLogin(SocialLoginView):
     serializer_class = TwitterLoginSerializer
     adapter_class = TwitterOAuthAdapter
+
 
 class FacebookLogin(SocialLoginView):
     adapter_class = FacebookOAuth2Adapter
 
 
-class GoogleLogin(SocialLoginView): # if you want to use Implicit Grant, use this
+class GoogleLogin(SocialLoginView):  # if you want to use Implicit Grant, use this
     adapter_class = GoogleOAuth2Adapter
 
 
@@ -52,7 +54,6 @@ class AuthUserRegistrationView(APIView):
             }
 
             return Response(response, status=status_code)
-
 
 
 class AuthUserLoginView(APIView):
@@ -81,34 +82,39 @@ class AuthUserLoginView(APIView):
             return Response(response, status=status_code)
 
 
-
 class UserListView(APIView):
     serializer_class = UserListSerializer
     permission_classes = (AllowAny,)
 
     def get(self, request):
-        admin = get_object_or_404(Group, name='admin')
-        user = request.user
+        # admin = get_object_or_404(Group, name='admin')
+        # user = request.user
 
-        if user.is_anonymous or user.role != admin.name:
-            response = {
-                'success': False,
-                'status_code': status.HTTP_403_FORBIDDEN,
-                'message': 'You are not authorized to perform this action'
-            }
-            return Response(response, status.HTTP_403_FORBIDDEN)
-        else:
-            users = User.objects.all()
-            serializer = self.serializer_class(users, many=True)
-            response = {
-                'success': True,
-                'status_code': status.HTTP_200_OK,
-                'message': 'Successfully fetched users',
-                'users': serializer.data
+        users = User.objects.all()
+        serializer = self.serializer_class(users, many=True)
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully fetched users',
+            'users': serializer.data
 
-            }
-            return Response(response, status=status.HTTP_200_OK)
-        
+        }
+        return Response(response, status=status.HTTP_200_OK)
+        # if user.is_anonymous or user.role != admin.name:
+        #     response = {
+        #         'success': False,
+        #         'status_code': status.HTTP_403_FORBIDDEN,
+        #         'message': 'You are not authorized to perform this action'
+        #     }
+        #     return Response(response, status.HTTP_403_FORBIDDEN)
+        # else:
+        #     users = User.objects.all()
+        #     serializer = self.serializer_class(users, many=True)
+        #     response = {
+        #         'success': True,
+        #         'status_code': status.HTTP_200_OK,
+        #         'message': 'Successfully fetched users',
+        #         'users': serializer.data
 
-
-
+        #     }
+        #     return Response(response, status=status.HTTP_200_OK)
