@@ -8,6 +8,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from authentication.models import User
 from instagram.models import Account
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x
@@ -24,8 +25,12 @@ class SalesRepManager(viewsets.ModelViewSet):
     def list(self, request):
 
         reps = SalesRep.objects.all()
+        user_info = []
+        for rep in reps:
+            info = {"user": User.objects.filter(id=rep.user.id).values(), "instagram": rep.instagram.values()}
+            user_info.append(info)
 
-        response = {"status_code": status.HTTP_200_OK, "instagram": [rep.instagram.values() for rep in reps]}
+        response = {"status_code": status.HTTP_200_OK, "info": user_info}
         return Response(response, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="assign-accounts")
