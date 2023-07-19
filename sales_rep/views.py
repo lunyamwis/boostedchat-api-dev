@@ -4,16 +4,14 @@ import random
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from authentication.models import User
 from instagram.models import Account
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x
 from .models import SalesRep
-from .serializers import SalesRepListSerializer, SalesRepSerializer
+from .serializers import SalesRepSerializer
 
 # Create your views here.
 
@@ -58,15 +56,3 @@ class SalesRepManager(viewsets.ModelViewSet):
                 i += 1
 
         return Response({"accounts": ready_accounts})
-
-
-class SalesRepListView(APIView):
-    serializer_class = SalesRepListSerializer
-    permission_classes = (AllowAny,)
-
-    def get(self, request):
-
-        users = SalesRep.objects.all()
-        serializer = self.serializer_class(users, many=True)
-        response = {"status_code": status.HTTP_200_OK, "sales_reps": serializer.data}
-        return Response(response, status=status.HTTP_200_OK)

@@ -2,7 +2,7 @@ import json
 
 from django.urls import include, path, reverse
 from rest_framework import status
-from rest_framework.test import APIClient, APITestCase, URLPatternsTestCase
+from rest_framework.test import APITestCase, URLPatternsTestCase
 
 from .models import User
 
@@ -45,40 +45,3 @@ class UserTest(APITestCase, URLPatternsTestCase):
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-    def test_list_all_users_as_admin(self):
-        """Test fetching all users. Restricted to admins"""
-        # Setup the token
-        url = reverse("login")
-        data = {"email": "admin@test.com", "password": "admin"}
-        response = self.client.post(url, data)
-        login_response_data = json.loads(response.content)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue("access" in login_response_data)
-        token = login_response_data["access"]
-
-        # Test the endpoint
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION="JWT " + token)
-        response = client.get(reverse("users"))
-        # response_data = json.loads(response.content)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        # self.assertEqual(User.objects.count(), len(response_data['users']))
-
-    def test_access_denied_all_users(self):
-        """Test fetching all users. Restricted to admins"""
-        url = reverse("login")
-        data = {"email": "test1@test.com", "password": "test"}
-        response = self.client.post(url, data)
-        login_response_data = json.loads(response.content)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue("access" in login_response_data)
-        token = login_response_data["access"]
-
-        # Test the endpoint
-        client = APIClient()
-        client.credentials(HTTP_AUTHORIZATION="JWT " + token)
-        response = client.get(reverse("users"))
-        response_data = json.loads(response.content)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertFalse(response_data["success"])
