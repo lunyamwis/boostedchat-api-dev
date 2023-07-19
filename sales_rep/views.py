@@ -4,17 +4,15 @@ import random
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from instagram.models import Account
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x
 from .models import SalesRep
 from .serializers import SalesRepListSerializer, SalesRepSerializer
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
 
 # Create your views here.
 
@@ -23,10 +21,12 @@ class SalesRepManager(viewsets.ModelViewSet):
     queryset = SalesRep.objects.all()
     serializer_class = SalesRepSerializer
 
-    # def get_serializer_class(self):
-    #     if self.action == "assign_accounts":
-    #         return AccountAssignmentSerializer
-    #     return self.serializer_class
+    def list(self, request):
+
+        reps = SalesRep.objects.all()
+
+        response = {"status_code": status.HTTP_200_OK, "instagram": [rep.instagram.values() for rep in reps]}
+        return Response(response, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="assign-accounts")
     def assign_accounts(self, request, pk=None):
@@ -62,9 +62,5 @@ class SalesRepListView(APIView):
 
         users = SalesRep.objects.all()
         serializer = self.serializer_class(users, many=True)
-        response = {
-            'status_code': status.HTTP_200_OK,
-            'sales_reps': serializer.data
-
-        }
+        response = {"status_code": status.HTTP_200_OK, "sales_reps": serializer.data}
         return Response(response, status=status.HTTP_200_OK)
