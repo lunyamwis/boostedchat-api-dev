@@ -1,14 +1,13 @@
 # Create your views here.
 import csv
 import io
-import os
 
-from instagrapi import Client
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from base.helpers.push_id import PushID
+from instagram.helpers.login import login_user
 
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
 from .serializers import (
@@ -40,15 +39,14 @@ class AccountViewSet(viewsets.ModelViewSet):
     def potential_buy(self, request, pk=None):
         account = self.get_object()
         status_code = 0
-        cl = Client()
-        cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        cl = login_user()
+
         user_info = cl.user_info_by_username(account.igname).dict()
         potential_buy = 0
         l1 = ["hello", "hi"]
-        l2 = user_info["biography"].split("")
+        l2 = user_info["biography"].split(" ")
         for i in l1:
-            if l2.count(i) >= 0:
+            if l2.count(i) > 0:
                 potential_buy = 50
                 break
             status_code = 200
@@ -58,15 +56,15 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="potential-promote")
     def potential_promote(self, request, pk=None):
         account = self.get_object()
-        cl = Client()
-        cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        status_code = 0
+        cl = login_user()
+
         user_info = cl.user_info_by_username(account.igname).dict()
         l1 = ["hello", "hi"]
-        l2 = user_info["biography"].split("")
+        l2 = user_info["biography"].split(" ")
         potential_promote = 0
         for i in l1:
-            if l2.count(i) >= 0:
+            if l2.count(i) > 0:
                 potential_promote = 50
                 break
             status_code = 200
@@ -76,9 +74,8 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="extract-followers")
     def extract_followers(self, request, pk=None):
         account = self.get_object()
-        cl = Client()
-        cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        cl = login_user()
+
         user_info = cl.user_info_by_username(account.igname).dict()
         followers = cl.user_followers(user_info["pk"])
         for follower in followers:
@@ -164,9 +161,8 @@ class PhotoViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
         photo = self.get_object()
-        cl = Client()
-        cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        cl = login_user()
+
         media_pk = cl.media_pk_from_url(photo.link)
         likers = cl.media_likers(media_pk)
         for liker in likers:
@@ -178,9 +174,8 @@ class PhotoViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="retrieve-commenters")
     def retrieve_commenters(self, request, pk=None):
         photo = self.get_object()
-        cl = Client()
-        cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        cl = login_user()
+
         media_pk = cl.media_pk_from_url(photo.link)
         comments = cl.media_comments(media_pk)
         for comment in comments:
@@ -229,9 +224,8 @@ class VideoViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
         video = self.get_object()
-        cl = Client()
-        cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        cl = login_user()
+
         media_pk = cl.media_pk_from_url(video.link)
         likers = cl.media_likers(media_pk)
         for liker in likers:
@@ -243,9 +237,8 @@ class VideoViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="retrieve-commenters")
     def retrieve_commenters(self, request, pk=None):
         video = self.get_object()
-        cl = Client()
-        cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        cl = login_user()
+
         media_pk = cl.media_pk_from_url(video.link)
         comments = cl.media_comments(media_pk)
         for comment in comments:
@@ -294,9 +287,8 @@ class ReelViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
         reel = self.get_object()
-        cl = Client()
-        cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        cl = login_user()
+
         media_pk = cl.media_pk_from_url(reel.link)
         likers = cl.media_likers(media_pk)
         for liker in likers:
@@ -308,9 +300,8 @@ class ReelViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="retrieve-commenters")
     def retrieve_commenters(self, request, pk=None):
         reel = self.get_object()
-        cl = Client()
-        cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        cl = login_user()
+
         media_pk = cl.media_pk_from_url(reel.link)
         comments = cl.media_comments(media_pk)
         for comment in comments:
@@ -368,9 +359,8 @@ class StoryViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="retrieve-info")
     def retrieve_info(self, request, pk=None):
         story = self.get_object()
-        cl = Client()
-        cl.delay_range = [1, 3]
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        cl = login_user()
+
         story_pk = cl.story_pk_from_url(story.link)
         info = cl.story_info(story_pk).dict()
         return Response(info)

@@ -2,10 +2,11 @@ import math
 import random
 
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from authentication.models import User
 from instagram.models import Account
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x
@@ -19,15 +20,25 @@ class SalesRepManager(viewsets.ModelViewSet):
     queryset = SalesRep.objects.all()
     serializer_class = SalesRepSerializer
 
-    # def get_serializer_class(self):
-    #     if self.action == "assign_accounts":
-    #         return AccountAssignmentSerializer
-    #     return self.serializer_class
+    def list(self, request):
+
+        reps = SalesRep.objects.all()
+        user_info = []
+        for rep in reps:
+            if User.objects.filter(id=rep.user.id).exists():
+                info = {"user": User.objects.filter(id=rep.user.id).values(), "instagram": rep.instagram.values()}
+                user_info.append(info)
+
+        response = {"status_code": status.HTTP_200_OK, "info": user_info}
+        return Response(response, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="assign-accounts")
     def assign_accounts(self, request, pk=None):
         instagram_accounts = [i.id for i in Account.objects.all()]
         salesreps = list(SalesRep.objects.all())
+
+        if len(salesreps) == 0:
+            return Response({"message": "No sales reps"}, status=status.HTTP_400_BAD_REQUEST)
 
         ration = math.ceil(len(instagram_accounts) / len(salesreps))
 
