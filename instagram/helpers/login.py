@@ -2,6 +2,7 @@ import email
 import imaplib
 import logging
 import os
+import random
 import re
 import time
 from pathlib import Path
@@ -10,6 +11,13 @@ from instagrapi import Client
 from instagrapi.mixins.challenge import ChallengeChoice
 
 logger = logging.getLogger()
+
+
+def change_password_handler(username):
+    # Simple way to generate a random string
+    chars = list("abcdefghijklmnopqrstuvwxyz1234567890!&£@#")
+    password = "".join(random.sample(chars, 8))
+    return password
 
 
 def get_code_from_email(username):
@@ -59,6 +67,8 @@ def login_user():
     """
 
     cl = Client()
+    # cl.change_password_handler = change_password_handler(os.getenv("IG_USERNAME"))
+    cl.challenge_code_handler = challenge_code_handler(os.getenv("IG_USERNAME"), 1)
     cl.delay_range = [1, 3]
     max_attempts = 5
     session_file_path = Path("session.json")
