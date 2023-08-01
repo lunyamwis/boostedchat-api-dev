@@ -33,5 +33,5 @@ class UserTest(APITestCase, URLPatternsTestCase):
         url = reverse("account-extract_action_button")
         response = self.client.get(url)
         nones = not all(response.data.values())
-        self.assertEqual(nones, False)
+        self.assertFalse(nones)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
