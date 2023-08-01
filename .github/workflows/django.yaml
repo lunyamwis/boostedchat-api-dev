@@ -5,6 +5,7 @@ on:
     branches: [ "*" ]
   pull_request:
     branches: [ "*" ]
+    types: [opened, closed, reopened]
 
 env:
   CELERY_BROKER_URL: $CELERY_BROKER_URL
@@ -38,3 +39,12 @@ jobs:
     - name: Run Tests
       run: |
         python manage.py test
+
+    - name: Create a comment
+      uses: Asana/comment-on-task-github-action@v1.2
+      id: createComment
+      with:
+        asana-secret: ${{ secrets.ASANA_SECRET }}
+        comment-text: "{{PR_NAME}} is {{PR_STATE}}: {{PR_URL}}"
+    - name: Get status
+      run: echo "Status is ${{ steps.createComment.outputs.status }}"

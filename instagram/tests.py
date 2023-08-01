@@ -1,6 +1,6 @@
 # Create your tests here.
 
-from django.urls import include, path
+from django.urls import include, path, reverse
 from rest_framework.test import APITestCase, URLPatternsTestCase
 
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
@@ -27,3 +27,7 @@ class UserTest(APITestCase, URLPatternsTestCase):
         self.reel = Reel.objects.create(link="https://www.instagram.com/reels/Cqb6IjJu18m/")
 
         self.video = Video.objects.create(link="https://www.instagram.com/p/ChAsEdoJfOt/")
+
+    def test_extract_booking_info(self):
+        url = reverse("extract_similar_accounts")
+        print(url)
