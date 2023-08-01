@@ -13,7 +13,15 @@ class Setup(object):
         self.gmaps_url = "https://www.google.com/maps"
         self.styleseat_url = "https://www.styleseat.com"
         self.instagram_url = "https://www.instagram.com/"
-        self.driver = webdriver.Chrome()
+        self.options = webdriver.ChromeOptions()
+        self.options.add_argument("--headless")
+        self.options.add_argument("start-maximized")  # open Browser in maximized mode
+        self.options.add_argument("disable-infobars")  # disabling infobars
+        self.options.add_argument("--disable-extensions")  # disabling extensions
+        self.options.add_argument("--disable-gpu")  # applicable to windows os only
+        self.options.add_argument("--disable-dev-shm-usage")  # overcome limited resource problems
+        self.options.add_argument("--no-sandbox")  # Bypass OS security model
+        self.driver = webdriver.Chrome(options=self.options)
 
     def derive_gmap_config(self):
         soup = None
