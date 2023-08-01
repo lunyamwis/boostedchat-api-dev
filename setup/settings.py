@@ -26,7 +26,7 @@ SECRET_KEY = "@yxw+2^(foid*3-@@uvjpm)!to+63zo4-%^3&_@((-+5%po=p-"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["104.154.195.123", "34.123.119.131", "127.0.0.1"]
+ALLOWED_HOSTS = ["104.154.195.123", "34.123.119.131", "api.boostedchat.com", "127.0.0.1"]
 
 
 # Application definition

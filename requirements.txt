@@ -11,6 +11,7 @@ dj-rest-auth
 django-softdelete
 django-role-permissions
 djangorestframework-simplejwt
+google-api-python-client
 gunicorn
 instagrapi
 mailchimp-marketing
@@ -25,4 +26,5 @@ selenium
 scrapy
 sqlparse
 coverage
+robotframework
 webdriver-manager
