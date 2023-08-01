@@ -13,6 +13,7 @@ class Account(BaseModel):
     review = models.FloatField(null=True, blank=True)
     gmaps_business_name = models.CharField(max_length=255, null=True, blank=True)
     profile_url = models.URLField(null=True, blank=True)
+    competitor = models.CharField(max_length=255, null=True, blank=True)
 
 
 class HashTag(BaseModel):

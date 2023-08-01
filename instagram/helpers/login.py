@@ -96,3 +96,9 @@ def login_user():
         cl.dump_settings(session_file_path)
         print("Session saved to file")
     return cl
+
+
+def easy_login():
+    cl = Client()
+    cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+    return cl

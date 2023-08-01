@@ -1,8 +1,10 @@
 # Create your views here.
 import csv
 import io
+import logging
+from urllib.parse import urlparse
 
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -106,6 +108,28 @@ class AccountViewSet(viewsets.ModelViewSet):
 
         else:
             return Response({"status_code": 500})
+
+    @action(detail=False, methods=["get"], url_path="extract-action-button", url_name="extract_action_button")
+    def extract_action_bution(self, request):
+        status_code = 0
+        external_urls = []
+        cl = login_user()
+
+        for _, account in enumerate(self.queryset):
+            url_info = cl.user_info_by_username(account.igname)
+            account.competitor = urlparse(url_info.external_url).netloc
+            account.save()
+            external_url_info = {
+                "external_url": url_info.external_url,
+                "category": url_info.category,
+                "competitor": account.competitor,
+            }
+            external_urls.append(external_url_info)
+            status_code = status.HTTP_200_OK
+            logging.warning(f"extracting info from => {account.igname}")
+
+        response = {"actions": external_urls, "status_code": status_code}
+        return Response(response)
 
 
 class HashTagViewSet(viewsets.ModelViewSet):
