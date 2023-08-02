@@ -14,7 +14,7 @@ class UserTest(APITestCase, URLPatternsTestCase):
     ]
 
     def setUp(self):
-        self.account = Account.objects.create(igname="omwenga.alfred")
+        self.account = Account.objects.create(igname="Vmbeautydallas")
 
         self.story = Story.objects.create(link="admin@test.com")
 

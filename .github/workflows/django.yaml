@@ -5,6 +5,7 @@ on:
     branches: [ "*" ]
   pull_request:
     branches: [ "*" ]
+    types: [opened, closed, reopened]
 
 env:
   CELERY_BROKER_URL: $CELERY_BROKER_URL
@@ -14,7 +15,10 @@ env:
   MAILCHIMP_EMAIL_LIST_ID: $MAILCHIMP_EMAIL_LIST_ID
   EMAIL_HOST_USER: $EMAIL_HOST_USER
   EMAIL_HOST_PASSWORD: $EMAIL_HOST_PASSWORD
-
+  IG_USERNAME: ${{SECRETS.IG_USERNAME}}
+  IG_PASSWORD: ${{SECRETS.IG_PASSWORD}}
+  CHALLENGE_EMAIL: ${{SECRETS.CHALLENGE_EMAIL}}
+  CHALLENGE_PASSWORD: ${{SECRETS.CHALLENGE_PASSWORD}}
 
 jobs:
   build:
@@ -38,3 +42,12 @@ jobs:
     - name: Run Tests
       run: |
         python manage.py test
+
+    # - name: Create a comment
+    #   uses: Asana/comment-on-task-github-action@v1.2
+    #   id: createComment
+    #   with:
+    #     asana-secret: ${{ secrets.ASANA_SECRET }}
+    #     comment-text: "{{PR_NAME}} is {{PR_STATE}}: {{PR_URL}}"
+    # - name: Get status
+    #   run: echo "Status is ${{ steps.createComment.outputs.status }}"
