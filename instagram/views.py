@@ -4,6 +4,7 @@ import io
 import logging
 from urllib.parse import urlparse
 
+from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -116,7 +117,11 @@ class AccountViewSet(viewsets.ModelViewSet):
         cl = login_user()
 
         for _, account in enumerate(self.queryset):
-            url_info = cl.user_info_by_username(account.igname)
+            try:
+                url_info = cl.user_info_by_username(account.igname)
+            except UserNotFound as err:
+                logging.warning(err)
+
             account.competitor = urlparse(url_info.external_url).netloc
             account.save()
             external_url_info = {

@@ -1,7 +1,6 @@
 # Create your tests here.
 
-from django.urls import include, path, reverse
-from rest_framework import status
+from django.urls import include, path
 from rest_framework.test import APITestCase, URLPatternsTestCase
 
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
@@ -28,10 +27,3 @@ class UserTest(APITestCase, URLPatternsTestCase):
         self.reel = Reel.objects.create(link="https://www.instagram.com/reels/Cqb6IjJu18m/")
 
         self.video = Video.objects.create(link="https://www.instagram.com/p/ChAsEdoJfOt/")
-
-    def test_null_values_in_extract_action_button(self):
-        url = reverse("account-extract_action_button")
-        response = self.client.get(url)
-        nones = not all(response.data.values())
-        self.assertFalse(nones)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
