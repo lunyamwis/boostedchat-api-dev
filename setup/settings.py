@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "instagram.apps.InstagramConfig",
     "base.apps.BaseConfig",
     "settings.apps.SettingsConfig",
+    "modelhub.apps.ModelhubConfig",
     "sales_rep.apps.SalesRepConfig",
     "leads.apps.LeadsConfig",
     "allauth",
