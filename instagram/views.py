@@ -15,6 +15,7 @@ from instagram.helpers.login import login_user
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
 from .serializers import (
     AccountSerializer,
+    AddCommentSerializer,
     CommentSerializer,
     HashTagSerializer,
     PhotoSerializer,
@@ -185,6 +186,8 @@ class PhotoViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "batch_uploads":
             return UploadSerializer
+        elif self.action == "add_comment":
+            return AddCommentSerializer
         return self.serializer_class
 
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
@@ -199,6 +202,20 @@ class PhotoViewSet(viewsets.ModelViewSet):
             account.igname = liker.username
             account.save()
         return Response(likers)
+
+    @action(detail=True, methods=["post"], url_path="add-comment")
+    def add_comment(self, request, pk=None):
+        photo = self.get_object()
+        cl = login_user()
+
+        media_pk = cl.media_pk_from_url(photo.link)
+        media_id = cl.media_id(media_pk=media_pk)
+        serializer = AddCommentSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+        if valid:
+            cl.media_comment(media_id, serializer.data.get("text"))
+
+        return Response({"status": status.HTTP_200_OK, "success": True})
 
     @action(detail=True, methods=["get"], url_path="retrieve-commenters")
     def retrieve_commenters(self, request, pk=None):
@@ -248,6 +265,8 @@ class VideoViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "batch_uploads":
             return UploadSerializer
+        elif self.action == "add_comment":
+            return AddCommentSerializer
         return self.serializer_class
 
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
@@ -262,6 +281,20 @@ class VideoViewSet(viewsets.ModelViewSet):
             account.igname = liker.username
             account.save()
         return Response(likers)
+
+    @action(detail=True, methods=["post"], url_path="add-comment")
+    def add_comment(self, request, pk=None):
+        photo = self.get_object()
+        cl = login_user()
+
+        media_pk = cl.media_pk_from_url(photo.link)
+        media_id = cl.media_id(media_pk=media_pk)
+        serializer = AddCommentSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+        if valid:
+            cl.media_comment(media_id, serializer.data.get("text"))
+
+        return Response({"status": status.HTTP_200_OK, "success": True})
 
     @action(detail=True, methods=["get"], url_path="retrieve-commenters")
     def retrieve_commenters(self, request, pk=None):
@@ -384,6 +417,15 @@ class StoryViewSet(viewsets.ModelViewSet):
         if self.action == "batch_uploads":
             return UploadSerializer
         return self.serializer_class
+
+    @action(detail=True, methods=["get"], url_path="retrieve-info")
+    def like_story(self, request, pk=None):
+        story = self.get_object()
+        cl = login_user()
+        story_pk = cl.story_pk_from_url(story.link)
+        info = cl.story_info(story_pk)
+        cl.story_like(story_id=info.id)
+        return Response({"status": status.HTTP_200_OK, "success": True})
 
     @action(detail=True, methods=["get"], url_path="retrieve-info")
     def retrieve_info(self, request, pk=None):

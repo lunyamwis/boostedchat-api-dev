@@ -57,3 +57,7 @@ class UploadSerializer(serializers.Serializer):
 
     class Meta:
         fields = ["file_uploaded"]
+
+
+class AddCommentSerializer(serializers.Serializer):
+    text = serializers.CharField(max_length=255)

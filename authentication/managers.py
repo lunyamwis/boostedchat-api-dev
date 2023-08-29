@@ -1,13 +1,13 @@
 from django.contrib.auth.base_user import BaseUserManager
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import Group
 
 
 class CustomUserManager(BaseUserManager):
     """
     Custom user model where the email address is the unique identifier
-    and has an is_admin field to allow access to the admin app 
+    and has an is_admin field to allow access to the admin app
     """
+
     def create_user(self, email, password, **extra_fields):
         if not email:
             raise ValueError(_("The email must be set"))
@@ -21,11 +21,7 @@ class CustomUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password, **extra_fields):
-        admin,_ = Group.objects.get_or_create(name='admin')
-        extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('is_superuser',True)
-        extra_fields.setdefault('role', admin)
-        
-        if extra_fields.get('role') != admin:
-            raise ValueError('Superuser must have role of Global Admin')
+        extra_fields.setdefault("is_active", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_staff", True)
         return self.create_user(email, password, **extra_fields)
