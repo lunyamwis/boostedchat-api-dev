@@ -21,7 +21,6 @@ urlpatterns = [
     path("api-auth/", include("rest_framework.urls")),  # new
     path("api/v1/authentication/", include("authentication.urls")),
     path("api/v1/instagram/", include("instagram.urls")),
-    path("api/v1/scrapper/", include("scrapper.urls")),
     path("api/v1/sales/", include("sales_rep.urls")),
     path("api/v1/leads/", include("leads.urls")),
 ]

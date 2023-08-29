@@ -48,8 +48,6 @@ INSTALLED_APPS = [
     "roles.apps.RolesConfig",
     "instagram.apps.InstagramConfig",
     "base.apps.BaseConfig",
-    "scrapper.apps.ScrapperConfig",
-    "settings.apps.SettingsConfig",
     "sales_rep.apps.SalesRepConfig",
     "leads.apps.LeadsConfig",
     "allauth",
