@@ -28,7 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["104.154.195.123", "34.123.119.131", "api.boostedchat.com", "127.0.0.1"]
 
-
+DIALOGFLOW_BASE_URL = "https://dialogflow.googleapis.com/v2beta1"
 # Application definition
 
 INSTALLED_APPS = [

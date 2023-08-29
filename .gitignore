@@ -162,3 +162,6 @@ session.json
 log.html
 output.xml
 report.html
+
+dialogflow.json
+dialogflow_token.json
