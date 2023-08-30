@@ -205,6 +205,20 @@ class PhotoViewSet(viewsets.ModelViewSet):
             account.save()
         return Response(likers)
 
+    @action(detail=True, methods=["get"], url_path="fetch-comments")
+    def fetch_comments(self, request, pk=None):
+        try:
+            photo = self.get_object()
+            cl = login_user()
+            media_pk = cl.media_pk_from_url(photo.link)
+            media_id = cl.media_id(media_pk=media_pk)
+            comments = cl.media_comments(media_id=media_id)
+            response = {"comments": comments}
+            return Response(response, status=status.HTTP_200_OK)
+        except Exception as error:
+            error_message = str(error)
+            return Response({"error": error_message})
+
     @action(detail=True, methods=["post"], url_path="add-comment")
     def add_comment(self, request, pk=None):
         photo = self.get_object()
@@ -214,17 +228,16 @@ class PhotoViewSet(viewsets.ModelViewSet):
         media_id = cl.media_id(media_pk=media_pk)
         serializer = AddCommentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
-        generate_response = detect_intent(
+        generated_response = detect_intent(
             project_id="boostedchatapi",
             session_id=str(uuid.uuid4()),
             message=serializer.data.get("text"),
             language_code="en",
         )
         if valid:
+            cl.media_comment(media_id, generated_response)
 
-            cl.media_comment(media_id, generate_response)
-
-        return Response({"status": status.HTTP_200_OK, "success": True})
+        return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
 
     @action(detail=True, methods=["get"], url_path="retrieve-commenters")
     def retrieve_commenters(self, request, pk=None):
