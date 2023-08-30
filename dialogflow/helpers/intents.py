@@ -23,7 +23,6 @@ def detect_intent(project_id, session_id, message, language_code):
         response = requests.post(api_url, headers=headers, json=payload)
         response.raise_for_status()  # Raise an exception if response status is not 2xx
         response_data = response.json()
-        print(response.json())
         fulfillment_text = response_data["queryResult"]["fulfillmentText"]
         return fulfillment_text
     except requests.exceptions.RequestException as error:

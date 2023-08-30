@@ -2,6 +2,7 @@
 import csv
 import io
 import logging
+import uuid
 from urllib.parse import urlparse
 
 from instagrapi.exceptions import UserNotFound
@@ -10,6 +11,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from base.helpers.push_id import PushID
+from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
 
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
@@ -212,8 +214,15 @@ class PhotoViewSet(viewsets.ModelViewSet):
         media_id = cl.media_id(media_pk=media_pk)
         serializer = AddCommentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
+        generate_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=serializer.data.get("text"),
+            language_code="en",
+        )
         if valid:
-            cl.media_comment(media_id, serializer.data.get("text"))
+
+            cl.media_comment(media_id, generate_response)
 
         return Response({"status": status.HTTP_200_OK, "success": True})
 
