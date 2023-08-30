@@ -26,9 +26,16 @@ SECRET_KEY = "@yxw+2^(foid*3-@@uvjpm)!to+63zo4-%^3&_@((-+5%po=p-"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["104.154.195.123", "34.123.119.131", "api.boostedchat.com", "127.0.0.1"]
+ALLOWED_HOSTS = [
+    "104.154.195.123",
+    "34.123.119.131",
+    "api.boostedchat.com",
+    "127.0.0.1",
+    "03e2-2c0f-fe38-2102-2b01-bd4c-710b-9955-a153.ngrok-free.app",
+]
 
 DIALOGFLOW_BASE_URL = "https://dialogflow.googleapis.com/v2beta1"
+OPENAI_BASE_URL = "https://api.openai.com/v1"
 # Application definition
 
 INSTALLED_APPS = [
@@ -49,7 +56,8 @@ INSTALLED_APPS = [
     "instagram.apps.InstagramConfig",
     "base.apps.BaseConfig",
     "settings.apps.SettingsConfig",
-    "modelhub.apps.ModelhubConfig",
+    "dialogflow.apps.DialogflowConfig",
+    "openai.apps.OpenaiConfig",
     "sales_rep.apps.SalesRepConfig",
     "leads.apps.LeadsConfig",
     "allauth",
