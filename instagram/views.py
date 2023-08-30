@@ -213,7 +213,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
             media_pk = cl.media_pk_from_url(photo.link)
             media_id = cl.media_id(media_pk=media_pk)
             comments = cl.media_comments(media_id=media_id)
-            response = {"comments": comments}
+            response = {"comments": comments, "length": len(comments)}
             return Response(response, status=status.HTTP_200_OK)
         except Exception as error:
             error_message = str(error)
@@ -291,6 +291,40 @@ class VideoViewSet(viewsets.ModelViewSet):
             return AddCommentSerializer
         return self.serializer_class
 
+    @action(detail=True, methods=["get"], url_path="fetch-comments")
+    def fetch_comments(self, request, pk=None):
+        try:
+            video = self.get_object()
+            cl = login_user()
+            media_pk = cl.media_pk_from_url(video.link)
+            media_id = cl.media_id(media_pk=media_pk)
+            comments = cl.media_comments(media_id=media_id)
+            response = {"comments": comments, "length": len(comments)}
+            return Response(response, status=status.HTTP_200_OK)
+        except Exception as error:
+            error_message = str(error)
+            return Response({"error": error_message})
+
+    @action(detail=True, methods=["post"], url_path="add-comment")
+    def add_comment(self, request, pk=None):
+        video = self.get_object()
+        cl = login_user()
+
+        media_pk = cl.media_pk_from_url(video.link)
+        media_id = cl.media_id(media_pk=media_pk)
+        serializer = AddCommentSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=serializer.data.get("text"),
+            language_code="en",
+        )
+        if valid:
+            cl.media_comment(media_id, generated_response)
+
+        return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
+
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
         video = self.get_object()
@@ -303,20 +337,6 @@ class VideoViewSet(viewsets.ModelViewSet):
             account.igname = liker.username
             account.save()
         return Response(likers)
-
-    @action(detail=True, methods=["post"], url_path="add-comment")
-    def add_comment(self, request, pk=None):
-        photo = self.get_object()
-        cl = login_user()
-
-        media_pk = cl.media_pk_from_url(photo.link)
-        media_id = cl.media_id(media_pk=media_pk)
-        serializer = AddCommentSerializer(data=request.data)
-        valid = serializer.is_valid(raise_exception=True)
-        if valid:
-            cl.media_comment(media_id, serializer.data.get("text"))
-
-        return Response({"status": status.HTTP_200_OK, "success": True})
 
     @action(detail=True, methods=["get"], url_path="retrieve-commenters")
     def retrieve_commenters(self, request, pk=None):
@@ -366,7 +386,44 @@ class ReelViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "batch_uploads":
             return UploadSerializer
+        elif self.action == "add_comment":
+            return AddCommentSerializer
+
         return self.serializer_class
+
+    @action(detail=True, methods=["get"], url_path="fetch-comments")
+    def fetch_comments(self, request, pk=None):
+        try:
+            reel = self.get_object()
+            cl = login_user()
+            media_pk = cl.media_pk_from_url(reel.link)
+            media_id = cl.media_id(media_pk=media_pk)
+            comments = cl.media_comments(media_id=media_id)
+            response = {"comments": comments, "length": len(comments)}
+            return Response(response, status=status.HTTP_200_OK)
+        except Exception as error:
+            error_message = str(error)
+            return Response({"error": error_message})
+
+    @action(detail=True, methods=["post"], url_path="add-comment")
+    def add_comment(self, request, pk=None):
+        reel = self.get_object()
+        cl = login_user()
+
+        media_pk = cl.media_pk_from_url(reel.link)
+        media_id = cl.media_id(media_pk=media_pk)
+        serializer = AddCommentSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=serializer.data.get("text"),
+            language_code="en",
+        )
+        if valid:
+            cl.media_comment(media_id, generated_response)
+
+        return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
 
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
@@ -438,7 +495,43 @@ class StoryViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "batch_uploads":
             return UploadSerializer
+        elif self.action == "add_comment":
+            return AddCommentSerializer
         return self.serializer_class
+
+    @action(detail=True, methods=["get"], url_path="fetch-comments")
+    def fetch_comments(self, request, pk=None):
+        try:
+            story = self.get_object()
+            cl = login_user()
+            media_pk = cl.media_pk_from_url(story.link)
+            media_id = cl.media_id(media_pk=media_pk)
+            comments = cl.media_comments(media_id=media_id)
+            response = {"comments": comments, "length": len(comments)}
+            return Response(response, status=status.HTTP_200_OK)
+        except Exception as error:
+            error_message = str(error)
+            return Response({"error": error_message})
+
+    @action(detail=True, methods=["post"], url_path="add-comment")
+    def add_comment(self, request, pk=None):
+        story = self.get_object()
+        cl = login_user()
+
+        media_pk = cl.media_pk_from_url(story.link)
+        media_id = cl.media_id(media_pk=media_pk)
+        serializer = AddCommentSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=serializer.data.get("text"),
+            language_code="en",
+        )
+        if valid:
+            cl.media_comment(media_id, generated_response)
+
+        return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
 
     @action(detail=True, methods=["get"], url_path="retrieve-info")
     def like_story(self, request, pk=None):
