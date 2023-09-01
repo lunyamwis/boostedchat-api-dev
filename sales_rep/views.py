@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from authentication.models import User
+from instagram.helpers.login import login_user
 from instagram.models import Account
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x
@@ -14,6 +15,12 @@ from .models import SalesRep
 from .serializers import SalesRepSerializer
 
 # Create your views here.
+COMPLIMENTS = {
+    "the_old_school_gentleman": "Loving the classic touch you bring to every cut. It's timeless.",
+    "the_fashion_forward_stylist": "Your styles are always runway-ready. Ahead of the curve!",
+    "the_family_barber": "You've got a knack for making the whole family look great. A gem in the community!",
+    "the_eco_artist": "Your green approach to grooming is not just refreshing but responsible. 🌿",
+}
 
 
 class SalesRepManager(viewsets.ModelViewSet):
@@ -52,7 +59,22 @@ class SalesRepManager(viewsets.ModelViewSet):
                 for j in range(ration):
                     if j > len(instagram_accounts):
                         break
-                    salesreps[i].instagram.add(get_object_or_404(Account, id=allocations[j]))
+                    account = get_object_or_404(Account, id=allocations[j])
+                    salesreps[i].instagram.add(account)
+
+                    cl = login_user(salesreps[i].ig_username, salesreps[i].ig_password)
+                    if account.igname:
+                        user_medias = cl.user_medias(account.igname)
+                        media_pks = [cl.media_pk_from_url(media.url) for media in user_medias]
+                        random_media_pk = random.choice(media_pks)
+                        media_id = cl.media_id(media_pk=random_media_pk)
+                        dict_items = list(COMPLIMENTS.items())
+                        # Pick a random item from the list
+                        random_item = random.choice(dict_items)
+                        # Extract the key and value from the random item
+                        _, random_compliment = random_item
+                        cl.media_comment(media_id, random_compliment)
+
                 i += 1
 
         return Response({"accounts": ready_accounts})

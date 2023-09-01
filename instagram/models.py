@@ -1,19 +1,23 @@
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 from base.models import BaseModel
 
 # Create your models here.
 
 
+class OutSourcedData(BaseModel):
+    source = models.CharField(null=True, blank=True, max_length=255)
+    results = models.JSONField()
+
+
 class Account(BaseModel):
     igname = models.CharField(max_length=255, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=255, null=True, blank=True)
-    is_from_styleseat = models.BooleanField(default=False)
-    review = models.FloatField(null=True, blank=True)
-    gmaps_business_name = models.CharField(max_length=255, null=True, blank=True)
     profile_url = models.URLField(null=True, blank=True)
-    competitor = models.CharField(max_length=255, null=True, blank=True)
+    outsourced = models.ForeignKey(OutSourcedData, on_delete=models.CASCADE, null=True, blank=True)
 
 
 class HashTag(BaseModel):
@@ -47,3 +51,13 @@ class Reel(BaseModel):
 class Comment(BaseModel):
     comment_id = models.CharField(max_length=50)
     text = models.TextField()
+
+
+@receiver(post_save, sender=OutSourcedData)
+def initialize_account(sender, instance, created, **kwargs):
+
+    if created:
+        account = Account()
+        account.outsourced = instance
+        account.save()
+        print(f"initialized outsourced account - {instance}")

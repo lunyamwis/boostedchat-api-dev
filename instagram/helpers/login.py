@@ -60,7 +60,7 @@ def challenge_code_handler(username, choice):
     return False
 
 
-def login_user():
+def login_user(username=os.getenv("IG_USERNAME"), password=os.getenv("IG_PASSWORD")):
     """
     Attempts to login to Instagram using either the provided session information
     or the provided username and password.
@@ -68,7 +68,7 @@ def login_user():
 
     cl = Client()
     # cl.change_password_handler = change_password_handler(os.getenv("IG_USERNAME"))
-    cl.challenge_code_handler = challenge_code_handler(os.getenv("IG_USERNAME"), 1)
+    cl.challenge_code_handler = challenge_code_handler(username, 1)
     cl.delay_range = [1, 3]
     max_attempts = 5
     session_file_path = Path("session.json")
@@ -87,18 +87,12 @@ def login_user():
                 else:
                     print("All attempts failed, removing session file and logging in with username and password")
                     os.remove(session_file_path)
-                    cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+                    cl.login(username, password)
                     cl.dump_settings(session_file_path)
                     print("Session saved to file")
     else:
-        cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
+        cl.login(username, password)
         print("Login with username and password")
         cl.dump_settings(session_file_path)
         print("Session saved to file")
-    return cl
-
-
-def easy_login():
-    cl = Client()
-    cl.login(os.getenv("IG_USERNAME"), os.getenv("IG_PASSWORD"))
     return cl

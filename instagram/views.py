@@ -234,8 +234,10 @@ class PhotoViewSet(viewsets.ModelViewSet):
             message=serializer.data.get("text"),
             language_code="en",
         )
-        if valid:
+        if valid and serializer.data.get("assign_robot"):
             cl.media_comment(media_id, generated_response)
+        else:
+            cl.media_comment(media_id, serializer.data.get("human_response"))
 
         return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
 
@@ -320,8 +322,10 @@ class VideoViewSet(viewsets.ModelViewSet):
             message=serializer.data.get("text"),
             language_code="en",
         )
-        if valid:
+        if valid and serializer.data.get("assign_robot"):
             cl.media_comment(media_id, generated_response)
+        else:
+            cl.media_comment(media_id, serializer.data.get("human_response"))
 
         return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
 
@@ -420,8 +424,10 @@ class ReelViewSet(viewsets.ModelViewSet):
             message=serializer.data.get("text"),
             language_code="en",
         )
-        if valid:
+        if valid and serializer.data.get("assign_robot"):
             cl.media_comment(media_id, generated_response)
+        else:
+            cl.media_comment(media_id, serializer.data.get("human_response"))
 
         return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
 
@@ -528,8 +534,10 @@ class StoryViewSet(viewsets.ModelViewSet):
             message=serializer.data.get("text"),
             language_code="en",
         )
-        if valid:
+        if valid and serializer.data.get("assign_robot"):
             cl.media_comment(media_id, generated_response)
+        else:
+            cl.media_comment(media_id, serializer.data.get("human_response"))
 
         return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
 

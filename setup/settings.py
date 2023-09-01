@@ -107,8 +107,14 @@ ROLEPERMISSIONS_MODULE = "roles.roles"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django_snowflake",
+        "NAME": "BOOSTEDCHAT",
+        "SCHEMA": "PUBLIC",
+        "WAREHOUSE": "COMPUTE_WH",
+        "USER": os.getenv("SF_USERNAME"),
+        "PASSWORD": os.getenv("SF_PASSWORD"),
+        "ACCOUNT": os.getenv("SF_ACCOUNT_IDENTIFIER"),
+        "OPTIONS": {},
     }
 }
 

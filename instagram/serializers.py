@@ -60,4 +60,6 @@ class UploadSerializer(serializers.Serializer):
 
 
 class AddCommentSerializer(serializers.Serializer):
-    text = serializers.CharField(max_length=255)
+    assign_robot = serializers.BooleanField(default=True)
+    text = serializers.CharField(max_length=255, required=False)
+    human_response = serializers.CharField(max_length=255, required=False)
