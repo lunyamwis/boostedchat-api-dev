@@ -7,9 +7,14 @@ from base.models import BaseModel
 # Create your models here.
 
 
-class OutSourcedData(BaseModel):
+class OutSourced(models.Model):
     source = models.CharField(null=True, blank=True, max_length=255)
     results = models.JSONField()
+
+
+class OutSourcedInfo(models.Model):
+    source = models.CharField(null=True, blank=True, max_length=255)
+    results = models.TextField(null=True, blank=True)
 
 
 class Account(BaseModel):
@@ -17,7 +22,7 @@ class Account(BaseModel):
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=255, null=True, blank=True)
     profile_url = models.URLField(null=True, blank=True)
-    outsourced = models.ForeignKey(OutSourcedData, on_delete=models.CASCADE, null=True, blank=True)
+    outsourced = models.ForeignKey(OutSourcedInfo, on_delete=models.CASCADE, null=True, blank=True)
 
 
 class HashTag(BaseModel):
@@ -53,7 +58,7 @@ class Comment(BaseModel):
     text = models.TextField()
 
 
-@receiver(post_save, sender=OutSourcedData)
+@receiver(post_save, sender=OutSourcedInfo)
 def initialize_account(sender, instance, created, **kwargs):
 
     if created:

@@ -219,6 +219,25 @@ class PhotoViewSet(viewsets.ModelViewSet):
             error_message = str(error)
             return Response({"error": error_message})
 
+    @action(detail=True, methods=["post"], url_path="generate-comment")
+    def generate_comment(self, request, pk=None):
+        photo = self.get_object()
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=request.data.get("text"),
+            language_code="en",
+        )
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "generated_comment": generated_response,
+                "text": request.data.get("text"),
+                "photo": photo.link,
+                "success": True,
+            }
+        )
+
     @action(detail=True, methods=["post"], url_path="add-comment")
     def add_comment(self, request, pk=None):
         photo = self.get_object()
@@ -228,18 +247,15 @@ class PhotoViewSet(viewsets.ModelViewSet):
         media_id = cl.media_id(media_pk=media_pk)
         serializer = AddCommentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
-        generated_response = detect_intent(
-            project_id="boostedchatapi",
-            session_id=str(uuid.uuid4()),
-            message=serializer.data.get("text"),
-            language_code="en",
-        )
-        if valid and serializer.data.get("assign_robot"):
+        generated_response = serializer.data.get("generated_response")
+        if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
             cl.media_comment(media_id, generated_response)
+            return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
         else:
             cl.media_comment(media_id, serializer.data.get("human_response"))
-
-        return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
+            return Response(
+                {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
+            )
 
     @action(detail=True, methods=["get"], url_path="retrieve-commenters")
     def retrieve_commenters(self, request, pk=None):
@@ -307,6 +323,25 @@ class VideoViewSet(viewsets.ModelViewSet):
             error_message = str(error)
             return Response({"error": error_message})
 
+    @action(detail=True, methods=["post"], url_path="generate-comment")
+    def generate_comment(self, request, pk=None):
+        video = self.get_object()
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=request.data.get("text"),
+            language_code="en",
+        )
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "generated_comment": generated_response,
+                "text": request.data.get("text"),
+                "video": video.link,
+                "success": True,
+            }
+        )
+
     @action(detail=True, methods=["post"], url_path="add-comment")
     def add_comment(self, request, pk=None):
         video = self.get_object()
@@ -316,18 +351,15 @@ class VideoViewSet(viewsets.ModelViewSet):
         media_id = cl.media_id(media_pk=media_pk)
         serializer = AddCommentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
-        generated_response = detect_intent(
-            project_id="boostedchatapi",
-            session_id=str(uuid.uuid4()),
-            message=serializer.data.get("text"),
-            language_code="en",
-        )
-        if valid and serializer.data.get("assign_robot"):
+        generated_response = serializer.data.get("generated_response")
+        if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
             cl.media_comment(media_id, generated_response)
+            return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
         else:
             cl.media_comment(media_id, serializer.data.get("human_response"))
-
-        return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
+            return Response(
+                {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
+            )
 
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
@@ -409,6 +441,25 @@ class ReelViewSet(viewsets.ModelViewSet):
             error_message = str(error)
             return Response({"error": error_message})
 
+    @action(detail=True, methods=["post"], url_path="generate-comment")
+    def generate_comment(self, request, pk=None):
+        reel = self.get_object()
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=request.data.get("text"),
+            language_code="en",
+        )
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "generated_comment": generated_response,
+                "text": request.data.get("text"),
+                "reel": reel.link,
+                "success": True,
+            }
+        )
+
     @action(detail=True, methods=["post"], url_path="add-comment")
     def add_comment(self, request, pk=None):
         reel = self.get_object()
@@ -418,18 +469,15 @@ class ReelViewSet(viewsets.ModelViewSet):
         media_id = cl.media_id(media_pk=media_pk)
         serializer = AddCommentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
-        generated_response = detect_intent(
-            project_id="boostedchatapi",
-            session_id=str(uuid.uuid4()),
-            message=serializer.data.get("text"),
-            language_code="en",
-        )
-        if valid and serializer.data.get("assign_robot"):
+        generated_response = serializer.data.get("generated_response")
+        if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
             cl.media_comment(media_id, generated_response)
+            return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
         else:
             cl.media_comment(media_id, serializer.data.get("human_response"))
-
-        return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
+            return Response(
+                {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
+            )
 
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
@@ -519,6 +567,25 @@ class StoryViewSet(viewsets.ModelViewSet):
             error_message = str(error)
             return Response({"error": error_message})
 
+    @action(detail=True, methods=["post"], url_path="generate-comment")
+    def generate_comment(self, request, pk=None):
+        story = self.get_object()
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=request.data.get("text"),
+            language_code="en",
+        )
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "generated_comment": generated_response,
+                "text": request.data.get("text"),
+                "story": story.link,
+                "success": True,
+            }
+        )
+
     @action(detail=True, methods=["post"], url_path="add-comment")
     def add_comment(self, request, pk=None):
         story = self.get_object()
@@ -528,18 +595,15 @@ class StoryViewSet(viewsets.ModelViewSet):
         media_id = cl.media_id(media_pk=media_pk)
         serializer = AddCommentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
-        generated_response = detect_intent(
-            project_id="boostedchatapi",
-            session_id=str(uuid.uuid4()),
-            message=serializer.data.get("text"),
-            language_code="en",
-        )
-        if valid and serializer.data.get("assign_robot"):
+        generated_response = serializer.data.get("generated_response")
+        if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
             cl.media_comment(media_id, generated_response)
+            return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
         else:
             cl.media_comment(media_id, serializer.data.get("human_response"))
-
-        return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
+            return Response(
+                {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
+            )
 
     @action(detail=True, methods=["get"], url_path="retrieve-info")
     def like_story(self, request, pk=None):
