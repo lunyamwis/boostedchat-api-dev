@@ -66,13 +66,14 @@ class SalesRepManager(viewsets.ModelViewSet):
                     if account.igname:
                         user_id = cl.user_id_from_username(account.igname)
                         user_medias = cl.user_medias(user_id)
-                        media_pks = [media.pk for media in user_medias]
-                        random_media_pk = random.choice(media_pks)
-                        media_id = cl.media_id(media_pk=random_media_pk)
+
+                        print(user_medias[0])
+                        try:
+                            media_id = cl.media_id(media_pk=user_medias[0].pk)
+                        except Exception as error:
+                            print(error)
                         dict_items = list(COMPLIMENTS.items())
-                        # Pick a random item from the list
                         random_item = random.choice(dict_items)
-                        # Extract the key and value from the random item
                         _, random_compliment = random_item
                         comment = cl.media_comment(media_id, random_compliment)
                         ready_accounts = {
