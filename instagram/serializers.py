@@ -6,7 +6,7 @@ from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ["id", "igname"]
+        fields = ["id", "igname", "photo"]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 

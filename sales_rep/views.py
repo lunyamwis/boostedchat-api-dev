@@ -50,7 +50,7 @@ class SalesRepManager(viewsets.ModelViewSet):
         ration = math.ceil(len(instagram_accounts) / len(salesreps))
 
         i = 0
-        ready_accounts = {}
+        accounts_complimented = []
 
         while i < len(salesreps):
             allocations = random.choices(instagram_accounts, k=ration)
@@ -64,8 +64,9 @@ class SalesRepManager(viewsets.ModelViewSet):
 
                     cl = login_user(salesreps[i].ig_username, salesreps[i].ig_password)
                     if account.igname:
-                        user_medias = cl.user_medias(account.igname)
-                        media_pks = [cl.media_pk_from_url(media.url) for media in user_medias]
+                        user_id = cl.user_id_from_username(account.igname)
+                        user_medias = cl.user_medias(user_id)
+                        media_pks = [media.pk for media in user_medias]
                         random_media_pk = random.choice(media_pks)
                         media_id = cl.media_id(media_pk=random_media_pk)
                         dict_items = list(COMPLIMENTS.items())
@@ -73,8 +74,14 @@ class SalesRepManager(viewsets.ModelViewSet):
                         random_item = random.choice(dict_items)
                         # Extract the key and value from the random item
                         _, random_compliment = random_item
-                        cl.media_comment(media_id, random_compliment)
+                        comment = cl.media_comment(media_id, random_compliment)
+                        ready_accounts = {
+                            "comment": comment.dict(),
+                            "account": account.igname,
+                            "salesrep": salesreps[i].ig_username,
+                        }
+                        accounts_complimented.append(ready_accounts)
 
                 i += 1
 
-        return Response({"accounts": ready_accounts})
+        return Response({"accounts": accounts_complimented})

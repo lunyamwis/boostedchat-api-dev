@@ -192,6 +192,21 @@ class PhotoViewSet(viewsets.ModelViewSet):
             return AddCommentSerializer
         return self.serializer_class
 
+    def create(self, request, *args, **kwargs):
+        cl = login_user()
+        serializer = self.get_serializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+        photo = Photo(**serializer.validated_data)
+        photo.save()
+        if valid:
+            media_pk = cl.media_pk_from_url(serializer.data.get("link"))
+            user = cl.media_user(media_pk=media_pk)
+            account = Account.objects.get(igname=user.username)
+            account.photo = photo
+            account.save()
+
+        return super().create(request, *args, **kwargs)
+
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
         photo = self.get_object()
@@ -213,7 +228,8 @@ class PhotoViewSet(viewsets.ModelViewSet):
             media_pk = cl.media_pk_from_url(photo.link)
             media_id = cl.media_id(media_pk=media_pk)
             comments = cl.media_comments(media_id=media_id)
-            response = {"comments": comments, "length": len(comments)}
+
+            response = {"comments": comments, "length": len(comments), "owner": photo.account_set.all().values()}
             return Response(response, status=status.HTTP_200_OK)
         except Exception as error:
             error_message = str(error)
