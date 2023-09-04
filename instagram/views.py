@@ -196,13 +196,19 @@ class PhotoViewSet(viewsets.ModelViewSet):
         cl = login_user()
         serializer = self.get_serializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
-        photo = serializer.save()
+        photo = Photo(**serializer.data)
         if valid:
             media_pk = cl.media_pk_from_url(serializer.data.get("link"))
             user = cl.media_user(media_pk=media_pk)
-            account = Account.objects.get(igname=user.username)
-            account.photo = photo
-            account.save()
+            account = Account.objects.filter(igname=user.username)
+            if account.exists():
+                photo.account = account.last()
+                photo.save()
+            else:
+                account = Account()
+                account.igname = user.username
+                account.save()
+                photo.save()
 
         return Response({"data": serializer.data})
 
@@ -228,7 +234,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
             media_id = cl.media_id(media_pk=media_pk)
             comments = cl.media_comments(media_id=media_id)
 
-            response = {"comments": comments, "length": len(comments), "owner": photo.account_set.all().values()}
+            response = {"comments": comments, "length": len(comments), "owner": photo.account.igname}
             return Response(response, status=status.HTTP_200_OK)
         except Exception as error:
             error_message = str(error)

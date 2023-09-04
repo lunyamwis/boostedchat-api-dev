@@ -6,7 +6,7 @@ from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
 class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
-        fields = ["id", "igname", "photo"]
+        fields = ["id", "igname"]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 
@@ -25,9 +25,11 @@ class HashTagSerializer(serializers.ModelSerializer):
 
 
 class PhotoSerializer(serializers.ModelSerializer):
+    account_username = serializers.CharField(source="account.igname", read_only=True)
+
     class Meta:
         model = Photo
-        fields = ["id", "photo_id", "link", "name"]
+        fields = ["id", "photo_id", "link", "name", "account_username"]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 

@@ -17,6 +17,14 @@ class OutSourcedInfo(models.Model):
     results = models.TextField(null=True, blank=True)
 
 
+class Account(BaseModel):
+    igname = models.CharField(max_length=255, null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    phone_number = models.CharField(max_length=255, null=True, blank=True)
+    profile_url = models.URLField(null=True, blank=True)
+    outsourced = models.ForeignKey(OutSourcedInfo, on_delete=models.CASCADE, null=True, blank=True)
+
+
 class HashTag(BaseModel):
     hashtag_id = models.CharField(max_length=255)
     name = models.CharField(max_length=255, null=True, blank=True)
@@ -31,6 +39,7 @@ class Photo(BaseModel):
     photo_id = models.CharField(max_length=50)
     link = models.URLField()
     name = models.CharField(max_length=255)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
 
 
 class Video(BaseModel):
@@ -48,18 +57,6 @@ class Reel(BaseModel):
 class Comment(BaseModel):
     comment_id = models.CharField(max_length=50)
     text = models.TextField()
-
-
-class Account(BaseModel):
-    igname = models.CharField(max_length=255, null=True, blank=True)
-    email = models.EmailField(null=True, blank=True)
-    phone_number = models.CharField(max_length=255, null=True, blank=True)
-    profile_url = models.URLField(null=True, blank=True)
-    outsourced = models.ForeignKey(OutSourcedInfo, on_delete=models.CASCADE, null=True, blank=True)
-    story = models.ForeignKey(Story, on_delete=models.CASCADE, null=True, blank=True)
-    photo = models.ForeignKey(Photo, on_delete=models.CASCADE, null=True, blank=True)
-    reel = models.ForeignKey(Reel, on_delete=models.CASCADE, null=True, blank=True)
-    video = models.ForeignKey(Video, on_delete=models.CASCADE, null=True, blank=True)
 
 
 @receiver(post_save, sender=OutSourcedInfo)
