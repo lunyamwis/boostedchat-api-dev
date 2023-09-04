@@ -192,12 +192,11 @@ class PhotoViewSet(viewsets.ModelViewSet):
             return AddCommentSerializer
         return self.serializer_class
 
-    def create(self, request, *args, **kwargs):
+    def perform_create(self, request, *args, **kwargs):
         cl = login_user()
         serializer = self.get_serializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
-        photo = Photo(**serializer.validated_data)
-        photo.save()
+        photo = serializer.save()
         if valid:
             media_pk = cl.media_pk_from_url(serializer.data.get("link"))
             user = cl.media_user(media_pk=media_pk)
@@ -205,7 +204,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
             account.photo = photo
             account.save()
 
-        return super().create(request, *args, **kwargs)
+        return Response({"data": serializer.data})
 
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
