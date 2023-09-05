@@ -17,12 +17,25 @@ class OutSourcedInfo(models.Model):
     results = models.TextField(null=True, blank=True)
 
 
+class StatusCheck(BaseModel):
+    STAGES = ((1, "Oven"), (2, "Needs Assessment"), (3, "Overcoming Objections"), (4, "Activation"))
+    stage = models.IntegerField(choices=STAGES, default=1)
+    name = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return f"{self.stage} - {self.name}"
+
+
 class Account(BaseModel):
     igname = models.CharField(max_length=255, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=255, null=True, blank=True)
     profile_url = models.URLField(null=True, blank=True)
     outsourced = models.ForeignKey(OutSourcedInfo, on_delete=models.CASCADE, null=True, blank=True)
+    status = models.ForeignKey(StatusCheck, on_delete=models.CASCADE, null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.igname
 
 
 class HashTag(BaseModel):

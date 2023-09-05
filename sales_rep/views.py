@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 from authentication.models import User
 from instagram.helpers.login import login_user
-from instagram.models import Account
+from instagram.models import Account, StatusCheck
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x
 from .models import SalesRep
@@ -41,7 +41,8 @@ class SalesRepManager(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="assign-accounts")
     def assign_accounts(self, request, pk=None):
-        instagram_accounts = [i.id for i in Account.objects.all()]
+        statuscheck = get_object_or_404(StatusCheck, stage=1, name="sent_first_compliment")
+        instagram_accounts = [i.id for i in Account.objects.exclude(status=statuscheck)]
         salesreps = list(SalesRep.objects.all())
 
         if len(salesreps) == 0:
@@ -60,7 +61,11 @@ class SalesRepManager(viewsets.ModelViewSet):
                     if j > len(instagram_accounts):
                         break
                     account = get_object_or_404(Account, id=allocations[j])
+
                     salesreps[i].instagram.add(account)
+                    statuscheck, _ = StatusCheck.objects.update_or_create(stage=1, name="sent_first_compliment")
+                    account.status = statuscheck
+                    account.save()
 
                     cl = login_user(salesreps[i].ig_username, salesreps[i].ig_password)
                     if account.igname:

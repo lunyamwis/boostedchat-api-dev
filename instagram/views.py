@@ -139,6 +139,14 @@ class AccountViewSet(viewsets.ModelViewSet):
         response = {"actions": external_urls, "status_code": status_code}
         return Response(response)
 
+    @action(detail=False, methods=["get"], url_path="needs-assessment", url_name="needs_assesment")
+    def send_to_needs_assessment(self, request):
+
+        account = self.get_object()
+        account.stage = 2
+        account.save()
+        return Response({"stage": 2, "success": True})
+
 
 class HashTagViewSet(viewsets.ModelViewSet):
     """
