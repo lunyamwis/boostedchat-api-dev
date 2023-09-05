@@ -41,6 +41,13 @@ class AccountViewSet(viewsets.ModelViewSet):
             return UploadSerializer
         return self.serializer_class
 
+    def list(self, request, *args, **kwargs):
+
+        accounts = self.queryset.values()
+        # import pdb;pdb.set_trace()
+
+        return Response({"accounts": accounts})
+
     @action(detail=True, methods=["get"], url_path="potential-buy")
     def potential_buy(self, request, pk=None):
         account = self.get_object()

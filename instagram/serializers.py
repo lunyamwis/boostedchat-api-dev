@@ -4,9 +4,14 @@ from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
 
 
 class AccountSerializer(serializers.ModelSerializer):
+    # account_history = serializers.CharField(source="history.latest",read_only=True)
+    # print(account_history)
     class Meta:
         model = Account
-        fields = ["id", "igname"]
+        fields = [
+            "id",
+            "igname",
+        ]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 

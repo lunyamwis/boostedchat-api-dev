@@ -1,3 +1,5 @@
+from auditlog.models import AuditlogHistoryField
+from auditlog.registry import auditlog
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -33,9 +35,13 @@ class Account(BaseModel):
     profile_url = models.URLField(null=True, blank=True)
     outsourced = models.ForeignKey(OutSourcedInfo, on_delete=models.CASCADE, null=True, blank=True)
     status = models.ForeignKey(StatusCheck, on_delete=models.CASCADE, null=True, blank=True)
+    history = AuditlogHistoryField(pk_indexable=False)
 
     def __str__(self) -> str:
         return self.igname
+
+
+auditlog.register(Account)
 
 
 class HashTag(BaseModel):

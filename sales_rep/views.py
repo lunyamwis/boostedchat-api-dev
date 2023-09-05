@@ -41,8 +41,16 @@ class SalesRepManager(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="assign-accounts")
     def assign_accounts(self, request, pk=None):
-        statuscheck = get_object_or_404(StatusCheck, stage=1, name="sent_first_compliment")
-        instagram_accounts = [i.id for i in Account.objects.exclude(status=statuscheck)]
+        instagram_accounts_ = []
+        accounts = Account.objects.filter(status=None)
+        if accounts.exists():
+            instagram_accounts_.append(accounts)
+
+        instagram_accounts = []
+        for accounts_ in instagram_accounts_:
+            for account in accounts_:
+                instagram_accounts.append(account.id)
+
         salesreps = list(SalesRep.objects.all())
 
         if len(salesreps) == 0:
@@ -65,6 +73,7 @@ class SalesRepManager(viewsets.ModelViewSet):
                     salesreps[i].instagram.add(account)
                     statuscheck, _ = StatusCheck.objects.update_or_create(stage=1, name="sent_first_compliment")
                     account.status = statuscheck
+
                     account.save()
 
                     cl = login_user(salesreps[i].ig_username, salesreps[i].ig_password)
@@ -72,15 +81,15 @@ class SalesRepManager(viewsets.ModelViewSet):
                         user_id = cl.user_id_from_username(account.igname)
                         user_medias = cl.user_medias(user_id)
 
-                        print(user_medias[0])
                         try:
                             media_id = cl.media_id(media_pk=user_medias[0].pk)
+                            dict_items = list(COMPLIMENTS.items())
+                            random_item = random.choice(dict_items)
+                            _, random_compliment = random_item
+                            comment = cl.media_comment(media_id, random_compliment)
                         except Exception as error:
                             print(error)
-                        dict_items = list(COMPLIMENTS.items())
-                        random_item = random.choice(dict_items)
-                        _, random_compliment = random_item
-                        comment = cl.media_comment(media_id, random_compliment)
+
                         ready_accounts = {
                             "comment": comment.dict(),
                             "account": account.igname,

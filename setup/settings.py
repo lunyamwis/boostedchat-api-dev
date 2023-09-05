@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "rolepermissions",
+    "auditlog",
     "softdelete",
     "authentication.apps.AuthenticationConfig",
     "roles.apps.RolesConfig",
@@ -59,6 +60,7 @@ INSTALLED_APPS = [
     "dialogflow.apps.DialogflowConfig",
     "openai.apps.OpenaiConfig",
     "sales_rep.apps.SalesRepConfig",
+    "audittrails.apps.AudittrailsConfig",
     "leads.apps.LeadsConfig",
     "allauth",
     "allauth.account",
@@ -78,6 +80,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "auditlog.middleware.AuditlogMiddleware",
 ]
 
 ROOT_URLCONF = "setup.urls"
@@ -105,18 +108,28 @@ ROLEPERMISSIONS_MODULE = "roles.roles"
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django_snowflake",
-        "NAME": "BOOSTEDCHAT",
-        "SCHEMA": "PUBLIC",
-        "WAREHOUSE": "COMPUTE_WH",
-        "USER": os.getenv("SF_USERNAME"),
-        "PASSWORD": os.getenv("SF_PASSWORD"),
-        "ACCOUNT": os.getenv("SF_ACCOUNT_IDENTIFIER"),
-        "OPTIONS": {},
+
+if DEBUG:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "boostedchat",  # This is where you put the name of the db file.
+            # If one doesn't exist, it will be created at migration time.
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django_snowflake",
+            "NAME": "BOOSTEDCHAT",
+            "SCHEMA": "PUBLIC",
+            "WAREHOUSE": "COMPUTE_WH",
+            "USER": os.getenv("SF_USERNAME"),
+            "PASSWORD": os.getenv("SF_PASSWORD"),
+            "ACCOUNT": os.getenv("SF_ACCOUNT_IDENTIFIER"),
+            "OPTIONS": {},
+        }
+    }
 
 AUTH_USER_MODEL = "authentication.User"
 

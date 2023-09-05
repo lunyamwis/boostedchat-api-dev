@@ -25,4 +25,5 @@ urlpatterns = [
     path("api/v1/instagram/", include("instagram.urls")),
     path("api/v1/sales/", include("sales_rep.urls")),
     path("api/v1/leads/", include("leads.urls")),
+    path("api/v1/logs/", include("audittrails.urls")),
 ]
