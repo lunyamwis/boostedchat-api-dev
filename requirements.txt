@@ -4,7 +4,7 @@ celery
 numpy
 Django
 djangorestframework
-django-allauth
+django-allauth==0.54.0
 django-auditlog
 django-snowflake
 django-celery-beat
