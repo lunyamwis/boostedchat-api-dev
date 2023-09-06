@@ -27,12 +27,9 @@ SECRET_KEY = "@yxw+2^(foid*3-@@uvjpm)!to+63zo4-%^3&_@((-+5%po=p-"
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "34.138.184.47",
-    "104.154.195.123",
-    "34.123.119.131",
+    "*",
     "api.boostedchat.com",
     "127.0.0.1",
-    "03e2-2c0f-fe38-2102-2b01-bd4c-710b-9955-a153.ngrok-free.app",
 ]
 
 DIALOGFLOW_BASE_URL = "https://dialogflow.googleapis.com/v2beta1"
