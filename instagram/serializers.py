@@ -66,7 +66,8 @@ class UploadSerializer(serializers.Serializer):
         fields = ["file_uploaded"]
 
 
-class AddCommentSerializer(serializers.Serializer):
+class AddContentSerializer(serializers.Serializer):
+    account = serializers.CharField(max_length=255, required=False)
     assign_robot = serializers.BooleanField(default=True)
     approve = serializers.BooleanField(default=False)
     text = serializers.CharField(max_length=255, required=False)

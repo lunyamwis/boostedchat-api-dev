@@ -5,6 +5,7 @@ import logging
 import uuid
 from urllib.parse import urlparse
 
+from django.shortcuts import get_object_or_404
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -17,7 +18,7 @@ from instagram.helpers.login import login_user
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
 from .serializers import (
     AccountSerializer,
-    AddCommentSerializer,
+    AddContentSerializer,
     CommentSerializer,
     HashTagSerializer,
     PhotoSerializer,
@@ -204,7 +205,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
         if self.action == "batch_uploads":
             return UploadSerializer
         elif self.action == "add_comment":
-            return AddCommentSerializer
+            return AddContentSerializer
         return self.serializer_class
 
     def perform_create(self, request, *args, **kwargs):
@@ -281,7 +282,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
 
         media_pk = cl.media_pk_from_url(photo.link)
         media_id = cl.media_id(media_pk=media_pk)
-        serializer = AddCommentSerializer(data=request.data)
+        serializer = AddContentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         generated_response = serializer.data.get("generated_response")
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
@@ -342,7 +343,7 @@ class VideoViewSet(viewsets.ModelViewSet):
         if self.action == "batch_uploads":
             return UploadSerializer
         elif self.action == "add_comment":
-            return AddCommentSerializer
+            return AddContentSerializer
         return self.serializer_class
 
     @action(detail=True, methods=["get"], url_path="fetch-comments")
@@ -385,7 +386,7 @@ class VideoViewSet(viewsets.ModelViewSet):
 
         media_pk = cl.media_pk_from_url(video.link)
         media_id = cl.media_id(media_pk=media_pk)
-        serializer = AddCommentSerializer(data=request.data)
+        serializer = AddContentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         generated_response = serializer.data.get("generated_response")
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
@@ -459,7 +460,7 @@ class ReelViewSet(viewsets.ModelViewSet):
         if self.action == "batch_uploads":
             return UploadSerializer
         elif self.action == "add_comment":
-            return AddCommentSerializer
+            return AddContentSerializer
 
         return self.serializer_class
 
@@ -503,7 +504,7 @@ class ReelViewSet(viewsets.ModelViewSet):
 
         media_pk = cl.media_pk_from_url(reel.link)
         media_id = cl.media_id(media_pk=media_pk)
-        serializer = AddCommentSerializer(data=request.data)
+        serializer = AddContentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         generated_response = serializer.data.get("generated_response")
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
@@ -586,7 +587,7 @@ class StoryViewSet(viewsets.ModelViewSet):
         if self.action == "batch_uploads":
             return UploadSerializer
         elif self.action == "add_comment":
-            return AddCommentSerializer
+            return AddContentSerializer
         return self.serializer_class
 
     @action(detail=True, methods=["get"], url_path="fetch-comments")
@@ -629,7 +630,7 @@ class StoryViewSet(viewsets.ModelViewSet):
 
         media_pk = cl.media_pk_from_url(story.link)
         media_id = cl.media_id(media_pk=media_pk)
-        serializer = AddCommentSerializer(data=request.data)
+        serializer = AddContentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         generated_response = serializer.data.get("generated_response")
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
@@ -681,3 +682,53 @@ class StoryViewSet(viewsets.ModelViewSet):
 
         else:
             return Response({"status_code": 500})
+
+
+class SendDM(viewsets.ViewSet):
+    def fetch_messages(self, request, pk=None):
+        try:
+            account = get_object_or_404(Account, id=request.data.get("account"))
+            print(account)
+            story = self.get_object()
+            cl = login_user()
+            media_pk = cl.media_pk_from_url(story.link)
+            media_id = cl.media_id(media_pk=media_pk)
+            messages = cl.direct_messages(media_id=media_id)
+            response = {"messages": messages, "length": len(messages)}
+            return Response(response, status=status.HTTP_200_OK)
+        except Exception as error:
+            error_message = str(error)
+            return Response({"error": error_message})
+
+    def generate_comment(self, request, pk=None):
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=request.data.get("text"),
+            language_code="en",
+        )
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "generated_comment": generated_response,
+                "text": request.data.get("text"),
+                "success": True,
+            }
+        )
+
+    def send_message(self, request, pk=None):
+        serializer = AddContentSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
+        account = get_object_or_404(Account, id=serializer.data.get("account"))
+        cl = login_user()
+
+        user_id = cl.user_id_from_username(account.igname)
+        generated_response = serializer.data.get("generated_response")
+        if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
+            cl.direct_send(generated_response, [user_id])
+            return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
+        else:
+            cl.direct_send(serializer.data.get("human_response"), [user_id])
+            return Response(
+                {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
+            )

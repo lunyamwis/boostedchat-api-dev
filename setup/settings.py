@@ -27,6 +27,7 @@ SECRET_KEY = "@yxw+2^(foid*3-@@uvjpm)!to+63zo4-%^3&_@((-+5%po=p-"
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    "34.138.184.47",
     "104.154.195.123",
     "34.123.119.131",
     "api.boostedchat.com",

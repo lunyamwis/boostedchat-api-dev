@@ -5,7 +5,10 @@ numpy
 Django
 djangorestframework
 django-allauth
+django-auditlog
+django-snowflake
 django-celery-beat
+django-snowflake
 django-cors-headers
 dj-rest-auth
 django-softdelete
