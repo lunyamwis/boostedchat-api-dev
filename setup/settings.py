@@ -114,7 +114,7 @@ if DEBUG:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "boostedchat",  # This is where you put the name of the db file.
+            "NAME": BASE_DIR / "boostedchatdb",  # This is where you put the name of the db file.
             # If one doesn't exist, it will be created at migration time.
         }
     }
@@ -162,6 +162,8 @@ TIME_ZONE = "UTC"
 
 USE_I18N = True
 
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 USE_TZ = True
 
