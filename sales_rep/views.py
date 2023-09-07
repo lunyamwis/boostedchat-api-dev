@@ -2,6 +2,7 @@ import json
 import math
 import random
 
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django_celery_beat.models import DAYS, IntervalSchedule, PeriodicTask
 from rest_framework import status, viewsets
@@ -53,7 +54,7 @@ class SalesRepManager(viewsets.ModelViewSet):
         serializer = AccountAssignmentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instagram_accounts_ = []
-        accounts = Account.objects.filter(status=None)
+        accounts = Account.objects.filter(Q(status=None) | ~Q(status__name="sent_first_compliment"))
         if accounts.exists():
             instagram_accounts_.append(accounts)
 
@@ -109,9 +110,6 @@ class SalesRepManager(viewsets.ModelViewSet):
                             }
                             accounts_complimented.append(ready_accounts)
                         elif serializer.data.get("reaction") == 2:
-                            import pdb
-
-                            pdb.set_trace()
                             try:
                                 dict_items = list(COMPLIMENTS.items())
                                 random_item = random.choice(dict_items)
@@ -125,7 +123,6 @@ class SalesRepManager(viewsets.ModelViewSet):
                                 print(error)
 
                             ready_accounts = {
-                                "message": message.text,
                                 "account": account.igname,
                                 "salesrep": salesreps[i].ig_username,
                             }
