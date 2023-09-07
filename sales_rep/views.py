@@ -135,7 +135,7 @@ class SalesRepManager(viewsets.ModelViewSet):
                                 pass
                             elif thread.account.status.name == "sent_first_compliment":
                                 schedule, _ = IntervalSchedule.objects.get_or_create(every=1, period=DAYS)
-                                PeriodicTask.objects.update_or_create(
+                                PeriodicTask.objects.get_or_create(
                                     interval=schedule,  # we created this above.
                                     name="send_daily",  # simply describes this periodic task.
                                     task="instagram.tasks.send_message",  # name of task.
