@@ -86,7 +86,7 @@ class SalesRepManager(viewsets.ModelViewSet):
                     account.status = statuscheck
 
                     account.save()
-
+                    print(account.igname)
                     if account.igname:
                         if serializer.data.get("reaction") == 1:
                             cl = login_user(salesreps[i].ig_username, salesreps[i].ig_password)
@@ -109,13 +109,14 @@ class SalesRepManager(viewsets.ModelViewSet):
                             }
                             accounts_complimented.append(ready_accounts)
                         elif serializer.data.get("reaction") == 2:
+                            import pdb
+
+                            pdb.set_trace()
                             try:
                                 dict_items = list(COMPLIMENTS.items())
                                 random_item = random.choice(dict_items)
                                 _, random_compliment = random_item
-                                message = send_message.delay(
-                                    random_compliment, user_id=user_id, user_name=account.igname
-                                )
+                                message = send_message.delay(random_compliment, user_name=account.igname)
                                 thread = Thread()
                                 thread.thread_id = message.thread_id
                                 thread.account = account
