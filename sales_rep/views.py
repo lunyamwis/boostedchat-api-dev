@@ -56,6 +56,7 @@ class SalesRepManager(viewsets.ModelViewSet):
         if accounts.exists():
             instagram_accounts_.append(accounts)
 
+        print(accounts)
         instagram_accounts = []
         for accounts_ in instagram_accounts_:
             for account in accounts_:
@@ -112,7 +113,7 @@ class SalesRepManager(viewsets.ModelViewSet):
                                 dict_items = list(COMPLIMENTS.items())
                                 random_item = random.choice(dict_items)
                                 _, random_compliment = random_item
-                                send_message.delay(random_compliment, user_name=account.igname)
+                                send_message.delay(random_compliment, username=account.igname)
                             except Exception as error:
                                 print(error)
 
