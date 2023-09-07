@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from authentication.models import User
 from instagram.helpers.login import login_user
 from instagram.models import Account, StatusCheck, Thread
+from instagram.tasks import send_message
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x
 from .models import SalesRep
@@ -86,9 +87,9 @@ class SalesRepManager(viewsets.ModelViewSet):
 
                     account.save()
 
-                    cl = login_user(salesreps[i].ig_username, salesreps[i].ig_password)
                     if account.igname:
                         if serializer.data.get("reaction") == 1:
+                            cl = login_user(salesreps[i].ig_username, salesreps[i].ig_password)
                             user_id = cl.user_id_from_username(account.igname)
                             user_medias = cl.user_medias(user_id)
 
@@ -108,12 +109,13 @@ class SalesRepManager(viewsets.ModelViewSet):
                             }
                             accounts_complimented.append(ready_accounts)
                         elif serializer.data.get("reaction") == 2:
-                            user_id = cl.user_id_from_username(account.igname)
                             try:
                                 dict_items = list(COMPLIMENTS.items())
                                 random_item = random.choice(dict_items)
                                 _, random_compliment = random_item
-                                message = cl.direct_send(random_compliment, user_ids=[user_id])
+                                message = send_message.delay(
+                                    random_compliment, user_id=user_id, user_name=account.igname
+                                )
                                 thread = Thread()
                                 thread.thread_id = message.thread_id
                                 thread.account = account
@@ -129,7 +131,9 @@ class SalesRepManager(viewsets.ModelViewSet):
                             accounts_complimented.append(ready_accounts)
                             thread = Thread.objects.get(thread_id=message.thread_id)
 
-                            if not thread.account.status.name == "responded_to_first_compliment":
+                            if thread.account.status.name == "responded_to_first_compliment":
+                                pass
+                            elif thread.account.status.name == "sent_first_compliment":
                                 schedule, _ = IntervalSchedule.objects.get_or_create(every=1, period=DAYS)
                                 PeriodicTask.objects.update_or_create(
                                     interval=schedule,  # we created this above.

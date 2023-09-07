@@ -13,8 +13,11 @@ def send_comment(media_link, generated_response):
 
 
 @shared_task()
-def send_message(message, thread_id, user_id=None, thread=True):
+def send_message(message, thread_id=None, user_id=None, username=None, thread=True):
     cl = login_user()
+    user_id = None
+    if username:
+        user_id = cl.user_id_from_username(username)
     if thread_id and thread:
         cl.direct_send(message, thread_ids=[thread_id])
     else:
