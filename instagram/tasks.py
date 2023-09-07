@@ -23,11 +23,10 @@ def send_message(message, thread_id=None, user_id=None, username=None, thread=Tr
             account = Account.objects.get(igname=username)
         except Exception as error:
             print(error)
+        message = cl.direct_send(message, user_ids=[user_id])
         thread = Thread()
         thread.thread_id = message.thread_id
         thread.account = account
         thread.save()
     if thread_id and thread:
         cl.direct_send(message, thread_ids=[thread_id])
-    else:
-        cl.direct_send(message, user_ids=[user_id])
