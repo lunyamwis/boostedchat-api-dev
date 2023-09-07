@@ -1,17 +1,15 @@
-import json
 import math
 import random
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from django_celery_beat.models import DAYS, IntervalSchedule, PeriodicTask
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from authentication.models import User
 from instagram.helpers.login import login_user
-from instagram.models import Account, StatusCheck, Thread
+from instagram.models import Account, StatusCheck
 from instagram.tasks import send_message
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x
@@ -114,11 +112,7 @@ class SalesRepManager(viewsets.ModelViewSet):
                                 dict_items = list(COMPLIMENTS.items())
                                 random_item = random.choice(dict_items)
                                 _, random_compliment = random_item
-                                message = send_message.delay(random_compliment, user_name=account.igname)
-                                thread = Thread()
-                                thread.thread_id = message.thread_id
-                                thread.account = account
-                                thread.save()
+                                send_message.delay(random_compliment, user_name=account.igname)
                             except Exception as error:
                                 print(error)
 
@@ -127,18 +121,19 @@ class SalesRepManager(viewsets.ModelViewSet):
                                 "salesrep": salesreps[i].ig_username,
                             }
                             accounts_complimented.append(ready_accounts)
-                            thread = Thread.objects.get(thread_id=message.thread_id)
 
-                            if thread.account.status.name == "responded_to_first_compliment":
-                                pass
-                            elif thread.account.status.name == "sent_first_compliment":
-                                schedule, _ = IntervalSchedule.objects.get_or_create(every=1, period=DAYS)
-                                PeriodicTask.objects.get_or_create(
-                                    interval=schedule,  # we created this above.
-                                    name="send_daily",  # simply describes this periodic task.
-                                    task="instagram.tasks.send_message",  # name of task.
-                                    args=json.dumps([[random_compliment], [user_id], [False]]),
-                                )
+                            # thread = Thread.objects.get(thread_id=message.thread_id)
+
+                            # if thread.account.status.name == "responded_to_first_compliment":
+                            #     pass
+                            # elif thread.account.status.name == "sent_first_compliment":
+                            #     schedule, _ = IntervalSchedule.objects.get_or_create(every=1, period=DAYS)
+                            #     PeriodicTask.objects.get_or_create(
+                            #         interval=schedule,  # we created this above.
+                            #         name="send_daily",  # simply describes this periodic task.
+                            #         task="instagram.tasks.send_message",  # name of task.
+                            #         args=json.dumps([[random_compliment], [user_id], [False]]),
+                            #     )
 
                         elif serializer.data.get("reaction") == 3:
 

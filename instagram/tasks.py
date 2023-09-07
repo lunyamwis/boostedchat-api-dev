@@ -1,6 +1,7 @@
 from celery import shared_task
 
 from instagram.helpers.login import login_user
+from instagram.models import Account, Thread
 
 
 @shared_task()
@@ -18,6 +19,14 @@ def send_message(message, thread_id=None, user_id=None, username=None, thread=Tr
     user_id = None
     if username:
         user_id = cl.user_id_from_username(username)
+        try:
+            account = Account.objects.get(igname=username)
+        except Exception as error:
+            print(error)
+        thread = Thread()
+        thread.thread_id = message.thread_id
+        thread.account = account
+        thread.save()
     if thread_id and thread:
         cl.direct_send(message, thread_ids=[thread_id])
     else:
