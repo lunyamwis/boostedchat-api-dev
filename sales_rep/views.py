@@ -1,7 +1,9 @@
+import json
 import math
 import random
 
 from django.shortcuts import get_object_or_404
+from django_celery_beat.models import DAYS, IntervalSchedule, PeriodicTask
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -125,22 +127,32 @@ class SalesRepManager(viewsets.ModelViewSet):
                                 "salesrep": salesreps[i].ig_username,
                             }
                             accounts_complimented.append(ready_accounts)
+                            thread = Thread.objects.get(thread_id=message.thread_id)
 
-                    elif serializer.data.get("reaction") == 3:
+                            if not thread.account.status.name == "responded_to_first_compliment":
+                                schedule, _ = IntervalSchedule.objects.get_or_create(every=1, period=DAYS)
+                                PeriodicTask.objects.update_or_create(
+                                    interval=schedule,  # we created this above.
+                                    name="send_daily",  # simply describes this periodic task.
+                                    task="instagram.tasks.send_message",  # name of task.
+                                    args=json.dumps([[random_compliment], [user_id], [False]]),
+                                )
 
-                        try:
-                            media_id = cl.media_id(media_pk=user_medias[0].pk)
-                            cl.media_like(media_id)
-                        except Exception as error:
-                            print(error)
+                        elif serializer.data.get("reaction") == 3:
 
-                        ready_accounts = {
-                            "like": True,
-                            "account": account.igname,
-                            "salesrep": salesreps[i].ig_username,
-                            "success": True,
-                        }
-                        accounts_complimented.append(ready_accounts)
+                            try:
+                                media_id = cl.media_id(media_pk=user_medias[0].pk)
+                                cl.media_like(media_id)
+                            except Exception as error:
+                                print(error)
+
+                            ready_accounts = {
+                                "like": True,
+                                "account": account.igname,
+                                "salesrep": salesreps[i].ig_username,
+                                "success": True,
+                            }
+                            accounts_complimented.append(ready_accounts)
 
                 i += 1
 

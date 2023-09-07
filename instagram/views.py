@@ -27,6 +27,7 @@ from .serializers import (
     UploadSerializer,
     VideoSerializer,
 )
+from .tasks import send_comment, send_message
 
 
 class AccountViewSet(viewsets.ModelViewSet):
@@ -278,18 +279,14 @@ class PhotoViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="add-comment")
     def add_comment(self, request, pk=None):
         photo = self.get_object()
-        cl = login_user()
-
-        media_pk = cl.media_pk_from_url(photo.link)
-        media_id = cl.media_id(media_pk=media_pk)
         serializer = AddContentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         generated_response = serializer.data.get("generated_response")
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
-            cl.media_comment(media_id, generated_response)
+            send_comment.delay(photo.link, generated_response)
             return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
         else:
-            cl.media_comment(media_id, serializer.data.get("human_response"))
+            send_comment.delay(photo.link, serializer.data.get("human_response"))
             return Response(
                 {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
             )
@@ -390,10 +387,10 @@ class VideoViewSet(viewsets.ModelViewSet):
         valid = serializer.is_valid(raise_exception=True)
         generated_response = serializer.data.get("generated_response")
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
-            cl.media_comment(media_id, generated_response)
+            send_comment(media_id, generated_response)
             return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
         else:
-            cl.media_comment(media_id, serializer.data.get("human_response"))
+            send_comment(media_id, serializer.data.get("human_response"))
             return Response(
                 {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
             )
@@ -739,25 +736,28 @@ class DMViewset(viewsets.ModelViewSet):
         thread = self.get_object()
         serializer = AddContentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
-        cl = login_user()
         generated_response = serializer.data.get("generated_response")
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
-            message = cl.direct_send(generated_response, thread_ids=[thread.thread_id])
+            send_message.delay(generated_response, thread_id=thread.thread_id)
+            thread.account.status.name = "responded_to_first_compliment"
+            thread.save()
             return Response(
                 {
                     "status": status.HTTP_200_OK,
                     "message": generated_response,
-                    "thread_id": message.thread_id,
+                    "thread_id": thread.thread_id,
                     "success": True,
                 }
             )
         else:
-            message = cl.direct_send(serializer.data.get("human_response"), thread_ids=[thread.thread_id])
+            send_message.delay(serializer.data.get("human_response"), thread_id=thread.thread_id)
+            thread.account.status.name = "responded_to_first_compliment"
+            thread.save()
             return Response(
                 {
                     "status": status.HTTP_200_OK,
                     "message": serializer.data.get("human_response"),
-                    "thread_id": message.thread_id,
+                    "thread_id": thread.thread_id,
                     "success": True,
                 }
             )

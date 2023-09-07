@@ -18,15 +18,18 @@ class LogEntryViewset(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         entries = []
         for entry in self.queryset:
-            if entry.actor:
-                entry_dict = {
-                    "object_pk": entry.object_pk,
-                    "timestamp": entry.timestamp,
-                    "actor": f"{entry.actor.first_name} {entry.actor.last_name}",
-                    "actor_email": entry.actor.email,
-                    "action": entry.action,
-                    "changes": entry.changes,
-                }
+            if entry:
+                if entry.actor:
+                    entry_dict = {
+                        "object_pk": entry.object_pk,
+                        "timestamp": entry.timestamp,
+                        "actor": f"{entry.actor.first_name} {entry.actor.last_name}",
+                        "actor_email": entry.actor.email,
+                        "action": entry.action,
+                        "changes": entry.changes,
+                    }
+                else:
+                    return Response(self.queryset.values)
             else:
                 return Response(self.queryset.values)
             entries.append(entry_dict)

@@ -75,7 +75,9 @@ class AddContentSerializer(serializers.Serializer):
 
 
 class ThreadSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="account.igname", read_only=True)
+
     class Meta:
         model = Thread
-        fields = "__all__"
+        fields = ["id", "username", "thread_id"]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
