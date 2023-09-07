@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -67,9 +67,15 @@ class UploadSerializer(serializers.Serializer):
 
 
 class AddContentSerializer(serializers.Serializer):
-    account = serializers.CharField(max_length=255, required=False)
     assign_robot = serializers.BooleanField(default=True)
     approve = serializers.BooleanField(default=False)
     text = serializers.CharField(max_length=255, required=False)
-    human_response = serializers.CharField(max_length=255, required=False)
-    generated_response = serializers.CharField(max_length=255, required=False)
+    human_response = serializers.CharField(max_length=1024, required=False)
+    generated_response = serializers.CharField(max_length=1024, required=False)
+
+
+class ThreadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Thread
+        fields = "__all__"
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}

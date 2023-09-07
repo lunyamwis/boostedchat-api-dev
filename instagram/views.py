@@ -5,7 +5,6 @@ import logging
 import uuid
 from urllib.parse import urlparse
 
-from django.shortcuts import get_object_or_404
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -15,7 +14,7 @@ from base.helpers.push_id import PushID
 from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
 
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Video
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video
 from .serializers import (
     AccountSerializer,
     AddContentSerializer,
@@ -24,6 +23,7 @@ from .serializers import (
     PhotoSerializer,
     ReelSerializer,
     StorySerializer,
+    ThreadSerializer,
     UploadSerializer,
     VideoSerializer,
 )
@@ -684,23 +684,41 @@ class StoryViewSet(viewsets.ModelViewSet):
             return Response({"status_code": 500})
 
 
-class SendDM(viewsets.ViewSet):
+class DMViewset(viewsets.ModelViewSet):
+    queryset = Thread.objects.all()
+    serializer_class = ThreadSerializer
+
+    def get_serializer_class(self):
+        if self.action == "send_message":
+            return AddContentSerializer
+        elif self.action == "generate_response":
+            return AddContentSerializer
+        return self.serializer_class
+
+    @action(detail=True, methods=["get"], url_path="fetch-messages")
     def fetch_messages(self, request, pk=None):
+        thread = self.get_object()
+        cl = login_user()
+        message_info = []
         try:
-            account = get_object_or_404(Account, id=request.data.get("account"))
-            print(account)
-            story = self.get_object()
-            cl = login_user()
-            media_pk = cl.media_pk_from_url(story.link)
-            media_id = cl.media_id(media_pk=media_pk)
-            messages = cl.direct_messages(media_id=media_id)
-            response = {"messages": messages, "length": len(messages)}
-            return Response(response, status=status.HTTP_200_OK)
+
+            # Iterate through the threads and access messages
+            messages = cl.direct_messages(thread_id=thread.thread_id)
+
+            for message in messages:
+                message_response = {
+                    "username": cl.username_from_user_id(message.user_id),
+                    "text": message.text,
+                    "timestamp": message.timestamp,
+                }
+                message_info.append(message_response)
+            return Response(message_info, status=status.HTTP_200_OK)
         except Exception as error:
             error_message = str(error)
             return Response({"error": error_message})
 
-    def generate_comment(self, request, pk=None):
+    @action(detail=True, methods=["post"], url_path="generate-response")
+    def generate_response(self, request, pk=None):
         generated_response = detect_intent(
             project_id="boostedchatapi",
             session_id=str(uuid.uuid4()),
@@ -716,19 +734,30 @@ class SendDM(viewsets.ViewSet):
             }
         )
 
+    @action(detail=True, methods=["post"], url_path="send-message")
     def send_message(self, request, pk=None):
+        thread = self.get_object()
         serializer = AddContentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
-        account = get_object_or_404(Account, id=serializer.data.get("account"))
         cl = login_user()
-
-        user_id = cl.user_id_from_username(account.igname)
         generated_response = serializer.data.get("generated_response")
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
-            cl.direct_send(generated_response, [user_id])
-            return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
-        else:
-            cl.direct_send(serializer.data.get("human_response"), [user_id])
+            message = cl.direct_send(generated_response, thread_ids=[thread.thread_id])
             return Response(
-                {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
+                {
+                    "status": status.HTTP_200_OK,
+                    "message": generated_response,
+                    "thread_id": message.thread_id,
+                    "success": True,
+                }
+            )
+        else:
+            message = cl.direct_send(serializer.data.get("human_response"), thread_ids=[thread.thread_id])
+            return Response(
+                {
+                    "status": status.HTTP_200_OK,
+                    "message": serializer.data.get("human_response"),
+                    "thread_id": message.thread_id,
+                    "success": True,
+                }
             )

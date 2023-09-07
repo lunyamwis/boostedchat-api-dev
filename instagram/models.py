@@ -61,6 +61,11 @@ class Photo(BaseModel):
     account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
 
 
+class Thread(BaseModel):
+    thread_id = models.CharField(max_length=255)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
+
+
 class Video(BaseModel):
     video_id = models.CharField(max_length=50)
     link = models.URLField()

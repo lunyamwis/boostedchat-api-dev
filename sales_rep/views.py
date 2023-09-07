@@ -8,11 +8,11 @@ from rest_framework.response import Response
 
 from authentication.models import User
 from instagram.helpers.login import login_user
-from instagram.models import Account, StatusCheck
+from instagram.models import Account, StatusCheck, Thread
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x
 from .models import SalesRep
-from .serializers import SalesRepSerializer
+from .serializers import AccountAssignmentSerializer, SalesRepSerializer
 
 # Create your views here.
 COMPLIMENTS = {
@@ -27,6 +27,12 @@ class SalesRepManager(viewsets.ModelViewSet):
     queryset = SalesRep.objects.all()
     serializer_class = SalesRepSerializer
 
+    def get_serializer_class(self):
+        if self.action == "assign_accounts":
+            return AccountAssignmentSerializer
+
+        return self.serializer_class
+
     def list(self, request):
 
         reps = SalesRep.objects.all()
@@ -39,8 +45,10 @@ class SalesRepManager(viewsets.ModelViewSet):
         response = {"status_code": status.HTTP_200_OK, "info": user_info}
         return Response(response, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["get"], url_path="assign-accounts")
+    @action(detail=False, methods=["post"], url_path="assign-accounts")
     def assign_accounts(self, request, pk=None):
+        serializer = AccountAssignmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         instagram_accounts_ = []
         accounts = Account.objects.filter(status=None)
         if accounts.exists():
@@ -78,22 +86,59 @@ class SalesRepManager(viewsets.ModelViewSet):
 
                     cl = login_user(salesreps[i].ig_username, salesreps[i].ig_password)
                     if account.igname:
-                        user_id = cl.user_id_from_username(account.igname)
-                        user_medias = cl.user_medias(user_id)
+                        if serializer.data.get("reaction") == 1:
+                            user_id = cl.user_id_from_username(account.igname)
+                            user_medias = cl.user_medias(user_id)
+
+                            try:
+                                media_id = cl.media_id(media_pk=user_medias[0].pk)
+                                dict_items = list(COMPLIMENTS.items())
+                                random_item = random.choice(dict_items)
+                                _, random_compliment = random_item
+                                comment = cl.media_comment(media_id, random_compliment)
+                            except Exception as error:
+                                print(error)
+
+                            ready_accounts = {
+                                "comment": comment.dict(),
+                                "account": account.igname,
+                                "salesrep": salesreps[i].ig_username,
+                            }
+                            accounts_complimented.append(ready_accounts)
+                        elif serializer.data.get("reaction") == 2:
+                            user_id = cl.user_id_from_username(account.igname)
+                            try:
+                                dict_items = list(COMPLIMENTS.items())
+                                random_item = random.choice(dict_items)
+                                _, random_compliment = random_item
+                                message = cl.direct_send(random_compliment, user_ids=[user_id])
+                                thread = Thread()
+                                thread.thread_id = message.thread_id
+                                thread.account = account
+                                thread.save()
+                            except Exception as error:
+                                print(error)
+
+                            ready_accounts = {
+                                "message": message.text,
+                                "account": account.igname,
+                                "salesrep": salesreps[i].ig_username,
+                            }
+                            accounts_complimented.append(ready_accounts)
+
+                    elif serializer.data.get("reaction") == 3:
 
                         try:
                             media_id = cl.media_id(media_pk=user_medias[0].pk)
-                            dict_items = list(COMPLIMENTS.items())
-                            random_item = random.choice(dict_items)
-                            _, random_compliment = random_item
-                            comment = cl.media_comment(media_id, random_compliment)
+                            cl.media_like(media_id)
                         except Exception as error:
                             print(error)
 
                         ready_accounts = {
-                            "comment": comment.dict(),
+                            "like": True,
                             "account": account.igname,
                             "salesrep": salesreps[i].ig_username,
+                            "success": True,
                         }
                         accounts_complimented.append(ready_accounts)
 

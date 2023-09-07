@@ -14,4 +14,6 @@ class SalesRepSerializer(serializers.ModelSerializer):
 
 
 class AccountAssignmentSerializer(serializers.Serializer):
-    per_sales_rep = serializers.IntegerField()
+    REACTIONS = ((1, "Comment"), (2, "Direct Messaging"), (3, "Like"))
+
+    reaction = serializers.ChoiceField(choices=REACTIONS)
