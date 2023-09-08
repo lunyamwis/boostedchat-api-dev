@@ -1,10 +1,14 @@
 # Create your views here.
 import csv
 import io
+import json
 import logging
+import random
 import uuid
+from datetime import timedelta
 from urllib.parse import urlparse
 
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -13,6 +17,7 @@ from rest_framework.response import Response
 from base.helpers.push_id import PushID
 from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
+from sales_rep.views import COMPLIMENTS
 
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video
 from .serializers import (
@@ -731,6 +736,43 @@ class DMViewset(viewsets.ModelViewSet):
             }
         )
 
+    @action(detail=False, methods=["get"], url_path="check-response")
+    def check_response(self, request, pk=None):
+        dict_items = list(COMPLIMENTS.items())
+        random_item = random.choice(dict_items)
+        _, random_compliment = random_item
+        daily_schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute="2",
+            hour="*",
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        )
+        monthly_schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute="5",
+            hour="*",
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        )
+        for thread_ in self.queryset.all():
+            if thread_.account.status.name == "responded_to_first_compliment":
+                pass
+            elif thread_.account.status.name == "sent_first_compliment":
+
+                PeriodicTask.objects.get_or_create(
+                    name=f"DailyTaskBeforeSevenDays-{thread_.account.igname}",
+                    crontab=daily_schedule,
+                    args=json.dumps([[random_compliment], [thread_.thread_id]]),
+                )
+                if thread_.created_at + timedelta(days=7):
+                    PeriodicTask.objects.get_or_create(
+                        name=f"MonthlyAfterSevenDays-{thread_.account.igname}",
+                        crontab=monthly_schedule,
+                        args=json.dumps([[random_compliment], [thread_.thread_id]]),
+                    )
+        return Response({"success": True}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=["post"], url_path="send-message")
     def send_message(self, request, pk=None):
         thread = self.get_object()
@@ -739,8 +781,10 @@ class DMViewset(viewsets.ModelViewSet):
         generated_response = serializer.data.get("generated_response")
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
             send_message.delay(generated_response, thread_id=thread.thread_id)
-            thread.account.status.name = "responded_to_first_compliment"
-            thread.save()
+            response_status = Thread.objects.filter(account__status__name="sent_first_compliment")
+            if response_status.exists():
+                thread.account.status.name = "responded_to_first_compliment"
+                thread.save()
             return Response(
                 {
                     "status": status.HTTP_200_OK,
@@ -751,8 +795,10 @@ class DMViewset(viewsets.ModelViewSet):
             )
         else:
             send_message.delay(serializer.data.get("human_response"), thread_id=thread.thread_id)
-            thread.account.status.name = "responded_to_first_compliment"
-            thread.save()
+            response_status = Thread.objects.filter(account__status__name="sent_first_compliment")
+            if response_status.exists():
+                thread.account.status.name = "responded_to_first_compliment"
+                thread.save()
             return Response(
                 {
                     "status": status.HTTP_200_OK,

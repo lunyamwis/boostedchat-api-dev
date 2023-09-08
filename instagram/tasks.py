@@ -28,5 +28,6 @@ def send_message(message, thread_id=None, user_id=None, username=None, thread=Tr
         thread.thread_id = message.thread_id
         thread.account = account
         thread.save()
+
     if thread_id and thread:
         cl.direct_send(message, thread_ids=[thread_id])
