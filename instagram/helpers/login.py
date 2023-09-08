@@ -74,22 +74,28 @@ def login_user(username=os.getenv("IG_USERNAME"), password=os.getenv("IG_PASSWOR
     session_file_path = Path("session.json")
     if os.path.exists(session_file_path):
         for attempt in range(1, max_attempts + 1):
-            cl.load_settings(session_file_path)
-            try:
-                cl.get_timeline_feed()  # Check if the session is valid
-                print("Session is valid, login with session")
-                break
-            except Exception as e:
-                print(f"Session is invalid (attempt {attempt}): {e}")
-                if attempt < max_attempts:
-                    print(f"Waiting 1 minute before trying again (attempt {attempt})")
-                    time.sleep(60)  # Wait for 1 minute
-                else:
-                    print("All attempts failed, removing session file and logging in with username and password")
-                    os.remove(session_file_path)
-                    cl.login(username, password)
-                    cl.dump_settings(session_file_path)
-                    print("Session saved to file")
+            session = cl.load_settings(session_file_path)
+            if session:
+                cl.set_settings(session)
+                try:
+                    cl.get_timeline_feed()  # Check if the session is valid
+                    print("Session is valid, login with session")
+
+                    break
+                except Exception as e:
+                    old_session = cl.get_settings()
+                    cl.set_settings({})
+                    cl.set_uuids(old_session["uuids"])
+                    print(f"Session is invalid (attempt {attempt}): {e}")
+                    if attempt < max_attempts:
+                        print(f"Waiting 1 minute before trying again (attempt {attempt})")
+                        time.sleep(60)  # Wait for 1 minute
+                    else:
+                        print("All attempts failed, removing session file and logging in with username and password")
+                        os.remove(session_file_path)
+                        cl.login(username, password)
+                        cl.dump_settings(session_file_path)
+                        print("Session saved to file")
     else:
         cl.login(username, password)
         print("Login with username and password")
