@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from authentication.models import User
-from data.compliments import COMPLIMENTS
+from data.dataset import COMPLIMENTS
 from data.helpers.random_data import get_random_compliment
 from instagram.helpers.login import login_user
 from instagram.models import Account, StatusCheck
@@ -118,19 +118,6 @@ class SalesRepManager(viewsets.ModelViewSet):
                                 "salesrep": salesreps[i].ig_username,
                             }
                             accounts_complimented.append(ready_accounts)
-
-                            # thread = Thread.objects.get(thread_id=message.thread_id)
-
-                            # if thread.account.status.name == "responded_to_first_compliment":
-                            #     pass
-                            # elif thread.account.status.name == "sent_first_compliment":
-                            #     schedule, _ = IntervalSchedule.objects.get_or_create(every=1, period=DAYS)
-                            #     PeriodicTask.objects.get_or_create(
-                            #         interval=schedule,  # we created this above.
-                            #         name="send_daily",  # simply describes this periodic task.
-                            #         task="instagram.tasks.send_message",  # name of task.
-                            #         args=json.dumps([[random_compliment], [user_id], [False]]),
-                            #     )
 
                         elif serializer.data.get("reaction") == 3:
 

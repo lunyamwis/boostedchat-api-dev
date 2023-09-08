@@ -14,7 +14,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from base.helpers.push_id import PushID
-from data.compliments import COMPLIMENTS
+from data.dataset import COMPLIMENTS
 from data.helpers.random_data import get_random_compliment
 from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
