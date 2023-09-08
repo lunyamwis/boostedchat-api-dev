@@ -79,5 +79,5 @@ class ThreadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Thread
-        fields = ["id", "username", "thread_id"]
+        fields = ["id", "username", "thread_id", "replied", "replied_at"]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
