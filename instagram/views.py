@@ -736,45 +736,49 @@ class DMViewset(viewsets.ModelViewSet):
                 "generated_comment": generated_response,
                 "text": request.data.get("text"),
                 "success": True,
+                "replied": thread.replied,
             }
         )
 
     @action(detail=False, methods=["get"], url_path="check-response")
     def check_response(self, request, pk=None):
-        dict_items = list(COMPLIMENTS.items())
-        random_item = random.choice(dict_items)
-        _, random_compliment = random_item
-        daily_schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute="2",
-            hour="*",
-            day_of_week="*",
-            day_of_month="*",
-            month_of_year="*",
-        )
-        monthly_schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute="5",
-            hour="*",
-            day_of_week="*",
-            day_of_month="*",
-            month_of_year="*",
-        )
-        for thread_ in self.queryset.all():
-            if thread_.account.status.name == "responded_to_first_compliment":
-                pass
-            elif thread_.account.status.name == "sent_first_compliment":
+        try:
+            dict_items = list(COMPLIMENTS.items())
+            random_item = random.choice(dict_items)
+            _, random_compliment = random_item
+            daily_schedule, _ = CrontabSchedule.objects.get_or_create(
+                minute="2",
+                hour="*",
+                day_of_week="*",
+                day_of_month="*",
+                month_of_year="*",
+            )
+            monthly_schedule, _ = CrontabSchedule.objects.get_or_create(
+                minute="5",
+                hour="*",
+                day_of_week="*",
+                day_of_month="*",
+                month_of_year="*",
+            )
+            for thread_ in self.queryset.all():
+                if thread_.account.status.name == "responded_to_first_compliment":
+                    pass
+                elif thread_.account.status.name == "sent_first_compliment":
 
-                PeriodicTask.objects.get_or_create(
-                    name=f"DailyTaskBeforeSevenDays-{thread_.account.igname}",
-                    crontab=daily_schedule,
-                    args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                )
-                if thread_.created_at + timedelta(days=7):
                     PeriodicTask.objects.get_or_create(
-                        name=f"MonthlyAfterSevenDays-{thread_.account.igname}",
-                        crontab=monthly_schedule,
+                        name=f"DailyTaskBeforeSevenDays-{thread_.account.igname}",
+                        crontab=daily_schedule,
                         args=json.dumps([[random_compliment], [thread_.thread_id]]),
                     )
-        return Response({"success": True}, status=status.HTTP_200_OK)
+                    if thread_.created_at + timedelta(days=7):
+                        PeriodicTask.objects.get_or_create(
+                            name=f"MonthlyAfterSevenDays-{thread_.account.igname}",
+                            crontab=monthly_schedule,
+                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
+                        )
+            return Response({"success": True}, status=status.HTTP_200_OK)
+        except Exception as error:
+            return Response({"error": str(error)})
 
     @action(detail=True, methods=["post"], url_path="send-message")
     def send_message(self, request, pk=None):
@@ -812,5 +816,7 @@ class DMViewset(viewsets.ModelViewSet):
                     "message": serializer.data.get("human_response"),
                     "thread_id": thread.thread_id,
                     "success": True,
+                    "replied": thread.replied,
+                    "replied_at": thread.replied_at,
                 }
             )
