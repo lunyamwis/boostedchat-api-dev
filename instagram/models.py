@@ -64,7 +64,7 @@ class Photo(BaseModel):
 class Thread(BaseModel):
     thread_id = models.CharField(max_length=255)
     account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
-    replied = models.BooleanField(default=True)
+    replied = models.BooleanField(default=False, null=True, blank=True)
     replied_at = models.DateTimeField(null=True, blank=True)
 
 
