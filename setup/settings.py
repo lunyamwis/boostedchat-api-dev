@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "openai.apps.OpenaiConfig",
     "sales_rep.apps.SalesRepConfig",
     "audittrails.apps.AudittrailsConfig",
+    "data.apps.DataConfig",
     "leads.apps.LeadsConfig",
     "allauth",
     "allauth.account",

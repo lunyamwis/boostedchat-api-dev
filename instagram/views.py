@@ -3,7 +3,6 @@ import csv
 import io
 import json
 import logging
-import random
 import uuid
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
@@ -15,9 +14,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from base.helpers.push_id import PushID
+from data.compliments import COMPLIMENTS
+from data.helpers.random_data import get_random_compliment
 from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
-from sales_rep.views import COMPLIMENTS
 
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video
 from .serializers import (
@@ -743,9 +743,7 @@ class DMViewset(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="check-response")
     def check_response(self, request, pk=None):
         try:
-            dict_items = list(COMPLIMENTS.items())
-            random_item = random.choice(dict_items)
-            _, random_compliment = random_item
+            random_compliment = get_random_compliment(COMPLIMENTS.items(), compliment_type="first_compliment")
             daily_schedule, _ = CrontabSchedule.objects.get_or_create(
                 minute="2",
                 hour="*",
