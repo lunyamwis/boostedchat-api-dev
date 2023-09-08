@@ -5,7 +5,7 @@ import json
 import logging
 import random
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
@@ -721,12 +721,15 @@ class DMViewset(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="generate-response")
     def generate_response(self, request, pk=None):
+        thread = self.get_object()
         generated_response = detect_intent(
             project_id="boostedchatapi",
             session_id=str(uuid.uuid4()),
             message=request.data.get("text"),
             language_code="en",
         )
+        thread.replied = False
+        thread.save()
         return Response(
             {
                 "status": status.HTTP_200_OK,
@@ -781,6 +784,8 @@ class DMViewset(viewsets.ModelViewSet):
         generated_response = serializer.data.get("generated_response")
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
             send_message.delay(generated_response, thread_id=thread.thread_id)
+            thread.replied = True
+            thread.replied_at = datetime.now()
             response_status = Thread.objects.filter(account__status__name="sent_first_compliment")
             if response_status.exists():
                 thread.account.status.name = "responded_to_first_compliment"
@@ -796,6 +801,8 @@ class DMViewset(viewsets.ModelViewSet):
         else:
             send_message.delay(serializer.data.get("human_response"), thread_id=thread.thread_id)
             response_status = Thread.objects.filter(account__status__name="sent_first_compliment")
+            thread.replied = True
+            thread.replied_at = datetime.now()
             if response_status.exists():
                 thread.account.status.name = "responded_to_first_compliment"
                 thread.save()
