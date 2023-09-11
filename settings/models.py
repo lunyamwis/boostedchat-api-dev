@@ -2,6 +2,7 @@ from django.db import models
 
 from base.models import BaseModel
 from data.languages import LANGUAGES
+from sales_rep.models import SalesRep
 
 
 class Industry(BaseModel):
@@ -17,3 +18,4 @@ class AutomationSheet(BaseModel):
     company = models.CharField(max_length=255, null=True, blank=True)
     language = models.CharField(max_length=5, choices=LANGUAGES, default="en")
     file = models.FileField(upload_to="media")
+    salesrep = models.ForeignKey(SalesRep, on_delete=models.CASCADE, null=True, blank=True)

@@ -8,7 +8,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from authentication.models import User
-from data.dataset import COMPLIMENTS
 from data.helpers.random_data import get_random_compliment
 from instagram.helpers.login import login_user
 from instagram.models import Account, StatusCheck
@@ -78,6 +77,7 @@ class SalesRepManager(viewsets.ModelViewSet):
                     account = get_object_or_404(Account, id=allocations[j])
 
                     salesreps[i].instagram.add(account)
+
                     statuscheck, _ = StatusCheck.objects.update_or_create(stage=1, name="sent_first_compliment")
                     account.status = statuscheck
 
@@ -92,7 +92,7 @@ class SalesRepManager(viewsets.ModelViewSet):
                             try:
                                 media_id = cl.media_id(media_pk=user_medias[0].pk)
                                 random_compliment = get_random_compliment(
-                                    COMPLIMENTS.items(), compliment_type="first_compliment"
+                                    salesrep=salesreps[i], compliment_type="first_compliment"
                                 )
                                 comment = cl.media_comment(media_id, random_compliment)
                             except Exception as error:
@@ -107,7 +107,7 @@ class SalesRepManager(viewsets.ModelViewSet):
                         elif serializer.data.get("reaction") == 2:
                             try:
                                 random_compliment = get_random_compliment(
-                                    COMPLIMENTS.items(), compliment_type="first_compliment"
+                                    salesrep=salesreps[i], compliment_type="first_compliment"
                                 )
                                 send_message.delay(random_compliment, username=account.igname)
                             except Exception as error:

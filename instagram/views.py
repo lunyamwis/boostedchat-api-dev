@@ -14,7 +14,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from base.helpers.push_id import PushID
-from data.dataset import COMPLIMENTS
 from data.helpers.random_data import get_random_compliment
 from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
@@ -742,8 +741,9 @@ class DMViewset(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="check-response")
     def check_response(self, request, pk=None):
+
         try:
-            random_compliment = get_random_compliment(COMPLIMENTS.items(), compliment_type="first_compliment")
+
             daily_schedule, _ = CrontabSchedule.objects.get_or_create(
                 minute="2",
                 hour="*",
@@ -762,7 +762,8 @@ class DMViewset(viewsets.ModelViewSet):
                 if thread_.account.status.name == "responded_to_first_compliment":
                     pass
                 elif thread_.account.status.name == "sent_first_compliment":
-
+                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
+                    random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
                     PeriodicTask.objects.get_or_create(
                         name=f"DailyTaskBeforeSevenDays-{thread_.account.igname}",
                         crontab=daily_schedule,

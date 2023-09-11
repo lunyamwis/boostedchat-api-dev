@@ -1,7 +1,15 @@
 import random
 
+import pandas as pd
 
-def get_random_compliment(compliments: dict, compliment_type: str):
-    list_compliments = list(compliments)
-    _, compliment = random.choice(list_compliments)
-    return compliment[compliment_type]
+from settings.models import AutomationSheet
+
+
+def get_random_compliment(salesrep: str, compliment_type: str):
+    sheet = AutomationSheet.objects.filter(salesrep=salesrep)
+    compliment = None
+    if sheet.exists():
+        company = sheet.last()
+        df = pd.read_excel(company.file.path, sheet_name="compliments")
+        compliment = random.choice(df[compliment_type])
+    return compliment
