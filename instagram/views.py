@@ -768,12 +768,14 @@ class DMViewset(viewsets.ModelViewSet):
                     PeriodicTask.objects.get_or_create(
                         name=f"DailyTaskBeforeSevenDays-{thread_.account.igname}",
                         crontab=daily_schedule,
+                        task="instagram.tasks.send_message",
                         args=json.dumps([[random_compliment], [thread_.thread_id]]),
                     )
                     if thread_.created_at + timedelta(minutes=8):
                         PeriodicTask.objects.get_or_create(
                             name=f"MonthlyAfterSevenDays-{thread_.account.igname}",
                             crontab=monthly_schedule,
+                            task="instagram.tasks.send_message",
                             args=json.dumps([[random_compliment], [thread_.thread_id]]),
                         )
             return Response({"success": True}, status=status.HTTP_200_OK)
