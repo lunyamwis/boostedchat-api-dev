@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
@@ -770,10 +771,10 @@ class DMViewset(viewsets.ModelViewSet):
                         crontab=daily_schedule,
                         task="instagram.tasks.send_message",
                         args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                        start_time=datetime.now(),
+                        start_time=timezone.now(),
                     )
 
-                    if datetime.now() >= task.start_time + timedelta(minutes=4):
+                    if timezone.now() >= task.start_time + timedelta(minutes=4):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
