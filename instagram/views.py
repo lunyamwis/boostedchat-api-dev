@@ -746,14 +746,14 @@ class DMViewset(viewsets.ModelViewSet):
         try:
 
             daily_schedule, _ = CrontabSchedule.objects.get_or_create(
-                minute="2",
+                minute="*/2",
                 hour="*",
                 day_of_week="*",
                 day_of_month="*",
                 month_of_year="*",
             )
             monthly_schedule, _ = CrontabSchedule.objects.get_or_create(
-                minute="5",
+                minute="*/5",
                 hour="*",
                 day_of_week="*",
                 day_of_month="*",
