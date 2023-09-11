@@ -766,15 +766,22 @@ class DMViewset(viewsets.ModelViewSet):
                 elif thread_.account.status.name == "sent_first_compliment":
                     salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
                     random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-                    task, _ = PeriodicTask.objects.get_or_create(
-                        name=f"FollowupTask-{thread_.account.igname}",
-                        crontab=daily_schedule,
-                        task="instagram.tasks.send_message",
-                        args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                        start_time=timezone.now(),
-                    )
+                    task = None
+                    try:
+                        task, _ = PeriodicTask.objects.get_or_create(
+                            name=f"FollowupTask-{thread_.account.igname}",
+                            crontab=daily_schedule,
+                            task="instagram.tasks.send_message",
+                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
+                            start_time=timezone.now(),
+                        )
+                    except Exception as error:
+                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
+                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
+                        task.save()
+                        logging.warning(str(error))
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=4):
+                    if timezone.now() >= task.start_time + timedelta(minutes=2):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
