@@ -765,14 +765,14 @@ class DMViewset(viewsets.ModelViewSet):
                 elif thread_.account.status.name == "sent_first_compliment":
                     salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
                     random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-                    PeriodicTask.objects.get_or_create(
+                    PeriodicTask.objects.update_or_create(
                         name=f"DailyTaskBeforeSevenDays-{thread_.account.igname}",
                         crontab=daily_schedule,
                         task="instagram.tasks.send_message",
                         args=json.dumps([[random_compliment], [thread_.thread_id]]),
                     )
-                    if thread_.created_at + timedelta(minutes=8):
-                        PeriodicTask.objects.get_or_create(
+                    if datetime.now() + timedelta(minutes=8):
+                        PeriodicTask.objects.update_or_create(
                             name=f"MonthlyAfterSevenDays-{thread_.account.igname}",
                             crontab=monthly_schedule,
                             task="instagram.tasks.send_message",
