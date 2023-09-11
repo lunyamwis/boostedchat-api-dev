@@ -765,19 +765,17 @@ class DMViewset(viewsets.ModelViewSet):
                 elif thread_.account.status.name == "sent_first_compliment":
                     salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
                     random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-                    PeriodicTask.objects.update_or_create(
-                        name=f"DailyTaskBeforeSevenDays-{thread_.account.igname}",
+                    task, _ = PeriodicTask.objects.get_or_create(
+                        name=f"FollowupTask-{thread_.account.igname}",
                         crontab=daily_schedule,
                         task="instagram.tasks.send_message",
                         args=json.dumps([[random_compliment], [thread_.thread_id]]),
                     )
-                    if datetime.now() + timedelta(minutes=8):
-                        PeriodicTask.objects.update_or_create(
-                            name=f"MonthlyAfterSevenDays-{thread_.account.igname}",
-                            crontab=monthly_schedule,
-                            task="instagram.tasks.send_message",
-                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                        )
+                    if task.created_at + timedelta(minutes=4):
+                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
+                        followup_task.crontab = (monthly_schedule,)
+                        followup_task.save()
+
             return Response({"success": True}, status=status.HTTP_200_OK)
         except Exception as error:
             return Response({"error": str(error)})
@@ -800,6 +798,11 @@ class DMViewset(viewsets.ModelViewSet):
                 account = get_object_or_404(Account, id=thread.account.id)
                 account.status = status_after_response
                 account.save()
+            responded = Thread.objects.filter(account__status__name="responded_to_first_compliment")
+            if responded.exists():
+                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
+                followup_task.delete()
+
             return Response(
                 {
                     "status": status.HTTP_200_OK,

@@ -31,6 +31,8 @@ def send_message(message, thread_id=None, user_id=None, username=None, thread=Tr
 
     if thread_id and thread:
         if type(thread_id) == list:
-            cl.direct_send(message, thread_ids=thread_id)
+            message = cl.direct_send(message, thread_ids=thread_id)
+            print(message.text)
         elif type(thread_id) == str:
-            cl.direct_send(message, thread_ids=[thread_id])
+            message = cl.direct_send(message, thread_ids=[thread_id])
+            print(message.text)
