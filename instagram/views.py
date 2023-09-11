@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime, timedelta
 from urllib.parse import urlparse
 
+from django.shortcuts import get_object_or_404
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
@@ -18,7 +19,7 @@ from data.helpers.random_data import get_random_compliment
 from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
 
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video
+from .models import Account, Comment, HashTag, Photo, Reel, StatusCheck, Story, Thread, Video
 from .serializers import (
     AccountSerializer,
     AddContentSerializer,
@@ -769,7 +770,7 @@ class DMViewset(viewsets.ModelViewSet):
                         crontab=daily_schedule,
                         args=json.dumps([[random_compliment], [thread_.thread_id]]),
                     )
-                    if thread_.created_at + timedelta(days=7):
+                    if thread_.created_at + timedelta(minutes=8):
                         PeriodicTask.objects.get_or_create(
                             name=f"MonthlyAfterSevenDays-{thread_.account.igname}",
                             crontab=monthly_schedule,
@@ -791,8 +792,12 @@ class DMViewset(viewsets.ModelViewSet):
             thread.replied_at = datetime.now()
             response_status = Thread.objects.filter(account__status__name="sent_first_compliment")
             if response_status.exists():
-                thread.account.status.name = "responded_to_first_compliment"
-                thread.save()
+                status_after_response, _ = StatusCheck.objects.get_or_create(
+                    stage=1, name="responded_to_first_compliment"
+                )
+                account = get_object_or_404(Account, id=thread.account.id)
+                account.status = status_after_response
+                account.save()
             return Response(
                 {
                     "status": status.HTTP_200_OK,
