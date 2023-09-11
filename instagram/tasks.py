@@ -30,4 +30,7 @@ def send_message(message, thread_id=None, user_id=None, username=None, thread=Tr
         thread.save()
 
     if thread_id and thread:
-        cl.direct_send(message, thread_ids=[thread_id])
+        if type(thread_id) == list:
+            cl.direct_send(message, thread_ids=thread_id)
+        elif type(thread_id) == str:
+            cl.direct_send(message, thread_ids=[thread_id])
