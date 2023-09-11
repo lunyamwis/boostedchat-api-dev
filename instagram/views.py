@@ -771,7 +771,8 @@ class DMViewset(viewsets.ModelViewSet):
                         task="instagram.tasks.send_message",
                         args=json.dumps([[random_compliment], [thread_.thread_id]]),
                     )
-                    if task.created_at + timedelta(minutes=4):
+
+                    if datetime.now() >= task.start_time + timedelta(minutes=4):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = (monthly_schedule,)
                         followup_task.save()
