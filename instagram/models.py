@@ -29,7 +29,7 @@ class StatusCheck(BaseModel):
 
 
 class Account(BaseModel):
-    igname = models.CharField(max_length=255, null=True, blank=True)
+    igname = models.CharField(max_length=255, null=True, unique=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=255, null=True, blank=True)
     profile_url = models.URLField(null=True, blank=True)

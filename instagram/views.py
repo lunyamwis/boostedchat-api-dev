@@ -726,22 +726,30 @@ class DMViewset(viewsets.ModelViewSet):
         thread = self.get_object()
         generated_response = None
         if thread.account.status.name == "responded_to_first_compliment":
-            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-            followup_task.delete()
+            try:
+                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
+                followup_task.delete()
+            except Exception as error:
+                print(error)
 
             enforced_shared_compliment = query_gpt(
                 f"""
                 respond the following dm within the triple backticks
-                ```{request.data.get("text")}``` in a friendly tone assuring them that they
-                are a wonderful barber
+                ```{request.data.get("text")}``` in a friendly tone
                 """
             )
+            print(enforced_shared_compliment)
             generated_response = enforced_shared_compliment.get("choices")[0].get("text")
+            print(thread.account.igname)
             follow_user.delay(thread.account.igname)
             statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="preparing_to_send_first_question")
-            account = get_object_or_404(Account, id=thread.account.id)
+            print(statuscheck)
+            account = Account.objects.get(id=thread.account.id)
+            print(account.status)
             account.status = statuscheck
             account.save()
+
+            print(account.status)
         elif thread.account.status.name == "sent_first_question":
             followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
             followup_task.delete()
