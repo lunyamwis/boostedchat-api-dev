@@ -37,9 +37,6 @@ class Account(BaseModel):
     status = models.ForeignKey(StatusCheck, on_delete=models.CASCADE, null=True, blank=True)
     history = AuditlogHistoryField(pk_indexable=False)
 
-    def __str__(self) -> str:
-        return self.igname
-
 
 auditlog.register(Account)
 

@@ -918,7 +918,7 @@ class DMViewset(viewsets.ModelViewSet):
             response_status = Thread.objects.filter(account__status__name="preparing_to_send_first_question")
             if response_status.exists():
                 send_message.delay(
-                    ("By the way, I was wondering what's the gnarliest part", " of your barber gig?"),
+                    ("By the way, I was wondering what's the gnarliest part of your barber gig?"),
                     thread_id=thread.thread_id,
                 )
                 thread.replied = True
@@ -931,10 +931,10 @@ class DMViewset(viewsets.ModelViewSet):
             response_status = Thread.objects.filter(account__status__name="preparing_to_send_second_question")
             if response_status.exists():
                 send_message.delay(
-                    (
-                        "How about your clients? Is managing current ones ",
-                        "more difficult than attracting new clients?",
-                    ),
+                    """
+                    How about your clients? Is managing current ones
+                    more difficult than attracting new clients?
+                    """,
                     thread_id=thread.thread_id,
                 )
                 thread.replied = True
