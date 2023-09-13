@@ -17,6 +17,7 @@ class OutSourced(models.Model):
 class OutSourcedInfo(models.Model):
     source = models.CharField(null=True, blank=True, max_length=255)
     results = models.TextField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class StatusCheck(BaseModel):
@@ -36,6 +37,7 @@ class Account(BaseModel):
     outsourced = models.ForeignKey(OutSourcedInfo, on_delete=models.CASCADE, null=True, blank=True)
     status = models.ForeignKey(StatusCheck, on_delete=models.CASCADE, null=True, blank=True)
     history = AuditlogHistoryField(pk_indexable=False)
+    dormant_profile_created = models.BooleanField(default=True, null=True, blank=True)
 
 
 auditlog.register(Account)
