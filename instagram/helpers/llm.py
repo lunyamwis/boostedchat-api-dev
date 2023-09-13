@@ -15,7 +15,7 @@ def query_gpt(prompt):
         "frequency_penalty": 0,
         "presence_penalty": 0.6,
     }
-    header = {"Authorization": "Bearer " + os.getenv("OPENAI_API_KEY")}
+    header = {"Authorization": "Bearer " + os.getenv("OPENAI_API_KEY").strip()}
 
     res = requests.post("https://api.openai.com/v1/completions", json=body, headers=header)
     logging.warn(str(["time elapsed", res.elapsed.total_seconds()]))
