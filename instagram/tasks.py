@@ -13,6 +13,13 @@ def send_comment(media_link, generated_response):
     cl.media_comment(media_id, generated_response)
 
 
+@shared_task
+def follow_user(username):
+    cl = login_user()
+    user_id = cl.user_id_from_username(username)
+    cl.user_follow(user_id)
+
+
 @shared_task()
 def send_message(message, thread_id=None, user_id=None, username=None, thread=True):
     cl = login_user()

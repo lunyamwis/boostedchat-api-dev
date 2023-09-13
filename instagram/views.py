@@ -18,6 +18,7 @@ from rest_framework.response import Response
 from base.helpers.push_id import PushID
 from data.helpers.random_data import get_random_compliment
 from dialogflow.helpers.intents import detect_intent
+from instagram.helpers.llm import query_gpt
 from instagram.helpers.login import login_user
 
 from .models import Account, Comment, HashTag, Photo, Reel, StatusCheck, Story, Thread, Video
@@ -33,7 +34,7 @@ from .serializers import (
     UploadSerializer,
     VideoSerializer,
 )
-from .tasks import send_comment, send_message
+from .tasks import follow_user, send_comment, send_message
 
 
 class AccountViewSet(viewsets.ModelViewSet):
@@ -723,12 +724,63 @@ class DMViewset(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="generate-response")
     def generate_response(self, request, pk=None):
         thread = self.get_object()
-        generated_response = detect_intent(
-            project_id="boostedchatapi",
-            session_id=str(uuid.uuid4()),
-            message=request.data.get("text"),
-            language_code="en",
-        )
+        generated_response = None
+        if thread.account.status.name == "responded_to_first_compliment":
+            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
+            followup_task.delete()
+
+            enforced_shared_compliment = query_gpt(
+                f"""
+                respond the following dm within the triple backticks
+                ```{request.data.get("text")}``` in a friendly tone assuring them that they
+                are a wonderful barber
+                """
+            )
+            generated_response = enforced_shared_compliment.get("choices")[0].get("text")
+            follow_user.delay(thread.account.igname)
+            statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="preparing_to_send_first_question")
+            account = get_object_or_404(Account, id=thread.account.id)
+            account.status = statuscheck
+            account.save()
+        elif thread.account.status.name == "sent_first_question":
+            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
+            followup_task.delete()
+
+            rephrase_defined_problem = query_gpt(
+                f"""
+                rephrase the problem stated in the followin dm within the triple backticks
+                ```{request.data.get("text")}``` in a friendly tone add emoji that indicate
+                you are in sympathy with them
+                """
+            )
+            generated_response = rephrase_defined_problem.get("choices")[0].get("text")
+            statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="preparing_to_send_second_question")
+            account = get_object_or_404(Account, id=thread.account.id)
+            account.status = statuscheck
+            account.save()
+        elif thread.account.status.name == "sent_second_question":
+            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
+            followup_task.delete()
+
+            rephrase_defined_problem = query_gpt(
+                f"""
+                rephrase the problem stated in the followin dm within the triple backticks
+                ```{request.data.get("text")}``` in a friendly tone add emoji that indicate
+                you are in sympathy with them
+                """
+            )
+            generated_response = rephrase_defined_problem.get("choices")[0].get("text")
+            statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="preparing_to_send_third_question")
+            account = get_object_or_404(Account, id=thread.account.id)
+            account.status = statuscheck
+            account.save()
+        else:
+            generated_response = detect_intent(
+                project_id="boostedchatapi",
+                session_id=str(uuid.uuid4()),
+                message=request.data.get("text"),
+                language_code="en",
+            )
         thread.replied = False
         thread.save()
         return Response(
@@ -785,6 +837,51 @@ class DMViewset(viewsets.ModelViewSet):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
+                elif thread_.account.status.name == "sent_first_question":
+                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
+                    random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
+                    task = None
+                    try:
+                        task, _ = PeriodicTask.objects.get_or_create(
+                            name=f"FollowupTask-{thread_.account.igname}",
+                            crontab=daily_schedule,
+                            task="instagram.tasks.send_message",
+                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
+                            start_time=timezone.now(),
+                        )
+                    except Exception as error:
+                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
+                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
+                        task.save()
+                        logging.warning(str(error))
+
+                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
+                        followup_task.crontab = monthly_schedule
+                        followup_task.save()
+
+                elif thread_.account.status.name == "sent_second_question":
+                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
+                    random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
+                    task = None
+                    try:
+                        task, _ = PeriodicTask.objects.get_or_create(
+                            name=f"FollowupTask-{thread_.account.igname}",
+                            crontab=daily_schedule,
+                            task="instagram.tasks.send_message",
+                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
+                            start_time=timezone.now(),
+                        )
+                    except Exception as error:
+                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
+                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
+                        task.save()
+                        logging.warning(str(error))
+
+                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
+                        followup_task.crontab = monthly_schedule
+                        followup_task.save()
 
             return Response({"success": True}, status=status.HTTP_200_OK)
         except Exception as error:
@@ -797,21 +894,47 @@ class DMViewset(viewsets.ModelViewSet):
         valid = serializer.is_valid(raise_exception=True)
         generated_response = serializer.data.get("generated_response")
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
-            send_message.delay(generated_response, thread_id=thread.thread_id)
-            thread.replied = True
-            thread.replied_at = datetime.now()
+
             response_status = Thread.objects.filter(account__status__name="sent_first_compliment")
             if response_status.exists():
+                send_message.delay(generated_response, thread_id=thread.thread_id)
+                thread.replied = True
+                thread.replied_at = datetime.now()
                 status_after_response, _ = StatusCheck.objects.get_or_create(
                     stage=1, name="responded_to_first_compliment"
                 )
                 account = get_object_or_404(Account, id=thread.account.id)
                 account.status = status_after_response
                 account.save()
-            responded = Thread.objects.filter(account__status__name="responded_to_first_compliment")
-            if responded.exists():
-                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                followup_task.delete()
+
+            response_status = Thread.objects.filter(account__status__name="preparing_to_send_first_question")
+            if response_status.exists():
+                send_message.delay(
+                    ("By the way, I was wondering what's the gnarliest part", " of your barber gig?"),
+                    thread_id=thread.thread_id,
+                )
+                thread.replied = True
+                thread.replied_at = datetime.now()
+                status_after_response, _ = StatusCheck.objects.get_or_create(stage=2, name="sent_first_question")
+                account = get_object_or_404(Account, id=thread.account.id)
+                account.status = status_after_response
+                account.save()
+
+            response_status = Thread.objects.filter(account__status__name="preparing_to_send_second_question")
+            if response_status.exists():
+                send_message.delay(
+                    (
+                        "How about your clients? Is managing current ones ",
+                        "more difficult than attracting new clients?",
+                    ),
+                    thread_id=thread.thread_id,
+                )
+                thread.replied = True
+                thread.replied_at = datetime.now()
+                status_after_response, _ = StatusCheck.objects.get_or_create(stage=2, name="sent_second_question")
+                account = get_object_or_404(Account, id=thread.account.id)
+                account.status = status_after_response
+                account.save()
 
             return Response(
                 {
