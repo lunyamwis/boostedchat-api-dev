@@ -14,4 +14,4 @@ class SalesRep(BaseModel):
     available = models.BooleanField(default=True)
 
     def __str__(self) -> str:
-        return self.ig_username
+        return self.user.email
