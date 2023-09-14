@@ -1,6 +1,5 @@
 import os
 
-from django.conf import settings
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -8,13 +7,13 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 SCOPES = ["https://www.googleapis.com/auth/dialogflow"]
 
 # Replace with the path to your JSON key file
-KEY_FILE = settings.BASE_DIR / "dialogflow.json"
+KEY_FILE = "dialogflow.json"
 
 
 def acquire_token():
     creds = None
-    token_json = os.path.join(settings.BASE_DIR, "dialogflow_token.json")
-    credentials_json = os.path.join(settings.BASE_DIR, "dialogflow.json")
+    token_json = "dialogflow_token.json"
+    credentials_json = "dialogflow.json"
     if os.path.exists(token_json):
         creds = Credentials.from_authorized_user_file(token_json, SCOPES)
     # If there are no (valid) credentials available, let the user log in.
