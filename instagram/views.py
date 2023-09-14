@@ -751,8 +751,11 @@ class DMViewset(viewsets.ModelViewSet):
 
             print(account.status)
         elif thread.account.status.name == "sent_first_question":
-            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-            followup_task.delete()
+            try:
+                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
+                followup_task.delete()
+            except Exception as error:
+                print(error)
 
             rephrase_defined_problem = query_gpt(
                 f"""
@@ -768,8 +771,9 @@ class DMViewset(viewsets.ModelViewSet):
             account.save()
         elif thread.account.status.name == "sent_second_question":
             last_seven_days = [date.today() - timedelta(days=day) for day in range(7)]
-            if thread.account.outsourced.updated_at.date() in last_seven_days:
-                pass
+            if thread.account.outsourced:
+                if thread.account.outsourced.updated_at.date() in last_seven_days:
+                    pass
             else:
                 followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
                 followup_task.delete()
@@ -811,8 +815,11 @@ class DMViewset(viewsets.ModelViewSet):
         elif thread.account.status.name == "sent_first_needs_assessment_question":
             confirm_reject_problem = True
             if confirm_reject_problem:
-                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                followup_task.delete()
+                try:
+                    followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
+                    followup_task.delete()
+                except Exception as error:
+                    print(error)
 
                 rephrase_defined_problem = query_gpt(
                     f"""
@@ -834,8 +841,11 @@ class DMViewset(viewsets.ModelViewSet):
             confirm_reject_problem = True
             if confirm_reject_problem:
 
-                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                followup_task.delete()
+                try:
+                    followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
+                    followup_task.delete()
+                except Exception as error:
+                    print(error)
 
                 rephrase_defined_problem = query_gpt(
                     f"""
@@ -855,8 +865,11 @@ class DMViewset(viewsets.ModelViewSet):
         elif thread.account.status.name == "sent_third_needs_assessment_question":
             confirm_reject_problem = True
             if confirm_reject_problem:
-                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                followup_task.delete()
+                try:
+                    followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
+                    followup_task.delete()
+                except Exception as error:
+                    print(error)
 
                 rephrase_defined_problem = query_gpt(
                     f"""
@@ -875,8 +888,11 @@ class DMViewset(viewsets.ModelViewSet):
         elif thread.account.status.name == "sent_follow_up_presentation":
             check_email = True
             if check_email:
-                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                followup_task.delete()
+                try:
+                    followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
+                    followup_task.delete()
+                except Exception as error:
+                    print(error)
 
                 rephrase_defined_problem = query_gpt(
                     f"""
@@ -952,14 +968,14 @@ class DMViewset(viewsets.ModelViewSet):
         try:
 
             daily_schedule, _ = CrontabSchedule.objects.get_or_create(
-                minute="*/2",
+                minute="*/4",
                 hour="*",
                 day_of_week="*",
                 day_of_month="*",
                 month_of_year="*",
             )
             monthly_schedule, _ = CrontabSchedule.objects.get_or_create(
-                minute="*/5",
+                minute="*/6",
                 hour="*",
                 day_of_week="*",
                 day_of_month="*",
@@ -986,7 +1002,7 @@ class DMViewset(viewsets.ModelViewSet):
                         task.save()
                         logging.warning(str(error))
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                    if timezone.now() >= task.start_time + timedelta(minutes=4):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
@@ -1008,7 +1024,7 @@ class DMViewset(viewsets.ModelViewSet):
                         task.save()
                         logging.warning(str(error))
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                    if timezone.now() >= task.start_time + timedelta(minutes=4):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
@@ -1032,7 +1048,7 @@ class DMViewset(viewsets.ModelViewSet):
                         task.save()
                         logging.warning(str(error))
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                    if timezone.now() >= task.start_time + timedelta(minutes=4):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
@@ -1056,7 +1072,7 @@ class DMViewset(viewsets.ModelViewSet):
                         task.save()
                         logging.warning(str(error))
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                    if timezone.now() >= task.start_time + timedelta(minutes=4):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
@@ -1080,7 +1096,7 @@ class DMViewset(viewsets.ModelViewSet):
                         task.save()
                         logging.warning(str(error))
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                    if timezone.now() >= task.start_time + timedelta(minutes=4):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
@@ -1104,7 +1120,7 @@ class DMViewset(viewsets.ModelViewSet):
                         task.save()
                         logging.warning(str(error))
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                    if timezone.now() >= task.start_time + timedelta(minutes=4):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
@@ -1128,7 +1144,7 @@ class DMViewset(viewsets.ModelViewSet):
                         task.save()
                         logging.warning(str(error))
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                    if timezone.now() >= task.start_time + timedelta(minutes=4):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
@@ -1165,7 +1181,7 @@ class DMViewset(viewsets.ModelViewSet):
                             task.save()
                             logging.warning(str(error))
 
-                        if timezone.now() >= task.start_time + timedelta(minutes=2):
+                        if timezone.now() >= task.start_time + timedelta(minutes=4):
                             followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                             followup_task.crontab = monthly_schedule
                             followup_task.save()
@@ -1192,7 +1208,7 @@ class DMViewset(viewsets.ModelViewSet):
                         task.save()
                         logging.warning(str(error))
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                    if timezone.now() >= task.start_time + timedelta(minutes=4):
                         second_attempt = """
                             When you see your profile on Booksy you won’t believe that you
                             used to [combination of problems].
@@ -1252,7 +1268,7 @@ class DMViewset(viewsets.ModelViewSet):
                         task.save()
                         logging.warning(str(error))
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                    if timezone.now() >= task.start_time + timedelta(minutes=4):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
@@ -1276,7 +1292,7 @@ class DMViewset(viewsets.ModelViewSet):
                         task.save()
                         logging.warning(str(error))
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=2):
+                    if timezone.now() >= task.start_time + timedelta(minutes=4):
                         followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
                         followup_task.crontab = monthly_schedule
                         followup_task.save()
@@ -1308,7 +1324,11 @@ class DMViewset(viewsets.ModelViewSet):
             response_status = Thread.objects.filter(account__status__name="preparing_to_send_first_question")
             if response_status.exists():
                 send_message.delay(
-                    ("By the way, I was wondering what's the gnarliest part of your barber gig?"),
+                    f"""
+                    {generated_response},
+                    I hope you don't mind me also asking,
+                    I was wondering what's the gnarliest part of your barber gig?
+                    """,
                     thread_id=thread.thread_id,
                 )
                 thread.replied = True
@@ -1321,7 +1341,9 @@ class DMViewset(viewsets.ModelViewSet):
             response_status = Thread.objects.filter(account__status__name="preparing_to_send_second_question")
             if response_status.exists():
                 send_message.delay(
-                    """
+                    f"""
+                    {generated_response}
+                    I was also thinking about asking,
                     How about your clients? Is managing current ones
                     more difficult than attracting new clients?
                     """,
@@ -1337,7 +1359,9 @@ class DMViewset(viewsets.ModelViewSet):
             response_status = Thread.objects.filter(account__status__name="preparing_to_send_third_question")
             if response_status.exists():
                 send_message.delay(
-                    """
+                    f"""
+                    {generated_response},
+                    by the way could you please help me understand,
                     How do you manage your calendar?
                     """,
                     thread_id=thread.thread_id,
@@ -1355,6 +1379,8 @@ class DMViewset(viewsets.ModelViewSet):
             if response_status.exists():
                 send_message.delay(
                     f"""
+                    {generated_response}
+                    besides I would like to notify you that,
                     Seems like you are starting a great career, {thread.account.igname} 🔥
                     If you don’t mind me asking... How do you market yourself? 🤔
                     """,
@@ -1374,7 +1400,9 @@ class DMViewset(viewsets.ModelViewSet):
             )
             if response_status.exists():
                 send_message.delay(
-                    """
+                    f"""
+                    {generated_response}
+                    I was also thinking of asking,
                     Did you consider social post creator tools to make your IG account more visible? you
                     have amazing potential and could easily convert your followers into clients with IG Book Button
                     """,
@@ -1394,7 +1422,9 @@ class DMViewset(viewsets.ModelViewSet):
             )
             if response_status.exists():
                 send_message.delay(
-                    """
+                    f"""
+                    {generated_response}
+                    by the way,
                     Returning clients are critical for long-term success,
                     are you able to invite back to your chair the clients who stopped booking? 🤔
                     """,
@@ -1412,7 +1442,9 @@ class DMViewset(viewsets.ModelViewSet):
             response_status = Thread.objects.filter(account__status__name="follow_up_after_presentation")
             if response_status.exists():
                 send_message.delay(
-                    """
+                    f"""
+                    {generated_response}
+                    I hope you are comfortable with me asking,
                     What do you think about booksy? would you like to give it a try?
                     """,
                     thread_id=thread.thread_id,
@@ -1429,7 +1461,9 @@ class DMViewset(viewsets.ModelViewSet):
             response_status = Thread.objects.filter(account__status__name="ask_for_email_first_attempt")
             if response_status.exists():
                 send_message.delay(
-                    """
+                    f"""
+                    {generated_response}
+                    consider also this that,
                     I can quickly setup an account for you to check it out - what’s your email address?
                     The one you use on IG will help with IG book button
                     """,
