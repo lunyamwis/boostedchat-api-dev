@@ -196,6 +196,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://34.121.32.131",
     "https://34.121.32.131",
+    "http://app.boostedchat.com",
 ]
 
 CORS_ALLOW_HEADERS = (

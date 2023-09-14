@@ -24,8 +24,15 @@ def follow_user(username):
 def send_message(message, thread_id=None, user_id=None, username=None, thread=True):
     cl = login_user()
     user_id = None
+    print("<<<<<<<<<<message<<<<<<<<<")
+    print(message)
+    print("<<<<<<<<<<username<<<<<<<<<")
+    print(username)
+
     if username:
         user_id = cl.user_id_from_username(username)
+        print("<<<<<<<<<<userid<<<<<<<<<")
+        print(user_id)
         try:
             account = Account.objects.get(igname=username)
         except Exception as error:
