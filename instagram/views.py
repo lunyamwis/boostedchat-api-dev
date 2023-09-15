@@ -726,202 +726,24 @@ class DMViewset(viewsets.ModelViewSet):
     def generate_response(self, request, pk=None):
         thread = self.get_object()
         generated_response = None
-        generate_response = GenerateResponse(thread.account.status.name, thread=thread)
-        if generate_response.status == "responded_to_first_compliment":
-            generate_response.check_responded_to_first_compliment()
+        GenerateResponseFactory = GenerateResponse(thread.account.status.name, thread=thread,
+                                                   lead_response=request.data.get("text"))
+        if GenerateResponseFactory.status == "responded_to_first_compliment":
+            generated_response = GenerateResponseFactory.check_responded_to_first_compliment()
         elif thread.account.status.name == "sent_first_question":
-            try:
-                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                followup_task.delete()
-            except Exception as error:
-                print(error)
-
-            rephrase_defined_problem = query_gpt(
-                f"""
-                rephrase the problem stated in the followin dm within the triple backticks
-                ```{request.data.get("text")}``` in a friendly tone add emoji that indicate
-                you are in sympathy with them
-                """
-            )
-            generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-            statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="preparing_to_send_second_question")
-            account = get_object_or_404(Account, id=thread.account.id)
-            account.status = statuscheck
-            account.save()
+            generated_response = GenerateResponseFactory.check_sent_first_question()
         elif thread.account.status.name == "sent_second_question":
-            last_seven_days = [date.today() - timedelta(days=day) for day in range(7)]
-            if thread.account.outsourced:
-                if thread.account.outsourced.updated_at.date() in last_seven_days:
-                    pass
-            else:
-                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                followup_task.delete()
-
-                rephrase_defined_problem = query_gpt(
-                    f"""
-                    rephrase the importance stated in the following dm within the triple backticks
-                    ```{request.data.get("text")}``` in a friendly tone add emoji that indicate
-                    you are affirming what they are saying
-                    """
-                )
-                generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-                statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="preparing_to_send_third_question")
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = statuscheck
-                account.save()
+            generated_response = GenerateResponseFactory.check_sent_second_question()
         elif thread.account.status.name == "sent_third_question":
-            booking_system = None
-            last_seven_days = [date.today() - timedelta(days=day) for day in range(7)]
-            if booking_system and thread.account.outsourced.updated_at.date() in last_seven_days:
-                pass
-            else:
-                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                followup_task.delete()
-
-                rephrase_defined_problem = query_gpt(
-                    f"""
-                    respond to the following dm within the triple backticks
-                    ```{request.data.get("text")}``` in a way that shows that you have understood them.
-                    """
-                )
-                generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-                statuscheck, _ = StatusCheck.objects.update_or_create(
-                    stage=2, name="preparing_to_send_first_needs_assessment_question"
-                )
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = statuscheck
-                account.save()
+            generated_response = GenerateResponseFactory.check_sent_third_question()
         elif thread.account.status.name == "sent_first_needs_assessment_question":
-            confirm_reject_problem = True
-            if confirm_reject_problem:
-                try:
-                    followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                    followup_task.delete()
-                except Exception as error:
-                    print(error)
-
-                rephrase_defined_problem = query_gpt(
-                    f"""
-                    respond to the following dm within the triple backticks
-                    ```{request.data.get("text")}``` in a way that shows that you have understood them.
-                    """
-                )
-                generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-                statuscheck, _ = StatusCheck.objects.update_or_create(
-                    stage=2, name="preparing_to_send_second_needs_assessment_question"
-                )
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = statuscheck
-                account.save()
-            else:
-                pass
-
+            generated_response = GenerateResponseFactory.check_sent_first_needs_assessment_question()
         elif thread.account.status.name == "sent_second_needs_assessment_question":
-            confirm_reject_problem = True
-            if confirm_reject_problem:
-
-                try:
-                    followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                    followup_task.delete()
-                except Exception as error:
-                    print(error)
-
-                rephrase_defined_problem = query_gpt(
-                    f"""
-                    respond to the following dm within the triple backticks
-                    ```{request.data.get("text")}``` in a way that shows that you have understood them.
-                    """
-                )
-                generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-                statuscheck, _ = StatusCheck.objects.update_or_create(
-                    stage=2, name="preparing_to_send_third_needs_assessment_question"
-                )
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = statuscheck
-                account.save()
-            else:
-                pass
+            generated_response = GenerateResponseFactory.check_sent_second_needs_assessment_question()
         elif thread.account.status.name == "sent_third_needs_assessment_question":
-            confirm_reject_problem = True
-            if confirm_reject_problem:
-                try:
-                    followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                    followup_task.delete()
-                except Exception as error:
-                    print(error)
-
-                rephrase_defined_problem = query_gpt(
-                    f"""
-                    respond to the following dm within the triple backticks
-                    ```{request.data.get("text")}``` in a way that shows that you have understood them.
-                    """
-                )
-                generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-                statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="follow_up_after_presentation")
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = statuscheck
-                account.save()
-            else:
-                pass
-
+            generated_response = GenerateResponseFactory.check_sent_third_needs_assessment_question()
         elif thread.account.status.name == "sent_follow_up_presentation":
-            check_email = True
-            if check_email:
-                try:
-                    followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                    followup_task.delete()
-                except Exception as error:
-                    print(error)
-
-                rephrase_defined_problem = query_gpt(
-                    f"""
-                    respond to the following dm within the triple backticks
-                    ```{request.data.get("text")}``` in a way that shows that you have understood them.
-                    """
-                )
-                generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-                statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="ask_for_email_first_attempt")
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = statuscheck
-                account.save()
-            else:
-                interested = query_gpt(
-                    f"""
-                    analyse to the following dm within the triple backticks
-                    ```{request.data.get("text")}``` to know whether they are interested in the
-                    product or not and return
-                    a boolean of 0 -if not interested, and 1 -if interested and 2 -if have any objections.
-                    """
-                )
-                if int(interested) == 1:
-                    pass
-
-                elif int(interested) == 0:
-                    rephrase_defined_problem = query_gpt(
-                        f"""
-                        rephrase the following dm within the triple backticks
-                        ```{request.data.get("text")}``` asking them why they are not interested.
-                        """
-                    )
-                    generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-                    statuscheck, _ = StatusCheck.objects.update_or_create(stage=3, name="ask_uninterest")
-                    account = get_object_or_404(Account, id=thread.account.id)
-                    account.status = statuscheck
-                    account.save()
-                elif int(interested) == 2:
-                    rephrase_defined_problem = query_gpt(
-                        f"""
-                        rephrase objection within the triple backticks
-                        ```{request.data.get("text")}``` in a way
-                        to show that they’re understood
-                        """
-                    )
-                    generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-                    statuscheck, _ = StatusCheck.objects.update_or_create(stage=3, name="ask_objection")
-                    account = get_object_or_404(Account, id=thread.account.id)
-                    account.status = statuscheck
-                    account.save()
-
+            generated_response = GenerateResponseFactory.check_sent_follow_up_presententation()
         else:
             generated_response = detect_intent(
                 project_id="boostedchatapi",
