@@ -1,27 +1,26 @@
 # Create your views here.
 import csv
 import io
-import json
 import logging
 import uuid
 from datetime import date, datetime, timedelta
 from urllib.parse import urlparse
 
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
-from django_celery_beat.models import CrontabSchedule, PeriodicTask
+from django_celery_beat.models import PeriodicTask
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from base.helpers.push_id import PushID
-from data.helpers.random_data import get_random_compliment
 from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.llm import query_gpt
 from instagram.helpers.login import login_user
 
+from .helpers.check_response import CheckResponse
 from .helpers.generate_response import GenerateResponse
+from .helpers.send_content import SendContent
 from .models import Account, Comment, HashTag, Photo, Reel, StatusCheck, Story, Thread, Video
 from .serializers import (
     AccountSerializer,
@@ -946,336 +945,44 @@ class DMViewset(viewsets.ModelViewSet):
 
         try:
 
-            daily_schedule, _ = CrontabSchedule.objects.get_or_create(
-                minute="*/4",
-                hour="*",
-                day_of_week="*",
-                day_of_month="*",
-                month_of_year="*",
-            )
-            monthly_schedule, _ = CrontabSchedule.objects.get_or_create(
-                minute="*/6",
-                hour="*",
-                day_of_week="*",
-                day_of_month="*",
-                month_of_year="*",
-            )
             for thread_ in self.queryset.all():
-                if thread_.account.status.name == "responded_to_first_compliment":
-                    pass
-                elif thread_.account.status.name == "sent_first_compliment":
-                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
-                    random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-                    task = None
-                    try:
-                        task, _ = PeriodicTask.objects.get_or_create(
-                            name=f"FollowupTask-{thread_.account.igname}",
-                            crontab=daily_schedule,
-                            task="instagram.tasks.send_message",
-                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                            start_time=timezone.now(),
-                        )
-                    except Exception as error:
-                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
-                        task.save()
-                        logging.warning(str(error))
+                check_responses = CheckResponse(status=thread_.account.status.name, thread=thread_)
+                if check_responses.status == "responded_to_first_compliment":
+                    check_responses.follow_up_if_responded_to_first_compliment()
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=4):
-                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        followup_task.crontab = monthly_schedule
-                        followup_task.save()
-                elif thread_.account.status.name == "sent_first_question":
-                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
-                    random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-                    task = None
-                    try:
-                        task, _ = PeriodicTask.objects.get_or_create(
-                            name=f"FollowupTask-{thread_.account.igname}",
-                            crontab=daily_schedule,
-                            task="instagram.tasks.send_message",
-                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                            start_time=timezone.now(),
-                        )
-                    except Exception as error:
-                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
-                        task.save()
-                        logging.warning(str(error))
+                elif check_responses.status == "sent_first_compliment":
+                    check_responses.follow_up_if_sent_first_compliment()
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=4):
-                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        followup_task.crontab = monthly_schedule
-                        followup_task.save()
+                elif check_responses.status == "sent_first_question":
+                    check_responses.follow_up_if_sent_first_question()
 
-                elif thread_.account.status.name == "sent_second_question":
+                elif check_responses.status == "sent_second_question":
+                    check_responses.follow_up_if_sent_second_question()
 
-                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
-                    random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-                    task = None
-                    try:
-                        task, _ = PeriodicTask.objects.get_or_create(
-                            name=f"FollowupTask-{thread_.account.igname}",
-                            crontab=daily_schedule,
-                            task="instagram.tasks.send_message",
-                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                            start_time=timezone.now(),
-                        )
-                    except Exception as error:
-                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
-                        task.save()
-                        logging.warning(str(error))
+                elif check_responses.status == "sent_third_question":
+                    check_responses.follow_up_if_sent_third_question()
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=4):
-                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        followup_task.crontab = monthly_schedule
-                        followup_task.save()
+                elif check_responses.status == "sent_first_needs_assessment_question":
+                    check_responses.follow_up_if_sent_first_needs_assessment_question()
 
-                elif thread_.account.status.name == "sent_third_question":
+                elif check_responses.status == "sent_second_needs_assessment_question":
 
-                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
-                    random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-                    task = None
-                    try:
-                        task, _ = PeriodicTask.objects.get_or_create(
-                            name=f"FollowupTask-{thread_.account.igname}",
-                            crontab=daily_schedule,
-                            task="instagram.tasks.send_message",
-                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                            start_time=timezone.now(),
-                        )
-                    except Exception as error:
-                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
-                        task.save()
-                        logging.warning(str(error))
+                    check_responses.follow_up_if_sent_second_needs_assessment_question()
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=4):
-                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        followup_task.crontab = monthly_schedule
-                        followup_task.save()
+                elif check_responses.status == "sent_third_needs_assessment_question":
 
-                elif thread_.account.status.name == "sent_first_needs_assessment_question":
+                    check_responses.follow_up_if_sent_third_needs_assessment_question()
 
-                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
-                    random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-                    task = None
-                    try:
-                        task, _ = PeriodicTask.objects.get_or_create(
-                            name=f"FollowupTask-{thread_.account.igname}",
-                            crontab=daily_schedule,
-                            task="instagram.tasks.send_message",
-                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                            start_time=timezone.now(),
-                        )
-                    except Exception as error:
-                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
-                        task.save()
-                        logging.warning(str(error))
+                elif check_responses.status == "sent_follow_up_after_presentation":
+                    check_responses.follow_up_if_sent_follow_up_after_presentation()
 
-                    if timezone.now() >= task.start_time + timedelta(minutes=4):
-                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        followup_task.crontab = monthly_schedule
-                        followup_task.save()
+                elif check_responses.status == "sent_email_first_attempt":
+                    check_responses.follow_up_if_sent_email_first_attempt()
+                elif check_responses.status == "sent_uninterest":
+                    check_responses.follow_up_if_sent_uninterest()
 
-                elif thread_.account.status.name == "sent_second_needs_assessment_question":
-
-                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
-                    random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-                    task = None
-                    try:
-                        task, _ = PeriodicTask.objects.get_or_create(
-                            name=f"FollowupTask-{thread_.account.igname}",
-                            crontab=daily_schedule,
-                            task="instagram.tasks.send_message",
-                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                            start_time=timezone.now(),
-                        )
-                    except Exception as error:
-                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
-                        task.save()
-                        logging.warning(str(error))
-
-                    if timezone.now() >= task.start_time + timedelta(minutes=4):
-                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        followup_task.crontab = monthly_schedule
-                        followup_task.save()
-
-                elif thread_.account.status.name == "sent_third_needs_assessment_question":
-
-                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
-                    random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-                    task = None
-                    try:
-                        task, _ = PeriodicTask.objects.get_or_create(
-                            name=f"FollowupTask-{thread_.account.igname}",
-                            crontab=daily_schedule,
-                            task="instagram.tasks.send_message",
-                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                            start_time=timezone.now(),
-                        )
-                    except Exception as error:
-                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
-                        task.save()
-                        logging.warning(str(error))
-
-                    if timezone.now() >= task.start_time + timedelta(minutes=4):
-                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        followup_task.crontab = monthly_schedule
-                        followup_task.save()
-
-                elif thread_.account.status.name == "sent_follow_up_after_presentation":
-                    if thread_.account.dormant_profile_created:
-                        booksy_status, _ = StatusCheck.objects.get_or_create(stage=2, name="Trial")
-
-                        account = get_object_or_404(Account, id=thread_.account.id)
-                        account.status = booksy_status
-                        account.save()
-
-                        salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
-
-                        random_compliment = f""""
-                            What's up {thread_.account.igname} let us make the most of your free trial account?
-                            you can manage it all with https://dl.booksy.com/WSlwk9kUhCb
-                            (login: {thread_.account.igname} password: {str(uuid.uuid4())}) to
-                            [solution to combination of problems]
-                            DM: let me know what you think and I’ll guide you for a month to grow it like crazy:)
-                            """
-                        task = None
-                        try:
-                            task, _ = PeriodicTask.objects.get_or_create(
-                                name=f"FollowupTask-{thread_.account.igname}",
-                                crontab=daily_schedule,
-                                task="instagram.tasks.send_message",
-                                args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                                start_time=timezone.now(),
-                            )
-                        except Exception as error:
-                            task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                            task.args = json.dumps([[random_compliment], [thread_.thread_id]])
-                            task.save()
-                            logging.warning(str(error))
-
-                        if timezone.now() >= task.start_time + timedelta(minutes=4):
-                            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                            followup_task.crontab = monthly_schedule
-                            followup_task.save()
-                elif thread_.account.status.name == "sent_email_first_attempt":
-                    # compiled from llm
-                    combination_of_problems = []
-                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
-                    random_compliment = f"""
-                        I actually think Booksy will help you big time {combination_of_problems}
-                        Let me know your email address and I’ll help you with the setup;)
-                        """
-                    task = None
-                    try:
-                        task, _ = PeriodicTask.objects.get_or_create(
-                            name=f"FollowupTask-{thread_.account.igname}",
-                            crontab=daily_schedule,
-                            task="instagram.tasks.send_message",
-                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                            start_time=timezone.now(),
-                        )
-                    except Exception as error:
-                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
-                        task.save()
-                        logging.warning(str(error))
-
-                    if timezone.now() >= task.start_time + timedelta(minutes=4):
-                        second_attempt = """
-                            When you see your profile on Booksy you won’t believe that you
-                            used to [combination of problems].
-                            What’s your valid email address?
-                            """
-                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        followup_task.crontab = monthly_schedule
-                        task.args = json.dumps([[second_attempt], [thread_.thread_id]])
-                        followup_task.save()
-
-                        status_after_response, _ = StatusCheck.objects.get_or_create(
-                            stage=2, name="sent_email_second_attempt"
-                        )
-                        account = get_object_or_404(Account, id=thread_.account.id)
-                        account.status = status_after_response
-                        account.save()
-
-                    if timezone.now() >= task.start_time + timedelta(minutes=3):
-                        third_attempt = """
-                            I can see you’re pretty busy and wanted to create profile on Booksy for you to
-                            elevate your business,
-                            I’ll just need your email address:)
-                            """
-                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        followup_task.crontab = monthly_schedule
-                        task.args = json.dumps([[third_attempt], [thread_.thread_id]])
-                        followup_task.save()
-
-                        status_after_response, _ = StatusCheck.objects.get_or_create(
-                            stage=3, name="sent_email_last_attempt"
-                        )
-                        account = get_object_or_404(Account, id=thread_.account.id)
-                        account.status = status_after_response
-                        account.save()
-
-                elif thread_.account.status.name == "sent_uninterest":
-
-                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
-                    rephrase_defined_problem = query_gpt(
-                        """
-                            ask for the more detailed reason why they are not interested
-                            """
-                    )
-                    random_compliment = rephrase_defined_problem.get("choices")[0].get("text")
-                    task = None
-                    try:
-                        task, _ = PeriodicTask.objects.get_or_create(
-                            name=f"FollowupTask-{thread_.account.igname}",
-                            crontab=daily_schedule,
-                            task="instagram.tasks.send_message",
-                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                            start_time=timezone.now(),
-                        )
-                    except Exception as error:
-                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
-                        task.save()
-                        logging.warning(str(error))
-
-                    if timezone.now() >= task.start_time + timedelta(minutes=4):
-                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        followup_task.crontab = monthly_schedule
-                        followup_task.save()
-
-                elif thread_.account.status.name == "sent_objection":
-
-                    salesrep = thread_.account.salesrep_set.get(instagram=thread_.account)
-                    random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-                    task = None
-                    try:
-                        task, _ = PeriodicTask.objects.get_or_create(
-                            name=f"FollowupTask-{thread_.account.igname}",
-                            crontab=daily_schedule,
-                            task="instagram.tasks.send_message",
-                            args=json.dumps([[random_compliment], [thread_.thread_id]]),
-                            start_time=timezone.now(),
-                        )
-                    except Exception as error:
-                        task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        task.args = json.dumps([[random_compliment], [thread_.thread_id]])
-                        task.save()
-                        logging.warning(str(error))
-
-                    if timezone.now() >= task.start_time + timedelta(minutes=4):
-                        followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread_.account.igname}")
-                        followup_task.crontab = monthly_schedule
-                        followup_task.save()
-
+                elif check_responses.status == "sent_objection":
+                    check_responses.follow_up_if_sent_objection()
             return Response({"success": True}, status=status.HTTP_200_OK)
         except Exception as error:
             return Response({"error": str(error)})
@@ -1286,200 +993,40 @@ class DMViewset(viewsets.ModelViewSet):
         serializer = AddContentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         generated_response = serializer.data.get("generated_response")
+        send_content = SendContent(status=thread.account.status.name, thread=thread)
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
 
-            response_status = Thread.objects.filter(account__status__name="sent_first_compliment")
-            if response_status.exists():
-                send_message.delay(generated_response, thread_id=thread.thread_id)
-                thread.replied = True
-                thread.replied_at = datetime.now()
-                status_after_response, _ = StatusCheck.objects.get_or_create(
-                    stage=1, name="responded_to_first_compliment"
-                )
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = status_after_response
-                account.save()
+            if send_content.status == "sent_first_compliment":
+                send_content.send_first_compliment()
+            elif send_content.status == "preparing_to_send_first_question":
+                send_content.send_first_question()
 
-            response_status = Thread.objects.filter(account__status__name="preparing_to_send_first_question")
-            if response_status.exists():
-                send_message.delay(
-                    f"""
-                    {generated_response},
-                    I hope you don't mind me also asking,
-                    I was wondering what's the gnarliest part of your barber gig?
-                    """,
-                    thread_id=thread.thread_id,
-                )
-                thread.replied = True
-                thread.replied_at = datetime.now()
-                status_after_response, _ = StatusCheck.objects.get_or_create(stage=2, name="sent_first_question")
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = status_after_response
-                account.save()
+            elif send_content.status == "preparing_to_send_second_question":
+                send_content.send_second_question()
 
-            response_status = Thread.objects.filter(account__status__name="preparing_to_send_second_question")
-            if response_status.exists():
-                send_message.delay(
-                    f"""
-                    {generated_response}
-                    I was also thinking about asking,
-                    How about your clients? Is managing current ones
-                    more difficult than attracting new clients?
-                    """,
-                    thread_id=thread.thread_id,
-                )
-                thread.replied = True
-                thread.replied_at = datetime.now()
-                status_after_response, _ = StatusCheck.objects.get_or_create(stage=2, name="sent_second_question")
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = status_after_response
-                account.save()
+            elif send_content.status == "preparing_to_send_third_question":
+                send_content.send_third_question()
 
-            response_status = Thread.objects.filter(account__status__name="preparing_to_send_third_question")
-            if response_status.exists():
-                send_message.delay(
-                    f"""
-                    {generated_response},
-                    by the way could you please help me understand,
-                    How do you manage your calendar?
-                    """,
-                    thread_id=thread.thread_id,
-                )
-                thread.replied = True
-                thread.replied_at = datetime.now()
-                status_after_response, _ = StatusCheck.objects.get_or_create(stage=2, name="sent_third_question")
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = status_after_response
-                account.save()
+            elif send_content.status == "preparing_to_send_first_needs_assessment_question":
+                send_content.send_first_needs_assessment_question()
 
-            response_status = Thread.objects.filter(
-                account__status__name="preparing_to_send_first_needs_assessment_question"
-            )
-            if response_status.exists():
-                send_message.delay(
-                    f"""
-                    {generated_response}
-                    besides I would like to notify you that,
-                    Seems like you are starting a great career, {thread.account.igname} 🔥
-                    If you don’t mind me asking... How do you market yourself? 🤔
-                    """,
-                    thread_id=thread.thread_id,
-                )
-                thread.replied = True
-                thread.replied_at = datetime.now()
-                status_after_response, _ = StatusCheck.objects.get_or_create(
-                    stage=2, name="sent_first_needs_assessment_question"
-                )
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = status_after_response
-                account.save()
+            elif send_content.status == "preparing_to_send_second_needs_assessment_question":
+                send_content.send_second_needs_assesment_question()
 
-            response_status = Thread.objects.filter(
-                account__status__name="preparing_to_send_second_needs_assessment_question"
-            )
-            if response_status.exists():
-                send_message.delay(
-                    f"""
-                    {generated_response}
-                    I was also thinking of asking,
-                    Did you consider social post creator tools to make your IG account more visible? you
-                    have amazing potential and could easily convert your followers into clients with IG Book Button
-                    """,
-                    thread_id=thread.thread_id,
-                )
-                thread.replied = True
-                thread.replied_at = datetime.now()
-                status_after_response, _ = StatusCheck.objects.get_or_create(
-                    stage=2, name="sent_second_needs_assessment_question"
-                )
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = status_after_response
-                account.save()
+            elif send_content.status == "preparing_to_send_third_needs_assessment_question":
+                send_content.send_third_needs_assessment_question()
 
-            response_status = Thread.objects.filter(
-                account__status__name="preparing_to_send_third_needs_assessment_question"
-            )
-            if response_status.exists():
-                send_message.delay(
-                    f"""
-                    {generated_response}
-                    by the way,
-                    Returning clients are critical for long-term success,
-                    are you able to invite back to your chair the clients who stopped booking? 🤔
-                    """,
-                    thread_id=thread.thread_id,
-                )
-                thread.replied = True
-                thread.replied_at = datetime.now()
-                status_after_response, _ = StatusCheck.objects.get_or_create(
-                    stage=2, name="sent_third_needs_assessment_question"
-                )
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = status_after_response
-                account.save()
+            elif send_content.status == "follow_up_after_presentation":
+                send_content.send_follow_up_after_presentation()
 
-            response_status = Thread.objects.filter(account__status__name="follow_up_after_presentation")
-            if response_status.exists():
-                send_message.delay(
-                    f"""
-                    {generated_response}
-                    I hope you are comfortable with me asking,
-                    What do you think about booksy? would you like to give it a try?
-                    """,
-                    thread_id=thread.thread_id,
-                )
-                thread.replied = True
-                thread.replied_at = datetime.now()
-                status_after_response, _ = StatusCheck.objects.get_or_create(
-                    stage=2, name="sent_follow_up_after_presentation"
-                )
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = status_after_response
-                account.save()
+            elif send_content.status == "ask_for_email_first_attempt":
+                send_content.send_request_for_email()
 
-            response_status = Thread.objects.filter(account__status__name="ask_for_email_first_attempt")
-            if response_status.exists():
-                send_message.delay(
-                    f"""
-                    {generated_response}
-                    consider also this that,
-                    I can quickly setup an account for you to check it out - what’s your email address?
-                    The one you use on IG will help with IG book button
-                    """,
-                    thread_id=thread.thread_id,
-                )
-                thread.replied = True
-                thread.replied_at = datetime.now()
-                status_after_response, _ = StatusCheck.objects.get_or_create(stage=2, name="sent_email_first_attempt")
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = status_after_response
-                account.save()
+            elif send_content.status == "ask_uninterest":
+                send_content.get_reason_why_uninterested()
 
-            response_status = Thread.objects.filter(account__status__name="ask_uninterest")
-            if response_status.exists():
-                send_message.delay(
-                    generated_response,
-                    thread_id=thread.thread_id,
-                )
-                thread.replied = True
-                thread.replied_at = datetime.now()
-                status_after_response, _ = StatusCheck.objects.get_or_create(stage=2, name="sent_uninterest")
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = status_after_response
-                account.save()
-
-            response_status = Thread.objects.filter(account__status__name="ask_objection")
-            if response_status.exists():
-                send_message.delay(
-                    generated_response,
-                    thread_id=thread.thread_id,
-                )
-                thread.replied = True
-                thread.replied_at = datetime.now()
-                status_after_response, _ = StatusCheck.objects.get_or_create(stage=2, name="sent_objection")
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = status_after_response
-                account.save()
+            elif send_content.status == "ask_objection":
+                send_content.respond_to_objection()
 
             return Response(
                 {
