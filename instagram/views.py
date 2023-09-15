@@ -769,40 +769,29 @@ class DMViewset(viewsets.ModelViewSet):
                 check_responses = CheckResponse(status=thread_.account.status.name, thread=thread_)
                 if check_responses.status == "responded_to_first_compliment":
                     check_responses.follow_up_if_responded_to_first_compliment()
-
                 elif check_responses.status == "sent_first_compliment":
                     check_responses.follow_up_if_sent_first_compliment()
-
                 elif check_responses.status == "sent_first_question":
                     check_responses.follow_up_if_sent_first_question()
-
                 elif check_responses.status == "sent_second_question":
                     check_responses.follow_up_if_sent_second_question()
-
                 elif check_responses.status == "sent_third_question":
                     check_responses.follow_up_if_sent_third_question()
-
                 elif check_responses.status == "sent_first_needs_assessment_question":
                     check_responses.follow_up_if_sent_first_needs_assessment_question()
-
                 elif check_responses.status == "sent_second_needs_assessment_question":
-
                     check_responses.follow_up_if_sent_second_needs_assessment_question()
-
                 elif check_responses.status == "sent_third_needs_assessment_question":
-
                     check_responses.follow_up_if_sent_third_needs_assessment_question()
-
                 elif check_responses.status == "sent_follow_up_after_presentation":
                     check_responses.follow_up_if_sent_follow_up_after_presentation()
-
                 elif check_responses.status == "sent_email_first_attempt":
                     check_responses.follow_up_if_sent_email_first_attempt()
                 elif check_responses.status == "sent_uninterest":
                     check_responses.follow_up_if_sent_uninterest()
-
                 elif check_responses.status == "sent_objection":
                     check_responses.follow_up_if_sent_objection()
+
             return Response({"success": True}, status=status.HTTP_200_OK)
         except Exception as error:
             return Response({"error": str(error)})
@@ -820,31 +809,22 @@ class DMViewset(viewsets.ModelViewSet):
                 send_content.send_first_compliment()
             elif send_content.status == "preparing_to_send_first_question":
                 send_content.send_first_question()
-
             elif send_content.status == "preparing_to_send_second_question":
                 send_content.send_second_question()
-
             elif send_content.status == "preparing_to_send_third_question":
                 send_content.send_third_question()
-
             elif send_content.status == "preparing_to_send_first_needs_assessment_question":
                 send_content.send_first_needs_assessment_question()
-
             elif send_content.status == "preparing_to_send_second_needs_assessment_question":
                 send_content.send_second_needs_assesment_question()
-
             elif send_content.status == "preparing_to_send_third_needs_assessment_question":
                 send_content.send_third_needs_assessment_question()
-
             elif send_content.status == "follow_up_after_presentation":
                 send_content.send_follow_up_after_presentation()
-
             elif send_content.status == "ask_for_email_first_attempt":
                 send_content.send_request_for_email()
-
             elif send_content.status == "ask_uninterest":
                 send_content.get_reason_why_uninterested()
-
             elif send_content.status == "ask_objection":
                 send_content.respond_to_objection()
 
