@@ -3,11 +3,9 @@ import csv
 import io
 import logging
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import datetime
 from urllib.parse import urlparse
 
-from django.shortcuts import get_object_or_404
-from django_celery_beat.models import PeriodicTask
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -15,13 +13,12 @@ from rest_framework.response import Response
 
 from base.helpers.push_id import PushID
 from dialogflow.helpers.intents import detect_intent
-from instagram.helpers.llm import query_gpt
 from instagram.helpers.login import login_user
 
 from .helpers.check_response import CheckResponse
 from .helpers.generate_response import GenerateResponse
 from .helpers.send_content import SendContent
-from .models import Account, Comment, HashTag, Photo, Reel, StatusCheck, Story, Thread, Video
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video
 from .serializers import (
     AccountSerializer,
     AddContentSerializer,
@@ -725,23 +722,24 @@ class DMViewset(viewsets.ModelViewSet):
     def generate_response(self, request, pk=None):
         thread = self.get_object()
         generated_response = None
-        GenerateResponseFactory = GenerateResponse(thread.account.status.name, thread=thread,
-                                                   lead_response=request.data.get("text"))
+        GenerateResponseFactory = GenerateResponse(
+            thread.account.status.name, thread=thread, lead_response=request.data.get("text")
+        )
         if GenerateResponseFactory.status == "responded_to_first_compliment":
             generated_response = GenerateResponseFactory.check_responded_to_first_compliment()
-        elif thread.account.status.name == "sent_first_question":
+        elif GenerateResponseFactory.status == "sent_first_question":
             generated_response = GenerateResponseFactory.check_sent_first_question()
-        elif thread.account.status.name == "sent_second_question":
+        elif GenerateResponseFactory.status == "sent_second_question":
             generated_response = GenerateResponseFactory.check_sent_second_question()
-        elif thread.account.status.name == "sent_third_question":
+        elif GenerateResponseFactory.status == "sent_third_question":
             generated_response = GenerateResponseFactory.check_sent_third_question()
-        elif thread.account.status.name == "sent_first_needs_assessment_question":
+        elif GenerateResponseFactory.status == "sent_first_needs_assessment_question":
             generated_response = GenerateResponseFactory.check_sent_first_needs_assessment_question()
-        elif thread.account.status.name == "sent_second_needs_assessment_question":
+        elif GenerateResponseFactory.status == "sent_second_needs_assessment_question":
             generated_response = GenerateResponseFactory.check_sent_second_needs_assessment_question()
-        elif thread.account.status.name == "sent_third_needs_assessment_question":
+        elif GenerateResponseFactory.status == "sent_third_needs_assessment_question":
             generated_response = GenerateResponseFactory.check_sent_third_needs_assessment_question()
-        elif thread.account.status.name == "sent_follow_up_presentation":
+        elif GenerateResponseFactory.status == "sent_follow_up_presentation":
             generated_response = GenerateResponseFactory.check_sent_follow_up_presententation()
         else:
             generated_response = detect_intent(
