@@ -11,12 +11,12 @@ from instagram.tasks import follow_user
 class GenerateResponse(object):
     def __init__(self, status: str, thread: Thread, lead_response: str) -> None:
         self.status = status
-        self.thread = thread
+        self.instance = thread
         self.lead_response = lead_response
 
     def if_followup_task_delete(self):
         try:
-            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{self.thread.account.igname}")
+            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{self.instance.account.igname}")
             followup_task.delete()
         except Exception as error:
             print(error)
@@ -24,7 +24,7 @@ class GenerateResponse(object):
     def update_account_status(self, stage, new_status):
         statuscheck, _ = StatusCheck.objects.update_or_create(stage=stage, name=new_status)
 
-        account = get_object_or_404(Account, id=self.thread.account.id)
+        account = get_object_or_404(Account, id=self.instance.account.id)
         account.status = statuscheck
         account.save()
 
@@ -40,7 +40,7 @@ class GenerateResponse(object):
 
         generated_response = enforced_shared_compliment.get("choices")[0].get("text")
 
-        follow_user.delay(self.thread.account.igname)
+        follow_user.delay(self.instance.account.igname)
 
         self.update_account_status(2, "preparing_to_send_first_question")
 
@@ -65,8 +65,8 @@ class GenerateResponse(object):
 
     def check_sent_second_question(self):
         last_seven_days = [date.today() - timedelta(days=day) for day in range(7)]
-        if self.thread.account.outsourced:
-            if self.thread.account.outsourced.updated_at.date() in last_seven_days:
+        if self.instance.account.outsourced:
+            if self.instance.account.outsourced.updated_at.date() in last_seven_days:
                 pass
         else:
             self.if_followup_task_delete()
@@ -87,7 +87,7 @@ class GenerateResponse(object):
     def check_sent_third_question(self):
         booking_system = None
         last_seven_days = [date.today() - timedelta(days=day) for day in range(7)]
-        if booking_system and self.thread.account.outsourced.updated_at.date() in last_seven_days:
+        if booking_system and self.instance.account.outsourced.updated_at.date() in last_seven_days:
             pass
         else:
             self.if_followup_task_delete()
