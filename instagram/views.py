@@ -21,6 +21,7 @@ from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.llm import query_gpt
 from instagram.helpers.login import login_user
 
+from .helpers.generate_response import GenerateResponse
 from .models import Account, Comment, HashTag, Photo, Reel, StatusCheck, Story, Thread, Video
 from .serializers import (
     AccountSerializer,
@@ -34,7 +35,7 @@ from .serializers import (
     UploadSerializer,
     VideoSerializer,
 )
-from .tasks import follow_user, send_comment, send_message
+from .tasks import send_comment, send_message
 
 
 class AccountViewSet(viewsets.ModelViewSet):
@@ -725,31 +726,9 @@ class DMViewset(viewsets.ModelViewSet):
     def generate_response(self, request, pk=None):
         thread = self.get_object()
         generated_response = None
-        if thread.account.status.name == "responded_to_first_compliment":
-            try:
-                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
-                followup_task.delete()
-            except Exception as error:
-                print(error)
-
-            enforced_shared_compliment = query_gpt(
-                f"""
-                respond the following dm within the triple backticks
-                ```{request.data.get("text")}``` in a friendly tone
-                """
-            )
-            print(enforced_shared_compliment)
-            generated_response = enforced_shared_compliment.get("choices")[0].get("text")
-            print(thread.account.igname)
-            follow_user.delay(thread.account.igname)
-            statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="preparing_to_send_first_question")
-            print(statuscheck)
-            account = Account.objects.get(id=thread.account.id)
-            print(account.status)
-            account.status = statuscheck
-            account.save()
-
-            print(account.status)
+        generate_response = GenerateResponse(thread.account.status.name, thread=thread)
+        if generate_response.status == "responded_to_first_compliment":
+            generate_response.check_responded_to_first_compliment()
         elif thread.account.status.name == "sent_first_question":
             try:
                 followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{thread.account.igname}")
