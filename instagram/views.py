@@ -806,9 +806,9 @@ class DMViewset(viewsets.ModelViewSet):
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
 
             if send_content.status == "sent_first_compliment":
-                send_content.send_first_compliment()
+                send_content.send_first_compliment(generated_response=generated_response)
             elif send_content.status == "preparing_to_send_first_question":
-                send_content.send_first_question()
+                send_content.send_first_question(generated_response=generated_response)
             elif send_content.status == "preparing_to_send_second_question":
                 send_content.send_second_question()
             elif send_content.status == "preparing_to_send_third_question":

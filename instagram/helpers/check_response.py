@@ -17,14 +17,14 @@ class CheckResponse(object):
     def __init__(self, status: str, thread: Thread) -> None:
         self.status = status
         self.daily_schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute="*/4",
+            minute="*/30",
             hour="*",
             day_of_week="*",
             day_of_month="*",
             month_of_year="*",
         )
         self.monthly_schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute="*/6",
+            minute="*/40",
             hour="*",
             day_of_week="*",
             day_of_month="*",
@@ -48,7 +48,7 @@ class CheckResponse(object):
             task.save()
             logging.warning(str(error))
 
-        if timezone.now() >= task.start_time + timedelta(minutes=4):
+        if timezone.now() >= task.start_time + timedelta(minutes=35):
             followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{self.instance.account.igname}")
             followup_task.crontab = self.monthly_schedule
             followup_task.save()
@@ -167,7 +167,7 @@ class CheckResponse(object):
                 ask for the more detailed reason why they are not interested
                 """
         )
-        random_compliment = rephrase_defined_problem.get("choices")[0].get("text")
+        random_compliment = rephrase_defined_problem.get("choices")[0].get("message").get("content")
         self.follow_up_task(message=random_compliment)
 
     def follow_up_if_sent_objection(self, thread_):
