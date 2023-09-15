@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 
 from django.shortcuts import get_object_or_404
 from django_celery_beat.models import PeriodicTask
@@ -24,7 +24,7 @@ class GenerateResponse(object):
     def update_account_status(self, stage, new_status):
         statuscheck, _ = StatusCheck.objects.update_or_create(stage=stage, name=new_status)
 
-        account = Account.objects.get(id=self.thread.account.id)
+        account = get_object_or_404(Account, id=self.thread.account.id)
         account.status = statuscheck
         account.save()
 
@@ -79,10 +79,8 @@ class GenerateResponse(object):
                 """
             )
             generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-            statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="preparing_to_send_third_question")
-            account = get_object_or_404(Account, id=self.thread.account.id)
-            account.status = statuscheck
-            account.save()
+
+            self.update_account_status(2, "preparing_to_send_third_question")
 
             return generated_response
 
@@ -101,12 +99,9 @@ class GenerateResponse(object):
                 """
             )
             generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-            statuscheck, _ = StatusCheck.objects.update_or_create(
-                stage=2, name="preparing_to_send_first_needs_assessment_question"
-            )
-            account = get_object_or_404(Account, id=self.thread.account.id)
-            account.status = statuscheck
-            account.save()
+
+            self.update_account_status(2, "preparing_to_send_first_needs_assessment_question")
+
             return generated_response
 
     def check_sent_first_needs_assessment_question(self):
@@ -121,20 +116,15 @@ class GenerateResponse(object):
                 """
             )
             generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-            statuscheck, _ = StatusCheck.objects.update_or_create(
-                stage=2, name="preparing_to_send_second_needs_assessment_question"
-            )
-            account = get_object_or_404(Account, id=self.thread.account.id)
-            account.status = statuscheck
-            account.save()
+            self.update_account_status(2, "preparing_to_send_second_needs_assessment_question")
             return generated_response
         else:
             pass
 
-    def check_sent_second_needs_assessment_question(self)
+    def check_sent_second_needs_assessment_question(self):
 
-      confirm_reject_problem = True
-       if confirm_reject_problem:
+        confirm_reject_problem = True
+        if confirm_reject_problem:
 
             self.if_followup_task_delete()
 
@@ -145,19 +135,15 @@ class GenerateResponse(object):
                 """
             )
             generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-            statuscheck, _ = StatusCheck.objects.update_or_create(
-                stage=2, name="preparing_to_send_third_needs_assessment_question"
-            )
-            account = get_object_or_404(Account, id=self.thread.account.id)
-            account.status = statuscheck
-            account.save()
+            self.update_account_status(2, "preparing_to_send_third_needs_assessment_question")
+            return generated_response
         else:
             pass
 
-    def check_sent_third_needs_assessment_question(self)
+    def check_sent_third_needs_assessment_question(self):
 
-      confirm_reject_problem = True
-       if confirm_reject_problem:
+        confirm_reject_problem = True
+        if confirm_reject_problem:
 
             self.if_followup_task_delete()
 
@@ -168,16 +154,16 @@ class GenerateResponse(object):
                 """
             )
             generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-            statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="follow_up_after_presentation")
-            account = get_object_or_404(Account, id=self.thread.account.id)
-            account.status = statuscheck
-            account.save()
+            self.update_account_status(2, "follow_up_after_presentation")
             return generated_response
         else:
             pass
 
     def check_sent_follow_up_presententation(self):
         check_email = True
+
+        generated_response = None
+
         if check_email:
             self.if_followup_task_delete()
 
@@ -188,10 +174,8 @@ class GenerateResponse(object):
                 """
             )
             generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-            statuscheck, _ = StatusCheck.objects.update_or_create(stage=2, name="ask_for_email_first_attempt")
-            account = get_object_or_404(Account, id=self.thread.account.id)
-            account.status = statuscheck
-            account.save()
+            self.update_account_status(2, "ask_for_email_first_attempt")
+
         else:
             interested = query_gpt(
                 f"""
@@ -212,10 +196,7 @@ class GenerateResponse(object):
                     """
                 )
                 generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-                statuscheck, _ = StatusCheck.objects.update_or_create(stage=3, name="ask_uninterest")
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = statuscheck
-                account.save()
+                self.update_account_status(3, "ask_uninterest")
             elif int(interested) == 2:
                 rephrase_defined_problem = query_gpt(
                     f"""
@@ -225,7 +206,6 @@ class GenerateResponse(object):
                     """
                 )
                 generated_response = rephrase_defined_problem.get("choices")[0].get("text")
-                statuscheck, _ = StatusCheck.objects.update_or_create(stage=3, name="ask_objection")
-                account = get_object_or_404(Account, id=thread.account.id)
-                account.status = statuscheck
-                account.save()
+                self.update_account_status(3, "ask_objection")
+
+        return generated_response
