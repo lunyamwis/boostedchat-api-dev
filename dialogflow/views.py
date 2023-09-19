@@ -1,6 +1,5 @@
 import json
 import logging
-import uuid
 from datetime import timedelta
 
 from django.utils import timezone
@@ -26,7 +25,7 @@ class FallbackWebhook(APIView):
         }
         convo = []
         schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute="*/5",
+            minute="*/2",
             hour="*",
             day_of_week="*",
             day_of_month="*",
@@ -53,10 +52,10 @@ class FallbackWebhook(APIView):
                 logging.warn(result)
                 convo.append(result)
                 logging.warn(str(["convo so far", ("\n").join(convo)]))
-                unique_id = str(uuid.uuid4())
+                # unique_id = str(uuid.uuid4())
                 first_question = "By the way, What is the gnarliest part of your barber gig?"
                 task, _ = PeriodicTask.objects.get_or_create(
-                    name=f"FollowupTask-{unique_id}",
+                    name=f"FollowupTask-{1}",
                     crontab=schedule,
                     task="instagram.tasks.send_message",
                     args=json.dumps([[first_question], ["340282366841710301244276030187054119912"]]),
