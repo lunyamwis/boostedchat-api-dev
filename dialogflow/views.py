@@ -54,13 +54,19 @@ class FallbackWebhook(APIView):
                 logging.warn(str(["convo so far", ("\n").join(convo)]))
                 # unique_id = str(uuid.uuid4())
                 first_question = "By the way, What is the gnarliest part of your barber gig?"
-                task, _ = PeriodicTask.objects.get_or_create(
-                    name=f"FollowupTask-{1}",
-                    crontab=schedule,
-                    task="instagram.tasks.send_message",
-                    args=json.dumps([[first_question], ["340282366841710301244276030187054119912"]]),
-                    start_time=timezone.now(),
-                )
+                task = None
+                try:
+                    task, _ = PeriodicTask.objects.get_or_create(
+                        name=f"FollowupTask-{1}",
+                        crontab=schedule,
+                        task="instagram.tasks.send_message",
+                        args=json.dumps([[first_question], ["340282366841710301244276030187054119912"]]),
+                        start_time=timezone.now(),
+                    )
+                except Exception as error:
+                    print(error)
+                    task = PeriodicTask.objects.get(name=f"FollowupTask-{1}")
+
                 if timezone.now() >= task.start_time + timedelta(minutes=2):
                     return Response(
                         {
