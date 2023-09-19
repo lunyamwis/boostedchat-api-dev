@@ -1,5 +1,10 @@
+import json
 import logging
+import uuid
+from datetime import timedelta
 
+from django.utils import timezone
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,10 +24,16 @@ class FallbackWebhook(APIView):
         """
         }
         convo = []
+        schedule = CrontabSchedule.objects.get_or_create(
+            minute="*/5",
+            hour="*",
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        )
         try:
             req = request.data
             # logging.warn('request data', req)
-            fulfillmentText = "you said"
             query_result = req.get("fulfillmentInfo")
             print(query_result)
             query = req.get("text")
@@ -41,6 +52,31 @@ class FallbackWebhook(APIView):
                 logging.warn(result)
                 convo.append(result)
                 logging.warn(str(["convo so far", ("\n").join(convo)]))
+                unique_id = str(uuid.uuid4())
+                first_question = "By the way, What is the gnarliest part of your barber gig?"
+                task, _ = PeriodicTask.objects.get_or_create(
+                    name=f"FollowupTask-{unique_id}",
+                    crontab=schedule,
+                    task="instagram.tasks.send_message",
+                    args=json.dumps([[first_question], [self.instance.thread_id]]),
+                    start_time=timezone.now(),
+                )
+                if timezone.now() >= task.start_time + timedelta(minutes=5):
+                    return Response(
+                        {
+                            "fulfillment_response": {
+                                "messages": [
+                                    {
+                                        "text": {
+                                            "text": [first_question],
+                                        },
+                                    },
+                                ]
+                            }
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+
                 return Response(
                     {
                         "fulfillment_response": {
@@ -66,16 +102,11 @@ class NeedsAssesmentWebhook(APIView):
     """
 
     def post(self, request, format=None):
-        prompts = {
-            "NA": """
-            Respond appropriately to the given DM and use emojis where necessary
-        """
-        }
+
         convo = []
         try:
             req = request.data
             # logging.warn('request data', req)
-            fulfillmentText = "you said"
             query_result = req.get("fulfillmentInfo")
             print(query_result)
             query = req.get("text")
