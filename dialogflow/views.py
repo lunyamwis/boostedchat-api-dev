@@ -61,7 +61,7 @@ class FallbackWebhook(APIView):
                     args=json.dumps([[first_question], ["340282366841710301244276030187054119912"]]),
                     start_time=timezone.now(),
                 )
-                if timezone.now() >= task.start_time + timedelta(minutes=5):
+                if timezone.now() >= task.start_time + timedelta(minutes=2):
                     return Response(
                         {
                             "fulfillment_response": {
