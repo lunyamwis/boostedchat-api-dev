@@ -21,6 +21,7 @@ class FallbackWebhook(APIView):
         prompts = {
             "NA": """
             Respond appropriately to the given DM and use emojis where necessary
+            Do not say you are an AI assistant or show that you are an ai assistant whatsoever
         """
         }
         convo = []
