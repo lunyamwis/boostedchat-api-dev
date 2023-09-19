@@ -25,7 +25,7 @@ class FallbackWebhook(APIView):
         """
         }
         convo = []
-        schedule = CrontabSchedule.objects.get_or_create(
+        schedule, _ = CrontabSchedule.objects.get_or_create(
             minute="*/5",
             hour="*",
             day_of_week="*",
