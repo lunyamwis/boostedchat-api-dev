@@ -15,6 +15,7 @@ django-softdelete
 django-role-permissions
 djangorestframework-simplejwt
 google-api-python-client
+google-cloud-dialogflow-cx
 google-auth
 google-auth-oauthlib
 gunicorn

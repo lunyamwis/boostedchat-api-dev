@@ -32,7 +32,9 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
 ]
 
-DIALOGFLOW_BASE_URL = "https://dialogflow.googleapis.com/v2beta1"
+DIALOGFLOW_BASE_URL = (
+    "https://us-central1-dialogflow.googleapis.com/v3beta1/projects/boostedchatapi/locations/us-central1/"
+)
 OPENAI_BASE_URL = "https://api.openai.com/v1"
 # Application definition
 

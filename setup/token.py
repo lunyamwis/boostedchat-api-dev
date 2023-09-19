@@ -11,19 +11,19 @@ KEY_FILE = "dialogflow.json"
 
 
 def acquire_token():
-    creds = None
+    credentials = None
     token_json = "dialogflow_token.json"
     credentials_json = "dialogflow.json"
     if os.path.exists(token_json):
-        creds = Credentials.from_authorized_user_file(token_json, SCOPES)
+        credentials = Credentials.from_authorized_user_file(token_json, SCOPES)
     # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+    if not credentials or not credentials.valid:
+        if credentials and credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(credentials_json, SCOPES)
-            creds = flow.run_local_server(port=0)
+            credentials = flow.run_local_server(port=0)
         # Save the credentials for the next run
         with open(token_json, "w") as token:
-            token.write(creds.to_json())
-    return creds.token
+            token.write(credentials.to_json())
+    return credentials.token

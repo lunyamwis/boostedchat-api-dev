@@ -30,113 +30,13 @@ class GenerateResponse(object):
 
     def check_responded_to_first_compliment(self):
         self.if_followup_task_delete()
-
-        prompt = """
-            mention in your instagram-like message that you're sure that they remember their positive reviews but you think that reviews like the one from [get reviewer name from the reviewerNameAndDate from the list of reviews in the data within the triple backticks] that [get reviewer text from the review_text from the list of reviews in the data within the triple backticks and rephrase the review] result in plenty of referrals from their clients.
-            here is an example that can guide you;
-            example:  I had my browser still open on your profile and Iove what your clients are saying [get reviewServiceName in the reviews list within the data in the triple backticks and then summarize what they said in the review_text in the reviews list within the data in the triple backticks]
-            complete this example with an encouraging remark that will keep them moving on.
-            ```[
-            {
-                "name": "styleseat",
-                "secondary_name": "Paul",
-                "category": "Barber",
-                "businessName": "Business name: The Fine Grooming Studio",
-                "ratings": "5.0\n(535)",
-                "reviews": [
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-
-                ],
-                "aboutName": [
-                "Hi there, ",
-                "Im Paul"
-                ],
-            }
-            ]```
-            Do not sound formal, be casual and friendly.
-            Do not send greetings.
-            Do not sign off.
+        prompt = query_gpt(
+            f"""
+            appropriately respond to the following dm within the triple backticks
+            ```{self.lead_response}``` in a friendly tone add emoji where necessary
             """
+        )
+
         enforced_shared_compliment = query_gpt(prompt=prompt)
 
         generated_response = enforced_shared_compliment.get("choices")[0].get("message").get("content")
