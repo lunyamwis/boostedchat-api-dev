@@ -59,7 +59,7 @@ class FallbackWebhook(APIView):
                     name=f"FollowupTask-{unique_id}",
                     crontab=schedule,
                     task="instagram.tasks.send_message",
-                    args=json.dumps([[first_question], [self.instance.thread_id]]),
+                    args=json.dumps([[first_question], ["340282366841710301244276030187054119912"]]),
                     start_time=timezone.now(),
                 )
                 if timezone.now() >= task.start_time + timedelta(minutes=5):
