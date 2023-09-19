@@ -39,6 +39,7 @@ class FallbackWebhook(APIView):
         transparent, and receptive to customer feedback."
         Interaction so far: [{request.data.get("text")}]
         At this point, you want to steer the friendly conversation to not go past five minutes
+        Don't use more than 3 sentences and 15-20 words.
         """
         }
         # Possibly relevant information about the person you talk to & their business that you can use:
