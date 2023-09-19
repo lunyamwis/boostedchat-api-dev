@@ -25,7 +25,7 @@ class FallbackWebhook(APIView):
         }
         convo = []
         schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute="*/2",
+            minute="*/5",
             hour="*",
             day_of_week="*",
             day_of_month="*",
@@ -67,7 +67,7 @@ class FallbackWebhook(APIView):
                     print(error)
                     task = PeriodicTask.objects.get(name=f"FollowupTask-{1}")
 
-                if timezone.now() >= task.start_time + timedelta(minutes=2):
+                if timezone.now() >= task.start_time + timedelta(minutes=5):
                     return Response(
                         {
                             "fulfillment_response": {
