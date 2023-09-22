@@ -71,7 +71,7 @@ prompts = {
         call unless the person asks for it directly, try to handle the whole conversation on direct messages.
 
         relevant information about the person you talk to:
-        category = barber
+        ```category = barber```
         """,
     3: f"""
         Respond to the received DM from a US-based [insert "category" from information below in triple backticks] in
@@ -104,7 +104,7 @@ prompts = {
         call unless the person asks for it directly, try to handle the whole conversation on direct messages.
 
         relevant information about the person you talk to:
-        category = barber
+        ```category = barber```
     """,
     4: f"""
    Respond to the received DM from a US-based [insert "category" from information below in triple backticks] in
@@ -139,7 +139,7 @@ I am using Styleseat
         call unless the person asks for it directly, try to handle the whole conversation on direct messages.
 
         relevant information about the person you talk to:
-        category = barber
+        ```category = barber```
 """,
     5: f"""
 Respond to the received DM from a US-based [insert "category" from information below in triple backticks] in
@@ -174,7 +174,7 @@ Don't  get me started. My clients hate that!
         call unless the person asks for it directly, try to handle the whole conversation on direct messages.
 
         relevant information about the person you talk to:
-        category = barber
+        ```category = barber```
 """,
     6: f"""
 Respond to the received DM from a US-based [insert "category" from information below in triple backticks] in
@@ -209,7 +209,7 @@ As I said before, I mainly use Instagram and Google Ads.
         call unless the person asks for it directly, try to handle the whole conversation on direct messages.
 
         relevant information about the person you talk to:
-        category = barber
+        ```category = barber```
 """,
     7: f"""
         You are a sales representative communicating via instagram DM with a US-based [insert "category" from information below in triple backticks] in hope of making a sale of a leading appointment booking system and beauty marketplace.
