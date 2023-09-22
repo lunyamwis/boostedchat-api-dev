@@ -1,14 +1,13 @@
-import json
 import logging
-from datetime import timedelta
 
-from django.utils import timezone
-from django_celery_beat.models import CrontabSchedule, PeriodicTask
+from prompt import prompts
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from instagram.helpers.llm import query_gpt
+
+from .helpers.get_status_number import get_status_number
 
 
 class FallbackWebhook(APIView):
@@ -17,40 +16,28 @@ class FallbackWebhook(APIView):
     """
 
     def post(self, request, format=None):
-        prompts = {
-            "NA": f"""
-                task:
-                Respond to the received DM from a US-based [insert "category" from information below in triple backticks] in a way that builds a relationship (make any small talk personal but brief - not more than 5 minutes) and helps us achieve the current conversation goal.
 
-                Current conversation goal:
-                within up to 5 minutes of a very friendly exchange steer the conversation to the point when the respondent is very friendly towards you, once you achieve that ask this question "Btw, what's the most frustrating part of your [insert "category" from information below in triple backticks] gig?".
-
-                your role:
-                Act as if you were an Instagram DM-based sales representative for the biggest beauty appointment management system & marketplace called Booksy.
-
-                your tone of voice:
-                make sure to use a tone of voice in line with those characteristics: "We’re revolutionizing the way people make appointments. Barbers and stylists are frustrated from wasting too much time managing their books when they could be focusing on their craft. Booksy offers a platform for them to streamline business management. Both a reliable receptionist and a trustworthy business partner, Booksy helps merchants grow and gives them time to master their skills. CONVERSATIONAL We are a business partner and friendly neighbor recommending a service or business. Our voice needs to match our attitude. Being corporate is too rigid, and can be alienating. Speaking casually and candidly allows customers to trust us. ENCOURAGING Our customers and merchants dream of fulfilling their full personal potential, and Booksy gives them the tools to accomplish that. GENUINE Booksy makes a promise to its customers. We’re adding a new meaning to their lives by redefining what it means to manage a business. How? By being accurate, honest, transparent, and receptive to customer feedback."
-
-                additional guidance:
-                Each message needs to be a short DM message (max 3 sentences and 15-20 words) in a way that sounds natural and engaging, confirming that we believe that the person we talk to is a great professional and we understand their point of view.
-                Don't ever ask how can i assist you, or act as if you were an assistant - your role is a sales representative that steers the relationship to a successful sale. don’t invite to a call unless the person asks for it directly, try to handle the whole conversation on direct messages.
-
-                relevant information about the person you talk to:
-                category = barber
-
-                Interaction so far: [{request.data.get("text")}]
-            """
-        }
         # Possibly relevant information about the person you talk to & their business that you can use:
         # [relevant scraped data]
         convo = []
-        schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute="*/5",
-            hour="*",
-            day_of_week="*",
-            day_of_month="*",
-            month_of_year="*",
-        )
+        status_prompt = f"""
+            Categorize the stage of the conversation meant to sell Booksy. Check the following statuses and match the resulting dm from the prospect within the triple backticks ```{request.data.get('text')}``` with the right status below from the
+            following list of statuses
+            1. sounds like an answer to 'What is the most frustrating part of your barber gig?' or indication of a problem not mentioned in the other points
+            2. sounds like an answer to 'What is more important between managing current clients and attracting new ones?'
+            3. sounds like an answer to 'How do you manage your calendar?' or 'What is your [barber] booking system?'
+            4. sounds like a complaint to the extra fees charged on their barber booking system that is being used.
+            5. sounds like an answer to 'How do you get new clients?'
+            6. sounds like a complaint on illegitimate reviews they are receiving from their barber booking system.
+            7. content has an @ sign within it
+            8. sounds like they are interested in trying out booksy or are already using it
+            9. sounds like they are not interested in trying out booksy
+            10. sounds like a detailed question or objection about the booking system
+            return the status number in double ticks
+        """
+        state = query_gpt(status_prompt)
+        status_number = get_status_number(state.get("choices")[0].get("message").get("content"))
+
         try:
             req = request.data
             # logging.warn('request data', req)
@@ -61,7 +48,7 @@ class FallbackWebhook(APIView):
             if query_result.get("tag") == "fallback":
                 print(query)
                 convo.append(query)
-                convo.append(prompts.get("NA"))
+                convo.append(prompts.get(status_number + 1))
                 prompt = ("\n").join(convo)
                 # logging.warn('prompt so far', convo)
                 response = query_gpt(prompt)
@@ -72,39 +59,6 @@ class FallbackWebhook(APIView):
                 logging.warn(result)
                 convo.append(result)
                 logging.warn(str(["convo so far", ("\n").join(convo)]))
-                # unique_id = str(uuid.uuid4())
-                first_question = "By the way, What is the most frustrating part of your barber gig?"
-                task = None
-                try:
-                    task, _ = PeriodicTask.objects.get_or_create(
-                        name=f"FollowupTask-{1}",
-                        crontab=schedule,
-                        task="instagram.tasks.send_message",
-                        args=json.dumps([[first_question], ["340282366841710301244276030187054119912"]]),
-                        start_time=timezone.now(),
-                    )
-                except Exception as error:
-                    print(error)
-                    task = PeriodicTask.objects.get(name=f"FollowupTask-{1}")
-
-                if "most frustrating part" in result:
-                    task.delete()
-
-                if timezone.now() >= task.start_time + timedelta(minutes=5):
-                    return Response(
-                        {
-                            "fulfillment_response": {
-                                "messages": [
-                                    {
-                                        "text": {
-                                            "text": [first_question],
-                                        },
-                                    },
-                                ]
-                            }
-                        },
-                        status=status.HTTP_200_OK,
-                    )
 
                 return Response(
                     {
