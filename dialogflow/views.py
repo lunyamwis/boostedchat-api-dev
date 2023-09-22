@@ -1,6 +1,5 @@
 import logging
 
-from prompt import prompts
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -8,6 +7,7 @@ from rest_framework.views import APIView
 from instagram.helpers.llm import query_gpt
 
 from .helpers.get_status_number import get_status_number
+from .prompt import prompts
 
 
 class FallbackWebhook(APIView):
