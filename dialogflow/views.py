@@ -23,6 +23,7 @@ class FallbackWebhook(APIView):
         status_prompt = f"""
             Categorize the stage of the conversation meant to sell Booksy. Check the following statuses and match the resulting dm from the prospect within the triple backticks ```{request.data.get('text')}``` with the right status below from the
             following list of statuses
+            0. sounds like anything outside the topics mentioned below
             1. sounds like an answer to 'What is the most frustrating part of your barber gig?' or indication of a problem not mentioned in the other points
             2. sounds like an answer to 'What is more important between managing current clients and attracting new ones?'
             3. sounds like an answer to 'How do you manage your calendar?' or 'What is your [barber] booking system?'
@@ -37,7 +38,7 @@ class FallbackWebhook(APIView):
         """
         state = query_gpt(status_prompt)
         status_number = get_status_number(state.get("choices")[0].get("message").get("content"))
-
+        print(status_number)
         try:
             req = request.data
             # logging.warn('request data', req)
