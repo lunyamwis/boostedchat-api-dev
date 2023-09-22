@@ -54,7 +54,7 @@ class FallbackWebhook(APIView):
             # import pdb;pdb.set_trace()
             if query_result.get("tag") == "fallback":
                 print(query)
-                convo.append("DM" + query)
+                convo.append("DM:" + query)
                 if status_number in range(0, 7):
                     convo.append(prompts.get(status_number + 1))
                 elif status_number == 8:
