@@ -1,6 +1,7 @@
 import re
 
-pattern = r"`([^`]+)`"
+# pattern = r"`([^`]+)`"
+pattern = r"\d+"
 
 
 def get_status_number(val):

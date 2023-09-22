@@ -40,6 +40,7 @@ class FallbackWebhook(APIView):
             Do not match it to more than one status just simply give me something sensible based on the statuses that
             I have given you!
             Return the status number in double backticks!
+            Always return a status number!!
         """
         state = query_gpt(status_prompt)
         status_number = get_status_number(state.get("choices")[0].get("message").get("content"))
