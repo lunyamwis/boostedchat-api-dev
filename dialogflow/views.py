@@ -21,11 +21,14 @@ class FallbackWebhook(APIView):
         # [relevant scraped data]
         convo = []
         status_prompt = f"""
-            Categorize the stage of the conversation meant to sell Booksy. Check the following statuses and match the resulting dm from the prospect within the triple backticks ```{request.data.get('text')}``` with the right status below from the
-            following list of statuses
+            Categorize the stage of the conversation meant to sell Booksy. Check the following statuses and match the
+            following dm within the triple backticks ```{request.data.get('text')}``` with the right status below from
+            the following list of statuses
             0. sounds like anything outside the topics mentioned below
-            1. sounds like an answer to 'What is the most frustrating part of your barber gig?' or indication of a problem not mentioned in the other points
-            2. sounds like an answer to 'What is more important between managing current clients and attracting new ones?'
+            1. sounds like an answer to 'What is the most frustrating part of your barber gig?' or indication of a
+            problem not mentioned in the other points
+            2. sounds like an answer to 'What is more important between managing current clients and attracting new
+            ones?'
             3. sounds like an answer to 'How do you manage your calendar?' or 'What is your [barber] booking system?'
             4. sounds like a complaint to the extra fees charged on their barber booking system that is being used.
             5. sounds like an answer to 'How do you get new clients?'
@@ -34,7 +37,9 @@ class FallbackWebhook(APIView):
             8. sounds like they are interested in trying out booksy or are already using it
             9. sounds like they are not interested in trying out booksy
             10. sounds like a detailed question or objection about the booking system
-            return the status number in double ticks
+            Do not match it to more than one status just simply give me something sensible based on the statuses that
+            I have given you!
+            Return the status number in double backticks!
         """
         state = query_gpt(status_prompt)
         status_number = get_status_number(state.get("choices")[0].get("message").get("content"))
