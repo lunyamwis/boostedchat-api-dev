@@ -36,7 +36,7 @@ prompts = {
                 call unless the person asks for it directly, try to handle the whole conversation on direct messages.
 
                 relevant information about the person you talk to:
-                category = barber
+                ```category = barber```
 
 
             """,

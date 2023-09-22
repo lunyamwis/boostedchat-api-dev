@@ -21,10 +21,10 @@ class FallbackWebhook(APIView):
         # [relevant scraped data]
         convo = []
         status_prompt = f"""
-            Categorize the stage of the conversation meant to sell Booksy. Check the following statuses and match the
+            Categorize the following statuses and match the
             following dm within the triple backticks ```{request.data.get('text')}``` with the right status below from
             the following list of statuses
-            0. sounds like anything outside the topics mentioned below
+            0. sounds like anything outside the topics mentioned below or sounds like acknowledgement of a compliment
             1. sounds like an answer to 'What is the most frustrating part of your barber gig?' or indication of a
             problem not mentioned in the other points
             2. sounds like an answer to 'What is more important between managing current clients and attracting new
@@ -55,7 +55,15 @@ class FallbackWebhook(APIView):
             if query_result.get("tag") == "fallback":
                 print(query)
                 convo.append(query)
-                convo.append(prompts.get(status_number + 1))
+                if status_number in range(0, 7):
+                    convo.append(prompts.get(status_number + 1))
+                elif status_number == 8:
+                    pass
+                elif status_number == 9:
+                    convo.append(prompts.get(9))
+                elif status_number == 10:
+                    convo.append(prompts.get(10))
+
                 prompt = ("\n").join(convo)
                 # logging.warn('prompt so far', convo)
                 response = query_gpt(prompt)
