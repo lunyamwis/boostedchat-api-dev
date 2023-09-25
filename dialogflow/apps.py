@@ -1,3 +1,5 @@
+import uuid
+
 from django.apps import AppConfig
 from django.core.signals import request_finished
 
@@ -11,4 +13,4 @@ class DialogflowConfig(AppConfig):
         from . import signals
 
         # Explicitly connect a signal handler.
-        request_finished.connect(signals.update_request_count)
+        request_finished.connect(signals.update_request_count, dispatch_uid=str(uuid.uuid4()))
