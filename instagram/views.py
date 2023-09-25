@@ -50,7 +50,6 @@ class AccountViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
 
         accounts = self.queryset.values()
-        # import pdb;pdb.set_trace()
 
         return Response({"accounts": accounts})
 
