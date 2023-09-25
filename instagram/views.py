@@ -48,7 +48,6 @@ class AccountViewSet(viewsets.ModelViewSet):
         return self.serializer_class
 
     def list(self, request, *args, **kwargs):
-
         accounts = self.queryset.values()
 
         return Response({"accounts": accounts})

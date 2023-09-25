@@ -1,5 +1,6 @@
 import logging
 
+from django.http.response import HttpResponse
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -32,7 +33,9 @@ class FallbackWebhook(APIView):
         print(request_count)
         print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 
-        if request_count == 1:
+        if "run_once" not in request.session:
+            response = HttpResponse("Setting")
+            request.session["run_once"] = 1
             status_prompt = f"""
                 Categorize the following statuses and match the
                 following dm within the triple backticks ```{request.data.get('text')}``` with the
@@ -57,7 +60,7 @@ class FallbackWebhook(APIView):
             state = query_gpt(status_prompt)
             status_number = get_status_number(state.get("choices")[0].get("message").get("content"))
 
-        if request_count > 1:
+        if "run_once" in request.session:
             statuschecks = StatusCheck.objects.filter(stage=status_number)
             if statuschecks.exists():
                 statuscheck = statuschecks.last()
