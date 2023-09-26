@@ -9,7 +9,6 @@ from instagram.helpers.llm import query_gpt
 from instagram.models import StatusCheck
 
 from .helpers.get_status_number import get_status_number
-from .models import RequestTracker
 from .prompt import prompts
 
 
@@ -25,17 +24,16 @@ class FallbackWebhook(APIView):
         convo = []
         status_number = None
         statuscheck = None
-
-        tracker = RequestTracker.objects.get(pk=1)
-
-        request_count = tracker.request_count
         print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        print(request_count)
+        print(request.session.items())
         print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 
         if "run_once" not in request.session:
             response = HttpResponse("Setting")
             request.session["run_once"] = 1
+            print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+            print(request.session.items())
+            print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
             status_prompt = f"""
                 Categorize the following statuses and match the
                 following dm within the triple backticks ```{request.data.get('text')}``` with the
@@ -77,6 +75,7 @@ class FallbackWebhook(APIView):
                 convo.append("DM:" + query)
                 if statuscheck.stage in range(0, 2):
                     convo.append(prompts.get(statuscheck.stage - 1))
+
                 elif statuscheck.stage == 3:
                     pass
 
