@@ -6,7 +6,7 @@ import requests
 
 def query_gpt(prompt):
     body = {
-        "model": "gpt-4",
+        "model": "gpt-3.5-turbo",
         "messages": [
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt},
