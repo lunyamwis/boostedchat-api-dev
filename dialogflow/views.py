@@ -1,14 +1,12 @@
 import logging
 
-from django.http.response import HttpResponse
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from instagram.helpers.llm import query_gpt
-from instagram.models import StatusCheck
+from instagram.models import StatusCheck, Thread
 
-from .helpers.get_status_number import get_status_number
 from .prompt import prompts
 
 
@@ -24,44 +22,43 @@ class FallbackWebhook(APIView):
         convo = []
         status_number = None
         statuscheck = None
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        print(request.session.items())
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        thread = Thread()
+        # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        # print(request.session.items())
+        # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
 
-        if "run_once" not in request.session:
-            response = HttpResponse("Setting")
-            request.session["run_once"] = 1
-            print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-            print(request.session.items())
-            print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-            status_prompt = f"""
-                Categorize the following statuses and match the
-                following dm within the triple backticks ```{request.data.get('text')}``` with the
-                right status below from
-                the following list of statuses
-                0. sounds like anything outside the topics mentioned below or sounds like
-                acknowledgement of a compliment
-                1. sounds like an answer to 'What is the most frustrating part of your
-                barber gig?' or indication of a
-                problem not mentioned in the other points
-                2. sounds like an answer to 'What is more important between managing
-                current clients and attracting new
-                ones?'
-                3. sounds like an answer to 'How do you manage your calendar?' or
-                'What is your [barber] booking system?'
-                Do not match it to more than one status just simply give me something
-                sensible based on the statuses that
-                I have given you!
-                Return the status number in double backticks!
-                Always return a status number!!
-            """
-            state = query_gpt(status_prompt)
-            status_number = get_status_number(state.get("choices")[0].get("message").get("content"))
+        # response = HttpResponse("Setting")
+        # request.session["run_once"] = 1
+        # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        # print(request.session.items())
+        # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        # status_prompt = f"""
+        #     Categorize the following statuses and match the
+        #     following dm within the triple backticks ```{request.data.get('text')}``` with the
+        #     right status below from
+        #     the following list of statuses
+        #     0. sounds like anything outside the topics mentioned below or sounds like
+        #     acknowledgement of a compliment
+        #     1. sounds like an answer to 'What is the most frustrating part of your
+        #     barber gig?' or indication of a
+        #     problem not mentioned in the other points
+        #     2. sounds like an answer to 'What is more important between managing
+        #     current clients and attracting new
+        #     ones?'
+        #     3. sounds like an answer to 'How do you manage your calendar?' or
+        #     'What is your [barber] booking system?'
+        #     Do not match it to more than one status just simply give me something
+        #     sensible based on the statuses that
+        #     I have given you!
+        #     Return the status number in double backticks!
+        #     Always return a status number!!
+        # """
+        # state = query_gpt(status_prompt)
+        # status_number = get_status_number(state.get("choices")[0].get("message").get("content"))
 
-        if "run_once" in request.session:
-            statuschecks = StatusCheck.objects.filter(stage=status_number + 2)
-            if statuschecks.exists():
-                statuscheck = statuschecks.last()
+        statuschecks = StatusCheck.objects.filter(stage=2)
+        if statuschecks.exists():
+            statuscheck = statuschecks.last()
 
         print(statuscheck.stage)
         try:
@@ -69,13 +66,15 @@ class FallbackWebhook(APIView):
             # logging.warn('request data', req)
             query_result = req.get("fulfillmentInfo")
             print(query_result)
+
             query = req.get("text")
+
             if query_result.get("tag") == "fallback":
                 print(query)
                 convo.append("DM:" + query)
-                if statuscheck.stage in range(0, 2):
-                    convo.append(prompts.get(statuscheck.stage - 1))
-
+                if statuscheck.stage in range(0, 3):
+                    convo.append(prompts.get(statuscheck.stage))
+                    print(statuscheck.stage)
                 elif statuscheck.stage == 3:
                     pass
 
@@ -88,6 +87,8 @@ class FallbackWebhook(APIView):
                 result = result.strip("\n")
                 logging.warn(result)
                 convo.append(result)
+                thread.content = f"client:{query},sales_rep:{result}"
+                thread.save()
                 logging.warn(str(["convo so far", ("\n").join(convo)]))
 
                 return Response(
