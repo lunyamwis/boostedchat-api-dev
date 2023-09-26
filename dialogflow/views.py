@@ -61,7 +61,7 @@ class FallbackWebhook(APIView):
             status_number = get_status_number(state.get("choices")[0].get("message").get("content"))
 
         if "run_once" in request.session:
-            statuschecks = StatusCheck.objects.filter(stage=status_number)
+            statuschecks = StatusCheck.objects.filter(stage=status_number + 2)
             if statuschecks.exists():
                 statuscheck = statuschecks.last()
 
@@ -76,7 +76,7 @@ class FallbackWebhook(APIView):
                 print(query)
                 convo.append("DM:" + query)
                 if statuscheck.stage in range(0, 2):
-                    convo.append(prompts.get(statuscheck.stage + 1))
+                    convo.append(prompts.get(statuscheck.stage - 1))
                 elif statuscheck.stage == 3:
                     pass
 
