@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from instagram.helpers.check_response import CheckResponse
 from instagram.helpers.llm import query_gpt
 from instagram.models import StatusCheck, Thread
 
@@ -21,7 +22,7 @@ class FallbackWebhook(APIView):
         # Possibly relevant information about the person you talk to & their business that you can use:
         # [relevant scraped data]
         convo = []
-        status_number = None
+        # status_number = None
         statuscheck = None
         thread = Thread()
         # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -61,6 +62,7 @@ class FallbackWebhook(APIView):
         if statuschecks.exists():
             statuscheck = statuschecks.last()
 
+        after_response = CheckResponse(status="confirmed_problem", thread=thread)
         print(statuscheck.stage)
         try:
             req = request.data
@@ -74,25 +76,39 @@ class FallbackWebhook(APIView):
                 print(query)
                 # convo.append("DM:" + query)
                 if statuscheck.stage in range(0, 3):
-                    convo.append(get_prompt(query, statuscheck.stage))
-                    print(statuscheck.stage)
+                    if statuscheck.name != "sent_first_question":
+                        convo.append(get_prompt(statuscheck.stage - 1, {"client_message": query}))
+                    if statuscheck.name == "sent_first_question":
+                        convo.append(get_prompt(statuscheck.stage, {"client_message": query}))
+                    if statuscheck.name == "confirmed_problem":
+                        convo.append(get_prompt(statuscheck.stage + 1, {"client_message": query}))
                 elif statuscheck.stage == 3:
                     pass
 
                 prompt = ("\n").join(convo)
-                # logging.warn('prompt so far', convo)
                 response = query_gpt(prompt)
 
-                # logging.warn('gpt resp', response)
                 result = response.get("choices")[0].get("message").get("content")
+
                 result = result.strip("\n")
-                confirmed_rejected_problems_arr = re.findall(r'\+\+(.*?)\+\+', result)
-                llm_response = re.findall(r'\_\_\_\_(.*?)\_\_\_\_', result)
+                confirmed_rejected_problems_arr = re.findall(r"\+\+(.*?)\+\+", result)
+                confirmation_counter = 0
+                for problem in confirmed_rejected_problems_arr:
+                    if "confirmed" in problem:
+                        confirmation_counter += 1
+
+                if confirmation_counter > 2:
+                    statuscheck.name = "confirmed_problem"
+                    statuscheck.save()
+                    after_response.follow_up_after_solutions_presented()
+                    after_response.follow_up_if_sent_email_first_attempt()
+
+                llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
 
                 if len(llm_response) == 0:
-                    llm_response = re.findall(r'\_\_(.*?)\_\_', result)
+                    llm_response = re.findall(r"\_\_(.*?)\_\_", result)
 
-                answers_re = re.search(r'```(.*?)```', result, re.DOTALL)
+                answers_re = re.search(r"```(.*?)```", result, re.DOTALL)
                 answers = None
                 if answers_re:
                     answers = answers_re.group(1)

@@ -782,13 +782,16 @@ class DMViewset(viewsets.ModelViewSet):
                 elif check_responses.status == "sent_third_needs_assessment_question":
                     check_responses.follow_up_if_sent_third_needs_assessment_question()
                 elif check_responses.status == "sent_follow_up_after_presentation":
-                    check_responses.follow_up_if_sent_follow_up_after_presentation()
+                    check_responses.follow_up_after_presentation()
                 elif check_responses.status == "sent_email_first_attempt":
                     check_responses.follow_up_if_sent_email_first_attempt()
                 elif check_responses.status == "sent_uninterest":
                     check_responses.follow_up_if_sent_uninterest()
                 elif check_responses.status == "sent_objection":
                     check_responses.follow_up_if_sent_objection()
+                elif check_responses.status == "confirmed_problem":
+                    check_responses.follow_up_after_solutions_presented()
+                    check_responses.follow_up_if_sent_email_first_attempt()
 
             return Response({"success": True}, status=status.HTTP_200_OK)
         except Exception as error:

@@ -88,43 +88,6 @@ class CheckResponse(object):
                     "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
                     "reviewServiceName": "Beard Line-up | Sculpting"
                 },
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
-                {
-                    "reviews": "5.0 (535 Reviews)\n1\n<1%\n2\n<1%\n3\n<1%\n4\n3%\n5\n96%",
-                    "clientPhotosNo": "Get $50",
-                    "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“",
-                    "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL",
-                    "aboutClientLocation": "CLEAN\nEASY PARKING",
-                    "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023",
-                    "reviewServiceName": "Beard Line-up | Sculpting"
-                },
 
                 ],
                 "aboutName": [
@@ -173,7 +136,21 @@ class CheckResponse(object):
         random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
         self.folow_up_task(message=random_compliment)
 
-    def follow_up_if_sent_follow_up_after_presentation(self):
+    def follow_up_after_solutions_presented(self):
+        if self.instance.account.dormant_profile_created:
+            booksy_status, _ = StatusCheck.objects.get_or_create(stage=2, name="Trial")
+
+            account = get_object_or_404(Account, id=self.instance.account.id)
+            account.status = booksy_status
+            account.save()
+
+            random_compliment = f""""
+                What do you think about booksy?\n
+                Would you like to give it a try?
+                """
+            self.folow_up_task(message=random_compliment)
+
+    def follow_up_after_presentation(self):
         if self.instance.account.dormant_profile_created:
             booksy_status, _ = StatusCheck.objects.get_or_create(stage=2, name="Trial")
 
