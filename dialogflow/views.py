@@ -100,7 +100,7 @@ class FallbackWebhook(APIView):
                     if "confirmed" in problem:
                         confirmation_counter += 1
 
-                if confirmation_counter > 2:
+                if confirmation_counter >= 3:
                     statuscheck.name = "confirmed_problem"
                     after_response.follow_up_after_solutions_presented()
                     after_response.follow_up_if_sent_email_first_attempt()
