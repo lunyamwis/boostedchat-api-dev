@@ -77,11 +77,11 @@ class FallbackWebhook(APIView):
                 # convo.append("DM:" + query)
                 if statuscheck.stage in range(0, 3):
                     if statuscheck.name != "sent_first_question":
-                        convo.append(get_prompt(statuscheck.stage - 1, {"client_message": query}))
+                        convo.append(get_prompt(statuscheck.stage - 1, client_message=query))
                     if statuscheck.name == "sent_first_question":
-                        convo.append(get_prompt(statuscheck.stage, {"client_message": query}))
+                        convo.append(get_prompt(statuscheck.stage - 1, client_message=query))
                     if statuscheck.name == "confirmed_problem":
-                        convo.append(get_prompt(statuscheck.stage + 1, {"client_message": query}))
+                        convo.append(get_prompt(statuscheck.stage - 1, client_message=query))
                 elif statuscheck.stage == 3:
                     pass
 
@@ -103,30 +103,33 @@ class FallbackWebhook(APIView):
                     after_response.follow_up_after_solutions_presented()
                     after_response.follow_up_if_sent_email_first_attempt()
 
-                llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
+                if statuscheck.name == "sent_first_question":
+                    llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
 
-                if len(llm_response) == 0:
-                    llm_response = re.findall(r"\_\_(.*?)\_\_", result)
+                    if len(llm_response) == 0:
+                        llm_response = re.findall(r"\_\_(.*?)\_\_", result)
 
-                answers_re = re.search(r"```(.*?)```", result, re.DOTALL)
-                answers = None
-                if answers_re:
-                    answers = answers_re.group(1)
-                print("-----result start-----")
-                print(result)
-                print("-----result end-----")
-                print("--------------Confirmed and rejected problems start---------------")
-                print(confirmed_rejected_problems_arr)
-                print("--------------Confirmed and rejected problems end---------------")
-                print("--------------answers start---------------")
-                print(answers)
-                print("--------------answers end---------------")
-                print("--------------response start---------------")
-                print(llm_response)
-                print("--------------response end---------------")
-                convo.append(result)
-                thread.content = f"barber:{query},you:{result}"
-                thread.save()
+                    answers_re = re.search(r"```(.*?)```", result, re.DOTALL)
+                    answers = None
+                    if answers_re:
+                        answers = answers_re.group(1)
+                    print("-----result start-----")
+                    print(result)
+                    print("-----result end-----")
+                    print("--------------Confirmed and rejected problems start---------------")
+                    print(confirmed_rejected_problems_arr)
+                    print("--------------Confirmed and rejected problems end---------------")
+                    print("--------------answers start---------------")
+                    print(answers)
+                    print("--------------answers end---------------")
+                    print("--------------response start---------------")
+                    print(llm_response)
+                    print("--------------response end---------------")
+                    convo.append(result)
+                    thread.content = f"barber:{query},you:{result}"
+                    thread.save()
+                else:
+                    pass
 
                 return Response(
                     {

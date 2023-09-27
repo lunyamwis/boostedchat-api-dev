@@ -137,18 +137,11 @@ class CheckResponse(object):
         self.folow_up_task(message=random_compliment)
 
     def follow_up_after_solutions_presented(self):
-        if self.instance.account.dormant_profile_created:
-            booksy_status, _ = StatusCheck.objects.get_or_create(stage=2, name="Trial")
-
-            account = get_object_or_404(Account, id=self.instance.account.id)
-            account.status = booksy_status
-            account.save()
-
-            random_compliment = f""""
-                What do you think about booksy?\n
-                Would you like to give it a try?
-                """
-            self.folow_up_task(message=random_compliment)
+        random_compliment = f""""
+            What do you think about booksy?\n
+            Would you like to give it a try?
+            """
+        self.folow_up_task(message=random_compliment)
 
     def follow_up_after_presentation(self):
         if self.instance.account.dormant_profile_created:
