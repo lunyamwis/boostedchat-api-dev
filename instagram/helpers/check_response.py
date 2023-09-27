@@ -134,14 +134,14 @@ class CheckResponse(object):
     def follow_up_if_sent_third_needs_assessment_question(self):
         salesrep = self.instance.account.salesrep_set.get(instagram=self.instance.account)
         random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-        self.folow_up_task(message=random_compliment)
+        self.follow_up_task(message=random_compliment)
 
     def follow_up_after_solutions_presented(self):
         random_compliment = f""""
             What do you think about booksy?\n
             Would you like to give it a try?
             """
-        self.folow_up_task(message=random_compliment)
+        self.follow_up_task(message=random_compliment)
 
     def follow_up_after_presentation(self):
         if self.instance.account.dormant_profile_created:
@@ -158,7 +158,7 @@ class CheckResponse(object):
                 [solution to combination of problems]
                 DM: let me know what you think and I’ll guide you for a month to grow it like crazy:)
                 """
-            self.folow_up_task(message=random_compliment)
+            self.follow_up_task(message=random_compliment)
 
     def follow_up_if_sent_email_first_attempt(self):
         combination_of_problems = []
