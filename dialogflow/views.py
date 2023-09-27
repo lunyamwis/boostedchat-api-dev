@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from instagram.helpers.check_response import CheckResponse
 from instagram.helpers.llm import query_gpt
-from instagram.models import StatusCheck, Thread
+from instagram.models import Account, StatusCheck, Thread
 
 from .prompt import get_prompt
 
@@ -25,6 +25,9 @@ class FallbackWebhook(APIView):
         # status_number = None
         statuscheck = None
         thread = Thread()
+        account = Account.objects.first()
+        thread.account = account
+        thread.thread_id = "340282366841710301244276027871564125912"
         # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         # print(request.session.items())
         # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -81,7 +84,7 @@ class FallbackWebhook(APIView):
                     if statuscheck.name == "sent_first_question":
                         convo.append(get_prompt(statuscheck.stage, client_message=query))
                     if statuscheck.name == "confirmed_problem":
-                        convo.append(get_prompt(statuscheck.stage +1, client_message=query))
+                        convo.append(get_prompt(statuscheck.stage + 1, client_message=query))
                 elif statuscheck.stage == 3:
                     pass
 
@@ -99,9 +102,9 @@ class FallbackWebhook(APIView):
 
                 if confirmation_counter > 2:
                     statuscheck.name = "confirmed_problem"
-                    statuscheck.save()
                     after_response.follow_up_after_solutions_presented()
                     after_response.follow_up_if_sent_email_first_attempt()
+                    statuscheck.save()
 
                 if statuscheck.name == "sent_first_question":
                     llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
@@ -128,7 +131,7 @@ class FallbackWebhook(APIView):
                     convo.append(result)
                     thread.content = f"barber:{query},you:{result}"
                     thread.save()
-                
+
                     return Response(
                         {
                             "fulfillment_response": {
