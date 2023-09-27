@@ -76,12 +76,12 @@ class FallbackWebhook(APIView):
                 print(query)
                 # convo.append("DM:" + query)
                 if statuscheck.stage in range(0, 3):
-                    if statuscheck.name != "sent_first_question":
+                    if statuscheck.name == "sent_compliment":
                         convo.append(get_prompt(statuscheck.stage - 1, client_message=query))
                     if statuscheck.name == "sent_first_question":
-                        convo.append(get_prompt(statuscheck.stage - 1, client_message=query))
+                        convo.append(get_prompt(statuscheck.stage, client_message=query))
                     if statuscheck.name == "confirmed_problem":
-                        convo.append(get_prompt(statuscheck.stage - 1, client_message=query))
+                        convo.append(get_prompt(statuscheck.stage +1, client_message=query))
                 elif statuscheck.stage == 3:
                     pass
 
@@ -128,23 +128,21 @@ class FallbackWebhook(APIView):
                     convo.append(result)
                     thread.content = f"barber:{query},you:{result}"
                     thread.save()
-                else:
-                    pass
-
-                return Response(
-                    {
-                        "fulfillment_response": {
-                            "messages": [
-                                {
-                                    "text": {
-                                        "text": [llm_response[0]],
+                
+                    return Response(
+                        {
+                            "fulfillment_response": {
+                                "messages": [
+                                    {
+                                        "text": {
+                                            "text": [llm_response[0]],
+                                        },
                                     },
-                                },
-                            ]
-                        }
-                    },
-                    status=status.HTTP_200_OK,
-                )
+                                ]
+                            }
+                        },
+                        status=status.HTTP_200_OK,
+                    )
 
         except Exception as error:
             print(error)
