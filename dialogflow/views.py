@@ -1,14 +1,15 @@
 import logging
+import re
 
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from instagram.helpers.check_response import CheckResponse
 from instagram.helpers.llm import query_gpt
 from instagram.models import StatusCheck, Thread
 
-from .helpers.get_prompt_responses import get_if_asked_first_question, get_if_confirmed_problem
-from .prompt import prompts
+from .prompt import get_prompt
 
 
 class FallbackWebhook(APIView):
@@ -21,7 +22,7 @@ class FallbackWebhook(APIView):
         # Possibly relevant information about the person you talk to & their business that you can use:
         # [relevant scraped data]
         convo = []
-        status_number = None
+        # status_number = None
         statuscheck = None
         thread = Thread()
         # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -61,6 +62,7 @@ class FallbackWebhook(APIView):
         if statuschecks.exists():
             statuscheck = statuschecks.last()
 
+        after_response = CheckResponse(status="confirmed_problem", thread=thread)
         print(statuscheck.stage)
         try:
             req = request.data
@@ -72,12 +74,14 @@ class FallbackWebhook(APIView):
 
             if query_result.get("tag") == "fallback":
                 print(query)
-                convo.append("DM:" + query)
+                # convo.append("DM:" + query)
                 if statuscheck.stage in range(0, 3):
                     if statuscheck.name != "sent_first_question":
-                        convo.append(prompts.get(statuscheck.stage - 1))
+                        convo.append(get_prompt(statuscheck.stage - 1, {"client_message": query}))
                     if statuscheck.name == "sent_first_question":
-                        convo.append(prompts.get(statuscheck.stage))
+                        convo.append(get_prompt(statuscheck.stage, {"client_message": query}))
+                    if statuscheck.name == "confirmed_problem":
+                        convo.append(get_prompt(statuscheck.stage + 1, {"client_message": query}))
                 elif statuscheck.stage == 3:
                     pass
 
@@ -85,20 +89,44 @@ class FallbackWebhook(APIView):
                 response = query_gpt(prompt)
 
                 result = response.get("choices")[0].get("message").get("content")
-                if get_if_asked_first_question(result):
-                    statuscheck.name = "sent_first_question"
-                    statuscheck.save()
-
-                if get_if_confirmed_problem(result):
-                    statuscheck.name = "confirmed_problem"
-                    statuscheck.save()
 
                 result = result.strip("\n")
-                logging.warn(result)
+                confirmed_rejected_problems_arr = re.findall(r"\+\+(.*?)\+\+", result)
+                confirmation_counter = 0
+                for problem in confirmed_rejected_problems_arr:
+                    if "confirmed" in problem:
+                        confirmation_counter += 1
+
+                if confirmation_counter > 2:
+                    statuscheck.name = "confirmed_problem"
+                    statuscheck.save()
+                    after_response.follow_up_after_solutions_presented()
+                    after_response.follow_up_if_sent_email_first_attempt()
+
+                llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
+
+                if len(llm_response) == 0:
+                    llm_response = re.findall(r"\_\_(.*?)\_\_", result)
+
+                answers_re = re.search(r"```(.*?)```", result, re.DOTALL)
+                answers = None
+                if answers_re:
+                    answers = answers_re.group(1)
+                print("-----result start-----")
+                print(result)
+                print("-----result end-----")
+                print("--------------Confirmed and rejected problems start---------------")
+                print(confirmed_rejected_problems_arr)
+                print("--------------Confirmed and rejected problems end---------------")
+                print("--------------answers start---------------")
+                print(answers)
+                print("--------------answers end---------------")
+                print("--------------response start---------------")
+                print(llm_response)
+                print("--------------response end---------------")
                 convo.append(result)
-                thread.content = f"client:{query},sales_rep:{result}"
+                thread.content = f"barber:{query},you:{result}"
                 thread.save()
-                logging.warn(str(["convo so far", ("\n").join(convo)]))
 
                 return Response(
                     {
@@ -106,7 +134,7 @@ class FallbackWebhook(APIView):
                             "messages": [
                                 {
                                     "text": {
-                                        "text": [result],
+                                        "text": [llm_response[0]],
                                     },
                                 },
                             ]
