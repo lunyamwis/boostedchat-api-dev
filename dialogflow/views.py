@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from instagram.helpers.llm import query_gpt
 from instagram.models import StatusCheck, Thread
 
+from .helpers.get_prompt_responses import get_if_asked_first_question, get_if_confirmed_problem
 from .prompt import prompts
 
 
@@ -73,17 +74,25 @@ class FallbackWebhook(APIView):
                 print(query)
                 convo.append("DM:" + query)
                 if statuscheck.stage in range(0, 3):
-                    convo.append(prompts.get(statuscheck.stage))
-                    print(statuscheck.stage)
+                    if statuscheck.name != "sent_first_question":
+                        convo.append(prompts.get(statuscheck.stage - 1))
+                    if statuscheck.name == "sent_first_question":
+                        convo.append(prompts.get(statuscheck.stage))
                 elif statuscheck.stage == 3:
                     pass
 
                 prompt = ("\n").join(convo)
-                # logging.warn('prompt so far', convo)
                 response = query_gpt(prompt)
 
-                # logging.warn('gpt resp', response)
                 result = response.get("choices")[0].get("message").get("content")
+                if get_if_asked_first_question(result):
+                    statuscheck.name = "sent_first_question"
+                    statuscheck.save()
+
+                if get_if_confirmed_problem(result):
+                    statuscheck.name = "confirmed_problem"
+                    statuscheck.save()
+
                 result = result.strip("\n")
                 logging.warn(result)
                 convo.append(result)

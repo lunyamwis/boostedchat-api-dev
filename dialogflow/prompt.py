@@ -29,6 +29,7 @@ prompts = {
                 How? By being accurate, honest, transparent, and receptive to customer feedback."
 
                 additional guidance:
+                Do not ask the conversational goal the first time let it be after two responses!
                 Do not begin with any greetings whatsoever!!
                 Do not say I am here to help!
                 Do not say that you are from the US!
@@ -42,6 +43,9 @@ prompts = {
 
                 relevant information about the person you talk to:
                 ```category = barber```
+
+                Once you have asked the question in the current conversation goal then return the word
+                asked in the triple backticks.
 
 
             """,
