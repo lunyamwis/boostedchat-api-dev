@@ -96,17 +96,17 @@ class FallbackWebhook(APIView):
                 result = result.strip("\n")
                 confirmed_rejected_problems_arr = re.findall(r"\+\+(.*?)\+\+", result)
                 confirmation_counter = 0
-                for problem in confirmed_rejected_problems_arr:
-                    if "confirmed" in problem:
-                        confirmation_counter += 1
-
-                if confirmation_counter >= 3:
-                    statuscheck.name = "confirmed_problem"
-                    after_response.follow_up_after_solutions_presented()
-                    after_response.follow_up_if_sent_email_first_attempt()
-                    statuscheck.save()
 
                 if statuscheck.name == "sent_first_question":
+                    for problem in confirmed_rejected_problems_arr:
+                        if "confirmed" in problem:
+                            confirmation_counter += 1
+
+                    if confirmation_counter >= 3:
+                        statuscheck.name = "confirmed_problem"
+                        after_response.follow_up_after_solutions_presented()
+                        after_response.follow_up_if_sent_email_first_attempt()
+                        statuscheck.save()
                     llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
 
                     if len(llm_response) == 0:
@@ -139,6 +139,22 @@ class FallbackWebhook(APIView):
                                     {
                                         "text": {
                                             "text": [llm_response[0]],
+                                        },
+                                    },
+                                ]
+                            }
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+
+                if statuscheck.name == "confirmed_problem":
+                    return Response(
+                        {
+                            "fulfillment_response": {
+                                "messages": [
+                                    {
+                                        "text": {
+                                            "text": [result],
                                         },
                                     },
                                 ]
