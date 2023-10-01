@@ -64,6 +64,7 @@ class Thread(BaseModel):
     thread_id = models.CharField(max_length=255)
     account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
     content = models.TextField(null=True, blank=True, default="test")
+    robot_response = models.TextField(null=True, blank=True, default="test")
     replied = models.BooleanField(default=False, null=True, blank=True)
     replied_at = models.DateTimeField(null=True, blank=True)
 
