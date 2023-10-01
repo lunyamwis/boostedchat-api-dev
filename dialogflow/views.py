@@ -138,7 +138,9 @@ class FallbackWebhook(APIView):
                     print(llm_response)
                     print("--------------response end---------------")
                     convo.append(result)
-                    thread.content = f"barber:{query},you:{result}"
+
+                    thread.content = f"{query},{llm_response[0]}"
+                    thread.robot_response = llm_response[0]
                     thread.save()
 
                     return Response(
@@ -157,6 +159,8 @@ class FallbackWebhook(APIView):
                     )
 
                 if statuscheck.name == "confirmed_problem":
+                    thread.content = query
+                    thread.robot_response = result
                     return Response(
                         {
                             "fulfillment_response": {
@@ -187,7 +191,8 @@ class FallbackWebhook(APIView):
                     print(matches_not_within_backticks)
                     account.status = statuscheck
                     account.save()
-
+                    thread.content = query
+                    thread.robot_response = matches_not_within_backticks[-1]
                     return Response(
                         {
                             "fulfillment_response": {
