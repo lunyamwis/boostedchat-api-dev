@@ -82,6 +82,7 @@ def get_prompt(prompt_number, *args, **kwargs):
             their calendar needs, return the corresponding value depending on their focus:
             "full calendar" if returning clients, "empty calendar" if new clients,
             "some availability" if both)
+            {kwargs['questions']}
 
             [[
             High Probability Problems:
@@ -118,9 +119,7 @@ def get_prompt(prompt_number, *args, **kwargs):
             It sounds like your dealing with [insert here the rephrased combination of identified problems listed below] and I was wondering if [insert here the rephrased combination of solutions to the problems] could work for you. I wonder what's your honest opinion about this?
 
             messages with identified problems and proposed solutions:
-            - Yikes, those hidden fees on StyleSeat are a bummer! How about a straightforward $30 monthly plan on Booksy with zero hidden charges? We're all about clarity and are available around the clock to chat if you ever need help. Thoughts?
-            - Struggling to find new clients on StyleSeat? How about we supercharge your bookings with Booksy's Boost, marketing tools, social media templates, and even special promotions for those slower days? Plus, we're a DM away, anytime. What do you think?
-            - Those StyleSeat reviews must be super frustrating! With Booksy, reviews are from verified customers—no more unwarranted negativity. And if you've got questions, we've got answers anytime. Interested?
+            {kwargs['solutions']}
 
 
             make sure to use a tone of voice in line with those characteristics: "We’re revolutionizing the way people make appointments. Barbers and stylists are frustrated from wasting too much time managing their books when they could be focusing on their craft. Booksy offers a platform for them to streamline business management. Both a reliable receptionist and a trustworthy business partner, Booksy helps merchants grow and gives them time to master their skills. CONVERSATIONAL We are a business partner and friendly neighbor recommending a service or business. Our voice needs to match our attitude. Being corporate is too rigid, and can be alienating. Speaking casually and candidly allows customers to trust us. ENCOURAGING Our customers and merchants dream of fulfilling their full personal potential, and Booksy gives them the tools to accomplish that. GENUINE Booksy makes a promise to its customers. We’re adding a new meaning to their lives by redefining what it means to manage a business. How? By being accurate, honest, transparent, and receptive to customer feedback.
@@ -257,46 +256,9 @@ def get_prompt(prompt_number, *args, **kwargs):
 
             Problems with Other Systems:
 
-            StyleSeat:
+            {kwargs['objection_system']}:
 
-            * Client Booking Fees
-
-            * Hidden Fees
-
-            * Inferior customer support
-
-            Squire:
-
-            * Incomplete features at the $30/month pricing tier.
-
-            * Limited customization and social media tools.
-
-            * Smaller local marketplace and fewer promotional options.
-
-            * Inferior customer support.
-
-            Vagaro:
-
-            * Expensive Add-ons.
-
-            * Fewer social media and visibility tools.
-
-            * Additional costs for text messaging.
-
-            * Fewer promotional features.
-
-            The Cut and Acuity:
-
-            * Limited customer support options.
-
-            * Fewer social media and client engagement tools.
-
-            * Smaller marketplace and limited visibility.
-
-            * Fewer loyalty and gift options in comparison to Booksy.
-
-
-
+            {kwargs['objection']}
 
 
             make sure to use a tone of voice in line with those characteristics: "We’re revolutionizing the way people make appointments. Barbers and stylists are frustrated from wasting too much time managing their books when they could be focusing on their craft. Booksy offers a platform for them to streamline business management. Both a reliable receptionist and a trustworthy business partner, Booksy helps merchants grow and gives them time to master their skills. CONVERSATIONAL We are a business partner and friendly neighbor recommending a service or business. Our voice needs to match our attitude. Being corporate is too rigid, and can be alienating. Speaking casually and candidly allows customers to trust us. ENCOURAGING Our customers and merchants dream of fulfilling their full personal potential, and Booksy gives them the tools to accomplish that. GENUINE Booksy makes a promise to its customers. We’re adding a new meaning to their lives by redefining what it means to manage a business. How? By being accurate, honest, transparent, and receptive to customer feedback.

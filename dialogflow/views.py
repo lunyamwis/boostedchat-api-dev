@@ -5,8 +5,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from data.helpers.random_data import get_matching_objection_response, get_matching_questions, get_matching_solutions
 from instagram.helpers.llm import query_gpt
-from instagram.models import Account, StatusCheck, Thread
+from instagram.models import Account, OutSourced, StatusCheck, Thread
 
 from .prompt import get_prompt
 
@@ -25,7 +26,21 @@ class FallbackWebhook(APIView):
         statuscheck = None
         thread = Thread()
         account = Account.objects.first()
+        outsourced_data = OutSourced.objects.filter(account=account).last()
         thread.account = account
+        questions = get_matching_questions(
+            outsourced_data.results["calendar_availability"],
+            outsourced_data.results["booking_system"],
+            outsourced_data.results["sm_activity"],
+            outsourced_data.results["book_button"],
+        )
+        solutions = get_matching_solutions(
+            outsourced_data.results["calendar_availability"],
+            outsourced_data.results["booking_system"],
+            outsourced_data.results["sm_activity"],
+            outsourced_data.results["book_button"],
+        )
+        objection_response = get_matching_objection_response(outsourced_data.source)
         # thread.thread_id = "340282366841710301244276027871564125912"
         # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         # print(request.session.items())
@@ -81,11 +96,18 @@ class FallbackWebhook(APIView):
                     if statuscheck.name == "sent_compliment":
                         convo.append(get_prompt(statuscheck.stage - 1, client_message=query))
                     if statuscheck.name == "sent_first_question":
-                        convo.append(get_prompt(statuscheck.stage, client_message=query))
+                        convo.append(get_prompt(statuscheck.stage, client_message=query, questions=questions))
                     if statuscheck.name == "confirmed_problem":
-                        convo.append(get_prompt(statuscheck.stage + 1, client_message=query))
+                        convo.append(get_prompt(statuscheck.stage + 1, client_message=query, solutions=solutions))
                     if statuscheck.name == "overcome_objections":
-                        convo.append(get_prompt(statuscheck.stage + 2, client_message=query))
+                        convo.append(
+                            get_prompt(
+                                statuscheck.stage + 2,
+                                client_message=query,
+                                objection=objection_response,
+                                objection_system=outsourced_data.source,
+                            )
+                        )
                 elif statuscheck.stage == 3:
                     pass
 
