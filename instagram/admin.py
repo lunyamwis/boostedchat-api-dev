@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import Account, Photo, StatusCheck, Thread, Video
+from .models import Account, Message, Photo, StatusCheck, Thread, Video
 
 admin.site.register(Photo)
 admin.site.register(Video)
@@ -29,4 +29,12 @@ class ThreadAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
         form = super(ThreadAdmin, self).get_form(request, obj, **kwargs)
+        return form
+
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(MessageAdmin, self).get_form(request, obj, **kwargs)
         return form

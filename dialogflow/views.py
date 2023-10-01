@@ -128,7 +128,8 @@ class FallbackWebhook(APIView):
                     print(llm_response)
                     print("--------------response end---------------")
                     convo.append(result)
-                    thread.content = query
+
+                    thread.content = f"{query},{llm_response[0]}"
                     thread.robot_response = llm_response[0]
                     thread.save()
 
