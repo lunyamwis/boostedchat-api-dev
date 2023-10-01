@@ -145,7 +145,7 @@ def get_prompt(prompt_number, *args, **kwargs):
 
             - '''NOT INTERESTED''' when they're sure they don't want Booksy
 
-            - '''DEFERRED - (insert time)''' when they want us to come back later
+            - '''DEFERRED - (insert time in hours given that now is {kwargs['current_time']})''' when they want us to come back later
 
             - '''NEW PROBLEM IDENTIFIED''' when you hear an indication of another problem from the list of potential problems confirm that it’s an issue for the respondent.
 

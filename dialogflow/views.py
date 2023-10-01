@@ -1,6 +1,7 @@
 import logging
 import re
 
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -106,6 +107,7 @@ class FallbackWebhook(APIView):
                                 client_message=query,
                                 objection=objection_response,
                                 objection_system=outsourced_data.source,
+                                current_time=timezone.now(),
                             )
                         )
                 elif statuscheck.stage == 3:
