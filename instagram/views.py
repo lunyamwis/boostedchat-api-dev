@@ -3,7 +3,6 @@ import csv
 import io
 import logging
 import uuid
-from datetime import datetime
 from urllib.parse import urlparse
 
 from instagrapi.exceptions import UserNotFound
@@ -16,8 +15,6 @@ from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
 
 from .helpers.check_response import CheckResponse
-from .helpers.generate_response import GenerateResponse
-from .helpers.send_content import SendContent
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video
 from .serializers import (
     AccountSerializer,
@@ -720,35 +717,40 @@ class DMViewset(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="generate-response")
     def generate_response(self, request, pk=None):
         thread = self.get_object()
-        generated_response = None
-        GenerateResponseFactory = GenerateResponse(
-            thread.account.status.name, thread=thread, lead_response=request.data.get("text")
+
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=request.data.get("text"),
+            language_code="en",
         )
-        if GenerateResponseFactory.status == "responded_to_first_compliment":
-            generated_response = GenerateResponseFactory.check_responded_to_first_compliment()
-        elif GenerateResponseFactory.status == "sent_first_question":
-            generated_response = GenerateResponseFactory.check_sent_first_question()
-        elif GenerateResponseFactory.status == "sent_second_question":
-            generated_response = GenerateResponseFactory.check_sent_second_question()
-        elif GenerateResponseFactory.status == "sent_third_question":
-            generated_response = GenerateResponseFactory.check_sent_third_question()
-        elif GenerateResponseFactory.status == "sent_first_needs_assessment_question":
-            generated_response = GenerateResponseFactory.check_sent_first_needs_assessment_question()
-        elif GenerateResponseFactory.status == "sent_second_needs_assessment_question":
-            generated_response = GenerateResponseFactory.check_sent_second_needs_assessment_question()
-        elif GenerateResponseFactory.status == "sent_third_needs_assessment_question":
-            generated_response = GenerateResponseFactory.check_sent_third_needs_assessment_question()
-        elif GenerateResponseFactory.status == "sent_follow_up_presentation":
-            generated_response = GenerateResponseFactory.check_sent_follow_up_presententation()
-        else:
-            generated_response = detect_intent(
-                project_id="boostedchatapi",
-                session_id=str(uuid.uuid4()),
-                message=request.data.get("text"),
-                language_code="en",
-            )
-        thread.replied = False
-        thread.save()
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "generated_comment": generated_response,
+                "text": request.data.get("text"),
+                "success": True,
+                "replied": thread.replied,
+            }
+        )
+
+    @action(detail=True, methods=["post"], url_path="generate-send-response")
+    def generate_and_send_response(self, request, pk=None):
+
+        thread = self.get_object()
+
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=request.data.get("text"),
+            language_code="en",
+        )
+        send_message.delay(
+            f"""
+            {generated_response},\n
+            """,
+            thread_id=thread.thread_id,
+        )
         return Response(
             {
                 "status": status.HTTP_200_OK,
@@ -790,9 +792,11 @@ class DMViewset(viewsets.ModelViewSet):
                     check_responses.follow_up_if_sent_uninterest()
                 elif check_responses.status == "sent_objection":
                     check_responses.follow_up_if_sent_objection()
-                elif check_responses.status == "confirmed_problem":
+                elif check_responses.status == "overcome":
                     check_responses.follow_up_after_solutions_presented()
                     check_responses.follow_up_if_sent_email_first_attempt()
+                elif check_responses.status == "deferred":
+                    check_responses.follow_up_if_deferred()
 
             return Response({"success": True}, status=status.HTTP_200_OK)
         except Exception as error:
@@ -800,35 +804,19 @@ class DMViewset(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="send-message")
     def send_message(self, request, pk=None):
+
         thread = self.get_object()
         serializer = AddContentSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         generated_response = serializer.data.get("generated_response")
-        send_content = SendContent(status=thread.account.status.name, thread=thread)
         if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
 
-            if send_content.status == "sent_first_compliment":
-                send_content.send_first_compliment(generated_response=generated_response)
-            elif send_content.status == "preparing_to_send_first_question":
-                send_content.send_first_question(generated_response=generated_response)
-            elif send_content.status == "preparing_to_send_second_question":
-                send_content.send_second_question()
-            elif send_content.status == "preparing_to_send_third_question":
-                send_content.send_third_question()
-            elif send_content.status == "preparing_to_send_first_needs_assessment_question":
-                send_content.send_first_needs_assessment_question()
-            elif send_content.status == "preparing_to_send_second_needs_assessment_question":
-                send_content.send_second_needs_assesment_question()
-            elif send_content.status == "preparing_to_send_third_needs_assessment_question":
-                send_content.send_third_needs_assessment_question()
-            elif send_content.status == "follow_up_after_presentation":
-                send_content.send_follow_up_after_presentation()
-            elif send_content.status == "ask_for_email_first_attempt":
-                send_content.send_request_for_email()
-            elif send_content.status == "ask_uninterest":
-                send_content.get_reason_why_uninterested()
-            elif send_content.status == "ask_objection":
-                send_content.respond_to_objection()
+            send_message.delay(
+                f"""
+                {generated_response},\n
+                """,
+                thread_id=thread.thread_id,
+            )
 
             return Response(
                 {
@@ -840,12 +828,7 @@ class DMViewset(viewsets.ModelViewSet):
             )
         else:
             send_message.delay(serializer.data.get("human_response"), thread_id=thread.thread_id)
-            response_status = Thread.objects.filter(account__status__name="sent_first_compliment")
-            thread.replied = True
-            thread.replied_at = datetime.now()
-            if response_status.exists():
-                thread.account.status.name = "responded_to_first_compliment"
-                thread.save()
+
             return Response(
                 {
                     "status": status.HTTP_200_OK,
