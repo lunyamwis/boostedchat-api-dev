@@ -5,7 +5,6 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from instagram.helpers.check_response import CheckResponse
 from instagram.helpers.llm import query_gpt
 from instagram.models import Account, StatusCheck, Thread
 
@@ -27,7 +26,7 @@ class FallbackWebhook(APIView):
         thread = Thread()
         account = Account.objects.first()
         thread.account = account
-        thread.thread_id = "340282366841710301244276027871564125912"
+        # thread.thread_id = "340282366841710301244276027871564125912"
         # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         # print(request.session.items())
         # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
@@ -65,7 +64,7 @@ class FallbackWebhook(APIView):
         if statuschecks.exists():
             statuscheck = statuschecks.last()
 
-        after_response = CheckResponse(status="confirmed_problem", thread=thread)
+        # after_response = CheckResponse(status="confirmed_problem", thread=thread)
         print(statuscheck.stage)
         try:
             req = request.data
@@ -85,6 +84,8 @@ class FallbackWebhook(APIView):
                         convo.append(get_prompt(statuscheck.stage, client_message=query))
                     if statuscheck.name == "confirmed_problem":
                         convo.append(get_prompt(statuscheck.stage + 1, client_message=query))
+                    if statuscheck.name == "overcome_objections":
+                        convo.append(get_prompt(statuscheck.stage + 2, client_message=query))
                 elif statuscheck.stage == 3:
                     pass
 
@@ -94,18 +95,16 @@ class FallbackWebhook(APIView):
                 result = response.get("choices")[0].get("message").get("content")
 
                 result = result.strip("\n")
-                confirmed_rejected_problems_arr = re.findall(r"\+\+(.*?)\+\+", result)
-                confirmation_counter = 0
 
                 if statuscheck.name == "sent_first_question":
+                    confirmed_rejected_problems_arr = re.findall(r"\+\+(.*?)\+\+", result)
+                    confirmation_counter = 0
                     for problem in confirmed_rejected_problems_arr:
                         if "confirmed" in problem:
                             confirmation_counter += 1
 
                     if confirmation_counter >= 3:
                         statuscheck.name = "confirmed_problem"
-                        after_response.follow_up_after_solutions_presented()
-                        after_response.follow_up_if_sent_email_first_attempt()
                         statuscheck.save()
                     llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
 
@@ -163,6 +162,36 @@ class FallbackWebhook(APIView):
                         status=status.HTTP_200_OK,
                     )
 
+                if statuscheck.name == "overcome_objections":
+                    matches_within_backticks = re.findall(r"```(.*?)```", result, re.DOTALL)
+                    print(matches_within_backticks)
+                    for objection in matches_within_backticks:
+                        if "OVERCAME".upper() in objection:
+                            statuscheck.name = "overcome"
+                        if "DEFERRED".upper() in objection:
+                            statuscheck.name = "deferred"
+
+                        statuscheck.save()
+
+                    matches_not_within_backticks = re.findall(r"(?<!```)([^`]+)(?!```)", result, re.DOTALL)
+                    print(matches_not_within_backticks)
+                    account.status = statuscheck
+                    account.save()
+
+                    return Response(
+                        {
+                            "fulfillment_response": {
+                                "messages": [
+                                    {
+                                        "text": {
+                                            "text": [matches_not_within_backticks[-1]],
+                                        },
+                                    },
+                                ]
+                            }
+                        },
+                        status=status.HTTP_200_OK,
+                    )
         except Exception as error:
             print(error)
 
