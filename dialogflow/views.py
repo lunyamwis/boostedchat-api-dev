@@ -6,7 +6,12 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from data.helpers.random_data import get_matching_objection_response, get_matching_questions, get_matching_solutions
+from data.helpers.random_data import (
+    get_matching_objection_response,
+    get_matching_questions,
+    get_matching_solutions,
+    get_potential_problems,
+)
 from instagram.helpers.llm import query_gpt
 from instagram.models import Account, OutSourced, StatusCheck, Thread
 
@@ -41,7 +46,31 @@ class FallbackWebhook(APIView):
             outsourced_data.results["sm_activity"],
             outsourced_data.results["book_button"],
         )
+        potential_problems = get_potential_problems(
+            outsourced_data.results["calendar_availability"],
+            outsourced_data.results["booking_system"],
+            outsourced_data.results["sm_activity"],
+            outsourced_data.results["book_button"],
+        )
         objection_response = get_matching_objection_response(outsourced_data.source)
+        booking_question = None
+        if not outsourced_data.results["booking_system"]:
+            booking_question = f"""
+                - How do you manage your bookings? (If the respondent mentions
+                their booking platform, return the name of that platform, options include booking
+                systems and custom solutions like: "styleseat", "vagaro", "the cut", "acuity",
+                "dm or call to book", "squire", or other)
+
+                """
+        calendar_availability_question = None
+        if not outsourced_data.results["calendar_availability"]:
+            calendar_availability_question = f"""
+                - What's more important between managing
+                existing current clients and attracting new ones? (If the respondent talks about
+                their calendar needs, return the corresponding value depending on their focus:
+                "full calendar" if returning clients, "empty calendar" if new clients,
+                "some availability" if both)
+                """
         # thread.thread_id = "340282366841710301244276027871564125912"
         # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         # print(request.session.items())
@@ -97,7 +126,17 @@ class FallbackWebhook(APIView):
                     if statuscheck.name == "sent_compliment":
                         convo.append(get_prompt(statuscheck.stage - 1, client_message=query))
                     if statuscheck.name == "sent_first_question":
-                        convo.append(get_prompt(statuscheck.stage, client_message=query, questions=questions))
+                        convo.append(
+                            get_prompt(
+                                statuscheck.stage,
+                                client_message=query,
+                                booking_question=booking_question,
+                                calendar_availability_question=calendar_availability_question,
+                                questions=questions,
+                                potential_problems=potential_problems,
+                                generic_problems=objection_response,
+                            )
+                        )
                     if statuscheck.name == "confirmed_problem":
                         convo.append(get_prompt(statuscheck.stage + 1, client_message=query, solutions=solutions))
                     if statuscheck.name == "overcome_objections":

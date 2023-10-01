@@ -73,33 +73,21 @@ def get_prompt(prompt_number, *args, **kwargs):
             list!! Please be sure not to offer Booksy as a solution.
 
             Qualifying Questions:
-            - How do you manage your bookings? (If the respondent mentions
-            their booking platform, return the name of that platform, options include booking
-            systems and custom solutions like: "styleseat", "vagaro", "the cut", "acuity",
-            "dm or call to book", "squire", or other)
-            - What's more important between managing
-            existing current clients and attracting new ones? (If the respondent talks about
-            their calendar needs, return the corresponding value depending on their focus:
-            "full calendar" if returning clients, "empty calendar" if new clients,
-            "some availability" if both)
-            {kwargs['questions']}
+
+            - {kwargs['booking_question']}
+            - {kwargs['calendar_availability_question']}
+            - {kwargs['questions']['na_question_1']}
+            - {kwargs['questions']['na_question_2']}
+            - {kwargs['questions']['na_question_3']}
 
             [[
             High Probability Problems:
-            - Their booking system (styleseat) is charging their clients to book with them
-            and additional hidden fees.
-            - Booking system's poor customer support(styleseat).
-            - They don't want to receive unjust reviews from cancelled bookings but their booking system (styleseat) allows those.
+            - {kwargs['potential_problems']['potential_problem_1']}
+            - {kwargs['potential_problems']['potential_problem_2']}
+            - {kwargs['potential_problems']['potential_problem_3']}
 
             Generic Problems:
-            - the juggling act of scheduling appointments prevents from focusing on craft and might annoy clients
-            - no Instagram Book button to convert followers into client bookings
-            - google ads acquisition with unknown cost per client
-            - positive reviews are not visible on Google, Facebook, Instagram, and the booking system and don't acquire more new clients
-            - booking system's poor customer service
-            - they don't want to receive unjust reviews from cancelled bookings but their booking system (styleseat) allows those
-            - Instagram activity and account could be more visible with tools that support content creation
-            - the risk of losing business due to no-shows
+            - {kwargs['generic_problems']}
             ]]
             Do not use more than 20 words!!
             Only use three sentences to respond!!
@@ -119,7 +107,9 @@ def get_prompt(prompt_number, *args, **kwargs):
             It sounds like your dealing with [insert here the rephrased combination of identified problems listed below] and I was wondering if [insert here the rephrased combination of solutions to the problems] could work for you. I wonder what's your honest opinion about this?
 
             messages with identified problems and proposed solutions:
-            {kwargs['solutions']}
+            - {kwargs['solutions']['solution_1']}
+            - {kwargs['solutions']['solution_2']}
+            - {kwargs['solutions']['solution_3']}
 
 
             make sure to use a tone of voice in line with those characteristics: "We’re revolutionizing the way people make appointments. Barbers and stylists are frustrated from wasting too much time managing their books when they could be focusing on their craft. Booksy offers a platform for them to streamline business management. Both a reliable receptionist and a trustworthy business partner, Booksy helps merchants grow and gives them time to master their skills. CONVERSATIONAL We are a business partner and friendly neighbor recommending a service or business. Our voice needs to match our attitude. Being corporate is too rigid, and can be alienating. Speaking casually and candidly allows customers to trust us. ENCOURAGING Our customers and merchants dream of fulfilling their full personal potential, and Booksy gives them the tools to accomplish that. GENUINE Booksy makes a promise to its customers. We’re adding a new meaning to their lives by redefining what it means to manage a business. How? By being accurate, honest, transparent, and receptive to customer feedback.
