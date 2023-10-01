@@ -8,6 +8,7 @@ from instagram.helpers.login import login_user
 from instagram.models import Account, Thread
 from dialogflow.prompt import get_prompt
 from instagram.helpers.llm import query_gpt
+from .helpers.check_response import CheckResponse
 
 
 @shared_task()
@@ -64,6 +65,48 @@ def send_message(message, thread_id=None, user_id=None, username=None, thread=Tr
         elif type(thread_id) == str:
             message = cl.direct_send(message, thread_ids=[thread_id])
             print(message.text)
+
+@shared_task()
+def check_response():
+    cl = login_user()
+
+    for thread_ in Thread.objects.all():
+        instagrapi_messages = cl.direct_messages(thread_id=thread_.thread_id)
+        saved_messages_arr = thread_.content.split('\n')
+        if instagrapi_messages[0].text != saved_messages_arr[len(saved_messages_arr) -1]:
+            continue
+
+        check_responses = CheckResponse(status=thread_.account.status.name, thread=thread_)
+
+        if check_responses.status == "responded_to_first_compliment":
+            check_responses.follow_up_if_responded_to_first_compliment()
+        elif check_responses.status == "sent_first_compliment":
+            check_responses.follow_up_if_sent_first_compliment()
+        elif check_responses.status == "sent_first_question":
+            check_responses.follow_up_if_sent_first_question()
+        elif check_responses.status == "sent_second_question":
+            check_responses.follow_up_if_sent_second_question()
+        elif check_responses.status == "sent_third_question":
+            check_responses.follow_up_if_sent_third_question()
+        elif check_responses.status == "sent_first_needs_assessment_question":
+            check_responses.follow_up_if_sent_first_needs_assessment_question()
+        elif check_responses.status == "sent_second_needs_assessment_question":
+            check_responses.follow_up_if_sent_second_needs_assessment_question()
+        elif check_responses.status == "sent_third_needs_assessment_question":
+            check_responses.follow_up_if_sent_third_needs_assessment_question()
+        elif check_responses.status == "sent_follow_up_after_presentation":
+            check_responses.follow_up_after_presentation()
+        elif check_responses.status == "sent_email_first_attempt":
+            check_responses.follow_up_if_sent_email_first_attempt()
+        elif check_responses.status == "sent_uninterest":
+            check_responses.follow_up_if_sent_uninterest()
+        elif check_responses.status == "sent_objection":
+            check_responses.follow_up_if_sent_objection()
+        elif check_responses.status == "overcome":
+            check_responses.follow_up_after_solutions_presented()
+            check_responses.follow_up_if_sent_email_first_attempt()
+        elif check_responses.status == "deferred":
+            check_responses.follow_up_if_deferred()
 
 
 @shared_task()

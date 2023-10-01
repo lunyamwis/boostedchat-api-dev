@@ -171,20 +171,6 @@ class FallbackWebhook(APIView):
                         },
                         status=status.HTTP_200_OK,
                     )
-                return Response(
-                    {
-                        "fulfillment_response": {
-                            "messages": [
-                                {
-                                    "text": {
-                                        "text": [result],
-                                    },
-                                },
-                            ]
-                        }
-                    },
-                    status=status.HTTP_200_OK,
-                )
 
                 if statuscheck.name == "overcome_objections":
                     matches_within_backticks = re.findall(r"```(.*?)```", result, re.DOTALL)
