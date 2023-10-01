@@ -1,11 +1,13 @@
+import uuid
 import re
 from datetime import datetime, timezone
 from celery import shared_task
 from dialogflow.models import InstaLead, InstaMessage
 from dialogflow.serializers import InstagramMessageSerializer
+from dialogflow.helpers.intents import detect_intent
 
 from instagram.helpers.login import login_user
-from instagram.models import Account, Thread
+from instagram.models import Account, Thread, Message
 from dialogflow.prompt import get_prompt
 from instagram.helpers.llm import query_gpt
 from .helpers.check_response import CheckResponse
@@ -66,14 +68,30 @@ def send_message(message, thread_id=None, user_id=None, username=None, thread=Tr
             message = cl.direct_send(message, thread_ids=[thread_id])
             print(message.text)
 
+
 @shared_task()
 def check_response():
     cl = login_user()
 
     for thread_ in Thread.objects.all():
         instagrapi_messages = cl.direct_messages(thread_id=thread_.thread_id)
-        saved_messages_arr = thread_.content.split('\n')
-        if instagrapi_messages[0].text != saved_messages_arr[len(saved_messages_arr) -1]:
+        saved_messages_arr = Message.objects.filter(thread=thread_.thread_id).order_by("-sent_on")
+        if instagrapi_messages[0].text != saved_messages_arr[0].content:
+            for instagrapi_message in instagrapi_messages:
+                if instagrapi_message != saved_messages_arr[0].content:
+                    username = cl.username_from_user_id(instagrapi_message.user_id)
+
+                    sent_by = "Robot"
+                    if username == thread_.account.igname:
+                        sent_by = "Client"
+                    message = Message()
+                    message.content = instagrapi_message.text
+                    message.sent_by = sent_by
+                    message.sent_on = instagrapi_message.timestamp
+                    message.thread = thread_
+                    message.save()
+                else:
+                    break
             continue
 
         check_responses = CheckResponse(status=thread_.account.status.name, thread=thread_)
@@ -107,6 +125,46 @@ def check_response():
             check_responses.follow_up_if_sent_email_first_attempt()
         elif check_responses.status == "deferred":
             check_responses.follow_up_if_deferred()
+
+
+@shared_task()
+def generate_and_send_response():
+    cl = login_user()
+
+    for thread_ in Thread.objects.all():
+        instagrapi_messages = cl.direct_messages(thread_id=thread_.thread_id)
+        saved_messages_arr = Message.objects.filter(thread=thread_.thread_id).order_by("-sent_on")
+        if instagrapi_messages[0].text == saved_messages_arr[0].content:
+            continue
+        for instagrapi_message in instagrapi_messages:
+            if instagrapi_message != saved_messages_arr[0].content:
+                username = cl.username_from_user_id(instagrapi_message.user_id)
+
+                sent_by = "Robot"
+                if username == thread_.account.igname:
+                    sent_by = "Client"
+                message = Message()
+                message.content = instagrapi_message.text
+                message.sent_by = sent_by
+                message.sent_on = instagrapi_message.timestamp
+                message.thread = thread_
+                message.save()
+            else:
+                break
+
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid .uuid4()),
+            message=instagrapi_messages[0].text,
+            language_code="en",
+        )
+
+        send_message.delay(
+            f"""
+            {generated_response},\n
+            """,
+            thread_id=thread_.thread_id,
+        )
 
 
 @shared_task()
@@ -255,7 +313,7 @@ def verify_move_to_overcoming_objections(gpt_generated_message, lead: InstaLead,
         if "confirmed" in problem:
             confirmation_counter += 1
 
-    if confirmation_counter >=2:
+    if confirmation_counter >= 2:
         # Temporarily save them in sending solution to objections
         lead.status = 3
         lead.save()
@@ -278,7 +336,6 @@ def verify_move_to_overcoming_objections(gpt_generated_message, lead: InstaLead,
             if len(llm_response) == 0:
                 llm_response = re.findall(r"\_(.*?)\_", gpt_generated_message)
 
-
         send_and_save_insta_message_overload(llm_response[0], lead, cl)
 
 
@@ -297,10 +354,9 @@ def verify_move_to_activation(gpt_generated_message, lead: InstaLead, cl):
         """Client is interested. Move the to activating status"""
         lead.status = 5
         lead.save()
-    else: 
+    else:
         """Most likely an objection, respond to the objection"""
         send_and_save_insta_message_overload(gpt_generated_message, lead, cl)
-
 
 
 def send_and_save_insta_message_overload(message_content, lead: InstaLead, cl=None):

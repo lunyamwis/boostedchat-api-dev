@@ -70,6 +70,7 @@ class Thread(BaseModel):
 class Message(BaseModel):
     content = models.TextField(null=True, blank=True, default="test")
     sent_by = models.CharField(max_length=255, null=True, blank=True)
+    sent_on = models.DateTimeField()
     thread = models.ForeignKey(Thread, on_delete=models.CASCADE, null=True, blank=True)
 
 
