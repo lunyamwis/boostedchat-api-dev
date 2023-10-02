@@ -126,6 +126,10 @@ class SalesRepManager(viewsets.ModelViewSet):
                                     random_compliment_state.get("choices")[0].get("message").get("content")
                                 )
                                 send_message.delay(random_compliment, username=account.igname)
+                                account.status.name = "sent_compliment"
+                                account.status.stage = 1
+                                account.save()
+
                             except Exception as error:
                                 print(error)
 
