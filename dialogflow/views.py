@@ -28,7 +28,7 @@ from instagram.tasks import (
     simulate_check_new_messages,
 )
 
-from .prompt import get_first_prompt, get_prompt, get_second_prompt, get_third_prompt
+from .prompt import get_first_prompt, get_prompt, get_second_prompt, get_third_prompt, get_fourth_prompt
 
 
 class FallbackWebhook(APIView):
@@ -48,8 +48,8 @@ class FallbackWebhook(APIView):
             query_result = req.get("fulfillmentInfo")
 
             query = req.get("text")
-            account_id = req.get("payload").get("account_id")
-
+            # account_id = req.get("payload").get("account_id")
+            account_id = "-NeCzVITeCfyMeaZMaUw"
             if query_result.get("tag") == "fallback":
                 account = Account.objects.get(id=account_id)
                 thread = Thread.objects.get(account=account)
@@ -100,13 +100,14 @@ class FallbackWebhook(APIView):
                 print(status_check.stage)
                 print("<<>Status>>>")
 
-                message.content = query
-                message.sent_by = "Client"
-                message.sent_on = timezone.now()
-                message.thread = thread
-                message.save()
+                client_message = Message()
+                client_message.content = query
+                client_message.sent_by = "Client"
+                client_message.sent_on = timezone.now()
+                client_message.thread = thread
+                client_message.save()
                 # convo.append("DM:" + query)
-                if status_check.stage in range(0, 3):
+                if status_check.stage in range(0, 4):
                     if status_check.name == "sent_compliment":
                         convo.append(get_first_prompt(conversation_so_far=get_conversation_so_far(thread.thread_id)))
                     if status_check.name == "sent_first_question":
@@ -126,9 +127,13 @@ class FallbackWebhook(APIView):
                                 conversation_so_far=get_conversation_so_far(thread.thread_id), solutions=solutions
                             )
                         )
+
+                    print(status_check.name)
+                    print(status_check.name == "overcome_objections")
                     if status_check.name == "overcome_objections":
+                        print("<-----Prompt #4------->")
                         convo.append(
-                            get_prompt(
+                            get_fourth_prompt(
                                 conversation_so_far=get_conversation_so_far(thread.thread_id),
                                 objection=objection_response,
                                 objection_system=outsourced_data.source,
@@ -151,19 +156,22 @@ class FallbackWebhook(APIView):
 
                 if status_check.name == "sent_compliment":
                     asked_first_question_re = re.findall(r"```(.*?)```", result)
-                    matches_not_within_backticks = re.findall(r"(?<!```)([^`]+)(?!```)", result, re.DOTALL)
-                    message.content = matches_not_within_backticks[0]
-                    message.sent_by = "Robot"
-                    message.sent_on = timezone.now()
-                    message.thread = thread
-                    message.save()
+                    # matches_not_within_backticks = re.findall(r"(?<!```)([^`]+)(?!```)", result, re.DOTALL)
+                    robot_message = Message()
+                    robot_message.content = result
+                    robot_message.sent_by = "Robot"
+                    robot_message.sent_on = timezone.now()
+                    robot_message.thread = thread
+                    robot_message.save()
                     if len(asked_first_question_re) > 0 and asked_first_question_re[0] == "SENT-QUESTION":
                         status_check.name = "sent_first_question"
                         status_check.stage = 2
                         status_check.save()
                         sent_first_question_status = StatusCheck.objects.filter(name="sent_first_question").last()
+
                         account.status = sent_first_question_status
                         account.save()
+                        print(account)
 
                     return Response(
                         {
@@ -171,7 +179,7 @@ class FallbackWebhook(APIView):
                                 "messages": [
                                     {
                                         "text": {
-                                            "text": [matches_not_within_backticks[-1]],
+                                            "text": [result],
                                         },
                                     },
                                 ]
@@ -194,10 +202,21 @@ class FallbackWebhook(APIView):
                         confirmed_problem_status = StatusCheck.objects.filter(name="confirmed_problem").last()
                         account.status = confirmed_problem_status
                         account.save()
-                    llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
+                    try:
+                        llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
+                    except Exception as error:
+                        try:
+                            llm_response = re.findall(r'____\n(.*?)\n____', result, re.DOTALL)
+                        except Exception as error:
+                            print(error)
 
                     if len(llm_response) == 0:
                         llm_response = re.findall(r"\_\_(.*?)\_\_", result)
+                    if "" in llm_response:
+                        llm_response = re.findall(r'____\n(.*?)\n____', result, re.DOTALL)
+                    if len(llm_response) == 0:
+                        llm_response = re.findall(r'\n_(.*?)\_', result, re.DOTALL)
+
 
                     answers_re = re.search(r"```(.*?)```", result, re.DOTALL)
                     answers = None
@@ -206,6 +225,9 @@ class FallbackWebhook(APIView):
                     convo.append(result)
 
                     try:
+                        print("<<<try>>")
+                        print(llm_response)
+                        print("<<<try>>")
                         message.content = llm_response[0]
                         message.sent_by = "Robot"
                         message.sent_on = timezone.now()
@@ -226,6 +248,9 @@ class FallbackWebhook(APIView):
                             status=status.HTTP_200_OK,
                         )
                     except Exception as error:
+                        print("<<<err>>")
+                        print(llm_response)
+                        print("<<<err>>")
                         message.content = llm_response
                         message.sent_by = "Robot"
                         message.sent_on = timezone.now()
@@ -577,4 +602,4 @@ def get_conversation_so_far(thread_id):
         else:
             formatted_message = f"You: {message.content}"
         formatted_messages.append(formatted_message)
-    return formatted_messages
+    return "\n".join(formatted_messages)
