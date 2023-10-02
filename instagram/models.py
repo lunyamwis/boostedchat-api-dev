@@ -9,11 +9,6 @@ from base.models import BaseModel
 # Create your models here.
 
 
-class OutSourced(models.Model):
-    source = models.CharField(null=True, blank=True, max_length=255)
-    results = models.JSONField()
-
-
 class OutSourcedInfo(models.Model):
     source = models.CharField(null=True, blank=True, max_length=255)
     results = models.TextField(null=True, blank=True)
@@ -27,6 +22,8 @@ class StatusCheck(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.stage} - {self.name}"
+    def get_id(self):
+        return self.id
 
 
 class Account(BaseModel):
@@ -34,10 +31,15 @@ class Account(BaseModel):
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=255, null=True, blank=True)
     profile_url = models.URLField(null=True, blank=True)
-    outsourced = models.ForeignKey(OutSourcedInfo, on_delete=models.CASCADE, null=True, blank=True)
     status = models.ForeignKey(StatusCheck, on_delete=models.CASCADE, null=True, blank=True)
     history = AuditlogHistoryField(pk_indexable=False)
     dormant_profile_created = models.BooleanField(default=True, null=True, blank=True)
+
+
+class OutSourced(models.Model):
+    source = models.CharField(null=True, blank=True, max_length=255)
+    results = models.JSONField()
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
 
 
 auditlog.register(Account)
