@@ -28,7 +28,7 @@ from instagram.tasks import (
     simulate_check_new_messages,
 )
 
-from .prompt import get_first_prompt, get_prompt, get_second_prompt, get_third_prompt, get_fourth_prompt
+from .prompt import get_first_prompt, get_fourth_prompt, get_prompt, get_second_prompt, get_third_prompt
 
 
 class FallbackWebhook(APIView):
@@ -164,11 +164,7 @@ class FallbackWebhook(APIView):
                     robot_message.thread = thread
                     robot_message.save()
                     if len(asked_first_question_re) > 0 and asked_first_question_re[0] == "SENT-QUESTION":
-                        status_check.name = "sent_first_question"
-                        status_check.stage = 2
-                        status_check.save()
-                        sent_first_question_status = StatusCheck.objects.filter(name="sent_first_question").last()
-
+                        sent_first_question_status = StatusCheck.objects.get(name="sent_first_question")
                         account.status = sent_first_question_status
                         account.save()
                         print(account)
@@ -196,27 +192,26 @@ class FallbackWebhook(APIView):
                             confirmation_counter += 1
 
                     if confirmation_counter >= 3:
-                        status_check.name = "confirmed_problem"
-                        status_check.stage = 2
-                        status_check.save()
-                        confirmed_problem_status = StatusCheck.objects.filter(name="confirmed_problem").last()
+                        confirmed_problem_status = StatusCheck.objects.get(name="confirmed_problem")
+                        problems = re.findall(r"```(.*?)```", result, re.DOTALL)
+                        account.confirmed_problems = [problem for problem in problems if "confirmed" in problem]
+                        account.rejected_problems = [problem for problem in problems if "rejected" in problem]
                         account.status = confirmed_problem_status
                         account.save()
                     try:
                         llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
                     except Exception as error:
                         try:
-                            llm_response = re.findall(r'____\n(.*?)\n____', result, re.DOTALL)
+                            llm_response = re.findall(r"____\n(.*?)\n____", result, re.DOTALL)
                         except Exception as error:
                             print(error)
 
                     if len(llm_response) == 0:
                         llm_response = re.findall(r"\_\_(.*?)\_\_", result)
                     if "" in llm_response:
-                        llm_response = re.findall(r'____\n(.*?)\n____', result, re.DOTALL)
+                        llm_response = re.findall(r"____\n(.*?)\n____", result, re.DOTALL)
                     if len(llm_response) == 0:
-                        llm_response = re.findall(r'\n_(.*?)\_', result, re.DOTALL)
-
+                        llm_response = re.findall(r"\n_(.*?)\_", result, re.DOTALL)
 
                     answers_re = re.search(r"```(.*?)```", result, re.DOTALL)
                     answers = None
@@ -277,8 +272,8 @@ class FallbackWebhook(APIView):
                     message.sent_on = timezone.now()
                     message.thread = thread
                     message.save()
-                    status_check.name = "overcome_objections"
-                    status_check.stage = 3
+                    overcome_objection_status = StatusCheck.objects.get(name="overcome_objections")
+                    account.status = overcome_objection_status
                     status_check.save()
                     return Response(
                         {

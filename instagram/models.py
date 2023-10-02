@@ -22,6 +22,7 @@ class StatusCheck(BaseModel):
 
     def __str__(self) -> str:
         return f"{self.stage} - {self.name}"
+
     def get_id(self):
         return self.id
 
@@ -32,6 +33,8 @@ class Account(BaseModel):
     phone_number = models.CharField(max_length=255, null=True, blank=True)
     profile_url = models.URLField(null=True, blank=True)
     status = models.ForeignKey(StatusCheck, on_delete=models.CASCADE, null=True, blank=True)
+    confirmed_problems = models.TextField(null=True, blank=True, default="test")
+    rejected_problems = models.TextField(null=True, blank=True, default="test")
     history = AuditlogHistoryField(pk_indexable=False)
     dormant_profile_created = models.BooleanField(default=True, null=True, blank=True)
 
