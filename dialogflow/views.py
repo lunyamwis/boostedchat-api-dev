@@ -1,10 +1,17 @@
+from datetime import datetime
+import json
 import logging
 import re
+import uuid
+from django.utils import timezone
 
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from dialogflow.models import InstaLead, InstaMessage
+from dialogflow.serializers import InstagramMessageSerializer, CreateLeadSerializer, GetInstagramMessageSerializer, InstagramMessageSerializer
 
 from data.helpers.random_data import (
     get_matching_objection_response,
@@ -13,9 +20,11 @@ from data.helpers.random_data import (
     get_potential_problems,
 )
 from instagram.helpers.llm import query_gpt
-from instagram.models import Account, OutSourced, StatusCheck, Thread
+from instagram.tasks import send_human_insta_message, send_and_save_insta_message, simulate_check_new_messages, send_and_save_insta_message_overload
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
+from instagram.models import Account, OutSourced, StatusCheck, Thread, Message
 
-from .prompt import get_prompt
+from .prompt import get_prompt, get_first_prompt, get_second_prompt, get_third_prompt, get_fourth_prompt
 
 
 class FallbackWebhook(APIView):
@@ -25,111 +34,81 @@ class FallbackWebhook(APIView):
 
     def post(self, request, format=None):
 
-        # Possibly relevant information about the person you talk to & their business that you can use:
-        # [relevant scraped data]
         convo = []
-        # status_number = None
-        statuscheck = None
+        status_check = None
         thread = Thread()
-        account = Account.objects.first()
-        outsourced_data = OutSourced.objects.filter(account=account).last()
-        thread.account = account
-        questions = get_matching_questions(
-            outsourced_data.results["calendar_availability"],
-            outsourced_data.results["booking_system"],
-            outsourced_data.results["sm_activity"],
-            outsourced_data.results["book_button"],
-        )
-        solutions = get_matching_solutions(
-            outsourced_data.results["calendar_availability"],
-            outsourced_data.results["booking_system"],
-            outsourced_data.results["sm_activity"],
-            outsourced_data.results["book_button"],
-        )
-        potential_problems = get_potential_problems(
-            outsourced_data.results["calendar_availability"],
-            outsourced_data.results["booking_system"],
-            outsourced_data.results["sm_activity"],
-            outsourced_data.results["book_button"],
-        )
-        objection_response = get_matching_objection_response(outsourced_data.source)
-        booking_question = None
-        if not outsourced_data.results["booking_system"]:
-            booking_question = f"""
-                - How do you manage your bookings? (If the respondent mentions
-                their booking platform, return the name of that platform, options include booking
-                systems and custom solutions like: "styleseat", "vagaro", "the cut", "acuity",
-                "dm or call to book", "squire", or other)
+        message = Message()
 
-                """
-        calendar_availability_question = None
-        if not outsourced_data.results["calendar_availability"]:
-            calendar_availability_question = f"""
-                - What's more important between managing
-                existing current clients and attracting new ones? (If the respondent talks about
-                their calendar needs, return the corresponding value depending on their focus:
-                "full calendar" if returning clients, "empty calendar" if new clients,
-                "some availability" if both)
-                """
-        # thread.thread_id = "340282366841710301244276027871564125912"
-        # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        # print(request.session.items())
-        # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-
-        # response = HttpResponse("Setting")
-        # request.session["run_once"] = 1
-        # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        # print(request.session.items())
-        # print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-        # status_prompt = f"""
-        #     Categorize the following statuses and match the
-        #     following dm within the triple backticks ```{request.data.get('text')}``` with the
-        #     right status below from
-        #     the following list of statuses
-        #     0. sounds like anything outside the topics mentioned below or sounds like
-        #     acknowledgement of a compliment
-        #     1. sounds like an answer to 'What is the most frustrating part of your
-        #     barber gig?' or indication of a
-        #     problem not mentioned in the other points
-        #     2. sounds like an answer to 'What is more important between managing
-        #     current clients and attracting new
-        #     ones?'
-        #     3. sounds like an answer to 'How do you manage your calendar?' or
-        #     'What is your [barber] booking system?'
-        #     Do not match it to more than one status just simply give me something
-        #     sensible based on the statuses that
-        #     I have given you!
-        #     Return the status number in double backticks!
-        #     Always return a status number!!
-        # """
-        # state = query_gpt(status_prompt)
-        # status_number = get_status_number(state.get("choices")[0].get("message").get("content"))
-
-        statuschecks = StatusCheck.objects.filter(stage=2)
-        if statuschecks.exists():
-            statuscheck = statuschecks.last()
-
-        # after_response = CheckResponse(status="confirmed_problem", thread=thread)
-        print(statuscheck.stage)
         try:
             req = request.data
-            # logging.warn('request data', req)
             query_result = req.get("fulfillmentInfo")
-            print(query_result)
 
             query = req.get("text")
+            account_id = req.get('payload').get("account_id")
 
             if query_result.get("tag") == "fallback":
-                print(query)
+                account = Account.objects.get(id=account_id)
+                thread = Thread.objects.get(account=account)
+
+                outsourced_data = OutSourced.objects.filter(account=account).last()
+                thread.account = account
+                questions = get_matching_questions(
+                    outsourced_data.results["calendar_availability"],
+                    outsourced_data.results["booking_system"],
+                    outsourced_data.results["sm_activity"],
+                    outsourced_data.results["book_button"],
+                )
+                solutions = get_matching_solutions(
+                    outsourced_data.results["calendar_availability"],
+                    outsourced_data.results["booking_system"],
+                    outsourced_data.results["sm_activity"],
+                    outsourced_data.results["book_button"],
+                )
+                potential_problems = get_potential_problems(
+                    outsourced_data.results["calendar_availability"],
+                    outsourced_data.results["booking_system"],
+                    outsourced_data.results["sm_activity"],
+                    outsourced_data.results["book_button"],
+                )
+                objection_response = get_matching_objection_response(outsourced_data.source)
+                booking_question = None
+                if not outsourced_data.results["booking_system"]:
+                    booking_question = f"""
+                        - How do you manage your bookings? (If the respondent mentions
+                        their booking platform, return the name of that platform, options include booking
+                        systems and custom solutions like: "styleseat", "vagaro", "the cut", "acuity",
+                        "dm or call to book", "squire", or other)
+
+                        """
+                calendar_availability_question = None
+                if not outsourced_data.results["calendar_availability"]:
+                    calendar_availability_question = f"""
+                        - What's more important between managing
+                        existing current clients and attracting new ones? (If the respondent talks about
+                        their calendar needs, return the corresponding value depending on their focus:
+                        "full calendar" if returning clients, "empty calendar" if new clients,
+                        "some availability" if both)
+                        """
+                print(potential_problems)
+                status_check = account.status
+                print("<<>Status>>>")
+                print(status_check)
+                print(status_check.stage)
+                print("<<>Status>>>")
+
+                message.content = query
+                message.sent_by = "Client"
+                message.sent_on = timezone.now()
+                message.thread = thread
+                message.save()
                 # convo.append("DM:" + query)
-                if statuscheck.stage in range(0, 3):
-                    if statuscheck.name == "sent_compliment":
-                        convo.append(get_prompt(statuscheck.stage - 1, client_message=query))
-                    if statuscheck.name == "sent_first_question":
+                if status_check.stage in range(0, 3):
+                    if status_check.name == "sent_compliment":
+                        convo.append(get_first_prompt(conversation_so_far=get_conversation_so_far(thread.thread_id)))
+                    if status_check.name == "sent_first_question":
                         convo.append(
-                            get_prompt(
-                                statuscheck.stage,
-                                client_message=query,
+                            get_second_prompt(
+                                conversation_so_far=get_conversation_so_far(thread.thread_id),
                                 booking_question=booking_question,
                                 calendar_availability_question=calendar_availability_question,
                                 questions=questions,
@@ -137,29 +116,62 @@ class FallbackWebhook(APIView):
                                 generic_problems=objection_response,
                             )
                         )
-                    if statuscheck.name == "confirmed_problem":
-                        convo.append(get_prompt(statuscheck.stage + 1, client_message=query, solutions=solutions))
-                    if statuscheck.name == "overcome_objections":
+                    if status_check.name == "confirmed_problem":
+                        convo.append(get_third_prompt(
+                            conversation_so_far=get_conversation_so_far(thread.thread_id),
+                            solutions=solutions))
+                    if status_check.name == "overcome_objections":
                         convo.append(
                             get_prompt(
-                                statuscheck.stage + 2,
-                                client_message=query,
+                                conversation_so_far=get_conversation_so_far(thread.thread_id),
                                 objection=objection_response,
                                 objection_system=outsourced_data.source,
                                 current_time=timezone.now(),
                             )
                         )
-                elif statuscheck.stage == 3:
+                elif status_check.stage == 3:
                     pass
 
                 prompt = ("\n").join(convo)
                 response = query_gpt(prompt)
+                print(response)
+                print("138")
+                print(prompt)
+                print("140")
 
                 result = response.get("choices")[0].get("message").get("content")
 
                 result = result.strip("\n")
 
-                if statuscheck.name == "sent_first_question":
+                if status_check.name == "sent_compliment":
+                    asked_first_question_re = re.findall(r'```(.*?)```', result)
+
+                    message.content = result
+                    message.sent_by = "Robot"
+                    message.sent_on = timezone.now()
+                    message.thread = thread
+                    message.save()
+                    if len(asked_first_question_re) > 0 and asked_first_question_re[0] == "SENT-QUESTION":
+                        sent_first_question_status = StatusCheck.objects.filter(name="sent_first_question").last()
+                        account.status = sent_first_question_status
+                        account.save()
+
+                    return Response(
+                        {
+                            "fulfillment_response": {
+                                "messages": [
+                                    {
+                                        "text": {
+                                            "text": [result],
+                                        },
+                                    },
+                                ]
+                            }
+                        },
+                        status=status.HTTP_200_OK,
+                    )
+
+                if status_check.name == "sent_first_question":
                     confirmed_rejected_problems_arr = re.findall(r"\+\+(.*?)\+\+", result)
                     confirmation_counter = 0
                     for problem in confirmed_rejected_problems_arr:
@@ -167,8 +179,9 @@ class FallbackWebhook(APIView):
                             confirmation_counter += 1
 
                     if confirmation_counter >= 3:
-                        statuscheck.name = "confirmed_problem"
-                        statuscheck.save()
+                        confirmed_problem_status = StatusCheck.objects.filter(name="confirmed_problem").last()
+                        account.status = confirmed_problem_status
+                        account.save()
                     llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
 
                     if len(llm_response) == 0:
@@ -178,23 +191,13 @@ class FallbackWebhook(APIView):
                     answers = None
                     if answers_re:
                         answers = answers_re.group(1)
-                    print("-----result start-----")
-                    print(result)
-                    print("-----result end-----")
-                    print("--------------Confirmed and rejected problems start---------------")
-                    print(confirmed_rejected_problems_arr)
-                    print("--------------Confirmed and rejected problems end---------------")
-                    print("--------------answers start---------------")
-                    print(answers)
-                    print("--------------answers end---------------")
-                    print("--------------response start---------------")
-                    print(llm_response)
-                    print("--------------response end---------------")
                     convo.append(result)
 
-                    thread.content = f"{query},{llm_response[0]}"
-                    thread.robot_response = llm_response[0]
-                    thread.save()
+                    message.content = llm_response[0]
+                    message.sent_by = "Robot"
+                    message.sent_on = timezone.now()
+                    message.thread = thread
+                    message.save()
 
                     return Response(
                         {
@@ -211,9 +214,12 @@ class FallbackWebhook(APIView):
                         status=status.HTTP_200_OK,
                     )
 
-                if statuscheck.name == "confirmed_problem":
-                    thread.content = query
-                    thread.robot_response = result
+                if status_check.name == "confirmed_problem":
+                    message.content = result
+                    message.sent_by = "Robot"
+                    message.sent_on = timezone.now()
+                    message.thread = thread
+                    message.save()
                     return Response(
                         {
                             "fulfillment_response": {
@@ -229,23 +235,26 @@ class FallbackWebhook(APIView):
                         status=status.HTTP_200_OK,
                     )
 
-                if statuscheck.name == "overcome_objections":
+                if status_check.name == "overcome_objections":
                     matches_within_backticks = re.findall(r"```(.*?)```", result, re.DOTALL)
                     print(matches_within_backticks)
                     for objection in matches_within_backticks:
                         if "OVERCAME".upper() in objection:
-                            statuscheck.name = "overcome"
+                            status_check.name = "overcome"
                         if "DEFERRED".upper() in objection:
-                            statuscheck.name = "deferred"
+                            status_check.name = "deferred"
 
-                        statuscheck.save()
+                        status_check.save()
 
                     matches_not_within_backticks = re.findall(r"(?<!```)([^`]+)(?!```)", result, re.DOTALL)
                     print(matches_not_within_backticks)
-                    account.status = statuscheck
+                    account.status = status_check
                     account.save()
-                    thread.content = query
-                    thread.robot_response = matches_not_within_backticks[-1]
+                    message.content = matches_not_within_backticks[-1]
+                    message.sent_by = "Robot"
+                    message.sent_on = timezone.now()
+                    message.thread = thread
+                    message.save()
                     return Response(
                         {
                             "fulfillment_response": {
@@ -260,6 +269,21 @@ class FallbackWebhook(APIView):
                         },
                         status=status.HTTP_200_OK,
                     )
+
+            return Response(
+                {
+                    "fulfillment_response": {
+                        "messages": [
+                            {
+                                "text": {
+                                    "text": ["Some text"],
+                                },
+                            },
+                        ]
+                    }
+                },
+                status=status.HTTP_200_OK,
+            )
         except Exception as error:
             print(error)
 
@@ -311,3 +335,221 @@ class NeedsAssesmentWebhook(APIView):
 
         except Exception as error:
             print(error)
+
+
+@api_view(['POST'])
+def create_lead(request):
+    """Creates a lead without sending the first compliment"""
+    serializer = CreateLeadSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response({"errors": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PATCH'])
+def update_lead(request, leadId):
+    """Updates a lead"""
+    try:
+        lead = InstaLead.objects.get(id=leadId)
+    except InstaLead.DoesNotExist:
+        return Response({"message": "Lead does not exist"}, status=status.HTTP_201_CREATED)
+
+    serializer = CreateLeadSerializer(lead, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response({"errors": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PATCH'])
+def start_lead_engagement(request, leadId):
+    try:
+        lead = InstaLead.objects.get(id=leadId)
+        compliment_prompt = get_prompt(1, conversation_so_far="")
+
+        response = query_gpt(compliment_prompt)
+
+        result = response.get("choices")[0].get("message").get("content")
+
+        result = result.strip("\n")
+
+        send_and_save_insta_message_overload(result, lead)
+        lead.is_engaged = True
+        lead.save()
+        return Response({"message": "Engagement started successfully"}, status=status.HTTP_201_CREATED)
+    except InstaLead.DoesNotExist:
+        return Response({"message": "Lead does not exist"}, status=status.HTTP_201_CREATED)
+
+
+@api_view(["DELETE"])
+def delete_lead(request):
+    try:
+        lead = InstaLead.objects.get(igname=request.data.get("igname"))
+        lead.delete()
+        return Response({"message": "Lead deleted successfully"}, status=status.HTTP_201_CREATED)
+    except InstaLead.DoesNotExist:
+        return Response({"message": "Lead does not exist"}, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+def create_lead_and_send_compliment(request):
+    compliment_prompt = get_prompt(1, client_message="")
+
+    response = query_gpt(compliment_prompt)
+
+    result = response.get("choices")[0].get("message").get("content")
+
+    result = result.strip("\n")
+
+    create_data = {**request.data, **{"id": uuid.uuid4(), "is_engaged": True}}
+    serializer = CreateLeadSerializer(data=create_data)
+    if serializer.is_valid():
+        serializer.save()
+        send_and_save_insta_message.delay(result, serializer.validated_data["id"])
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response({"errors": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_leads(request):
+    leads = InstaLead.objects.order_by('-updated_on')
+    serializer = CreateLeadSerializer(leads, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+def send_human_insta_message(request, leadId):
+    content = request.data.get("content")
+    if leadId is None or content is None:
+        return Response({"message": "Please provide lead id and message content"},
+                        status=status.HTTP_400_BAD_REQUEST)
+    try:
+        lead_obj = InstaLead.objects.get(pk=leadId)
+    except InstaLead.DoesNotExist:
+        return Response({"message": "Lead does not exist"}, status=status.HTTP_201_CREATED)
+
+    send_human_insta_message.delay(content, lead_obj.igname)
+
+    message_data = {
+        "content": content,
+        "lead_id": leadId,
+        "sent_by": "Human",
+        "sent_on": datetime.now()
+    }
+
+    serializer = InstagramMessageSerializer(data=message_data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response({"errors": serializer.errors},
+                    status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+def simulate_check_message(request):
+    """Creates a lead without sending the first compliment"""
+    lead_id = request.data.get('lead_id')
+
+    try:
+        lead = InstaLead.objects.get(id=lead_id)
+        simulate_check_new_messages(request.data.get('message'), lead)
+        return Response({"message": "Simulation success"}, status=status.HTTP_201_CREATED)
+    except InstaLead.DoesNotExist:
+        return Response({"message": "Lead does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(["DELETE"])
+def delete_message(request, pk):
+    try:
+        message = InstaMessage.objects.get(id=pk)
+        message.delete()
+        return Response({"message": "Message deleted successfully"}, status=status.HTTP_200_OK)
+    except InstaLead.DoesNotExist:
+        return Response({"message": "Message does not exist"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def get_messages(request):
+    messages = InstaMessage.objects.order_by('-sent_on')
+    serializer = GetInstagramMessageSerializer(messages, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+def get_messages_by_lead(request, leadId):
+    messages = InstaMessage.objects.filter(lead_id=leadId).order_by('-sent_on')
+    serializer = InstagramMessageSerializer(messages, many=True)
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+def set_check_message_periodic_task(request):
+    try:
+        PeriodicTask.objects.get(name="CheckNewMessageCron")
+        return Response({"message": "Periodic task already exists"}, status=status.HTTP_201_CREATED)
+    except PeriodicTask.DoesNotExist:
+        schedule = CrontabSchedule.objects.save(
+            minute="*/5",
+            hour="*",
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        )
+        PeriodicTask.objects.save(
+            name="CheckNewMessageCron",
+            crontab=schedule,
+            task="instagram.tasks.check_new_message",
+            args=json.dumps([[""], [""]]),
+            start_time=timezone.now(),
+        )
+        return Response({"message": "Periodic task created successfully"}, status=status.HTTP_201_CREATED)
+
+
+@api_view(["POST"])
+def update_check_message_periodic_task(request):
+    try:
+        task = PeriodicTask.objects.get(name="CheckNewMessageCron")
+
+        schedule = CrontabSchedule.objects.save(
+            minute="*/5",
+            hour="*",
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        )
+        task.crontab = schedule
+        task.save()
+        return Response({"message": "Periodic task updated successfully"}, status=status.HTTP_201_CREATED)
+    except PeriodicTask.DoesNotExist:
+        schedule = CrontabSchedule.objects.save(
+            minute="*/5",
+            hour="*",
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        )
+        PeriodicTask.objects.save(
+            name="CheckNewMessageCron",
+            crontab=schedule,
+            task="instagram.tasks.check_new_message",
+            args=json.dumps([[""], [""]]),
+            start_time=timezone.now(),
+        )
+        return Response({"message": "Periodic task created successfully"}, status=status.HTTP_201_CREATED)
+
+
+def get_conversation_so_far(thread_id):
+    messages = Message.objects.filter(thread=thread_id)
+    formatted_messages = []
+    for message in messages:
+        formatted_message = ""
+        if message.sent_by == "Client":
+            formatted_message = f"Respondent: {message.content}"
+        else:
+            formatted_message = f"You: {message.content}"
+        formatted_messages.append(formatted_message)
+    return formatted_messages
