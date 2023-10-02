@@ -152,7 +152,7 @@ class FallbackWebhook(APIView):
                 if status_check.name == "sent_compliment":
                     asked_first_question_re = re.findall(r"```(.*?)```", result)
                     matches_not_within_backticks = re.findall(r"(?<!```)([^`]+)(?!```)", result, re.DOTALL)
-                    message.content = matches_not_within_backticks[-1]
+                    message.content = matches_not_within_backticks[0]
                     message.sent_by = "Robot"
                     message.sent_on = timezone.now()
                     message.thread = thread
@@ -205,26 +205,46 @@ class FallbackWebhook(APIView):
                         answers = answers_re.group(1)
                     convo.append(result)
 
-                    message.content = llm_response[0]
-                    message.sent_by = "Robot"
-                    message.sent_on = timezone.now()
-                    message.thread = thread
-                    message.save()
-
-                    return Response(
-                        {
-                            "fulfillment_response": {
-                                "messages": [
-                                    {
-                                        "text": {
-                                            "text": [llm_response[0]],
+                    try:
+                        message.content = llm_response[0]
+                        message.sent_by = "Robot"
+                        message.sent_on = timezone.now()
+                        message.thread = thread
+                        message.save()
+                        return Response(
+                            {
+                                "fulfillment_response": {
+                                    "messages": [
+                                        {
+                                            "text": {
+                                                "text": [llm_response[0]],
+                                            },
                                         },
-                                    },
-                                ]
-                            }
-                        },
-                        status=status.HTTP_200_OK,
-                    )
+                                    ]
+                                }
+                            },
+                            status=status.HTTP_200_OK,
+                        )
+                    except Exception as error:
+                        message.content = llm_response
+                        message.sent_by = "Robot"
+                        message.sent_on = timezone.now()
+                        message.thread = thread
+                        message.save()
+                        return Response(
+                            {
+                                "fulfillment_response": {
+                                    "messages": [
+                                        {
+                                            "text": {
+                                                "text": [llm_response],
+                                            },
+                                        },
+                                    ]
+                                }
+                            },
+                            status=status.HTTP_200_OK,
+                        )
 
                 if status_check.name == "confirmed_problem":
                     message.content = result
