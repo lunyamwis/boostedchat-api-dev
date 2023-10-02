@@ -107,7 +107,7 @@ class FallbackWebhook(APIView):
                 client_message.thread = thread
                 client_message.save()
                 # convo.append("DM:" + query)
-                if status_check.stage in range(0, 3):
+                if status_check.stage in range(0, 4):
                     if status_check.name == "sent_compliment":
                         convo.append(get_first_prompt(conversation_so_far=get_conversation_so_far(thread.thread_id)))
                     if status_check.name == "sent_first_question":
@@ -127,7 +127,11 @@ class FallbackWebhook(APIView):
                                 conversation_so_far=get_conversation_so_far(thread.thread_id), solutions=solutions
                             )
                         )
+
+                    print(status_check.name)
+                    print(status_check.name == "overcome_objections")
                     if status_check.name == "overcome_objections":
+                        print("<-----Prompt #4------->")
                         convo.append(
                             get_fourth_prompt(
                                 conversation_so_far=get_conversation_so_far(thread.thread_id),
@@ -198,10 +202,21 @@ class FallbackWebhook(APIView):
                         confirmed_problem_status = StatusCheck.objects.filter(name="confirmed_problem").last()
                         account.status = confirmed_problem_status
                         account.save()
-                    llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
+                    try:
+                        llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
+                    except Exception as error:
+                        try:
+                            llm_response = re.findall(r'____\n(.*?)\n____', result, re.DOTALL)
+                        except Exception as error:
+                            print(error)
 
                     if len(llm_response) == 0:
                         llm_response = re.findall(r"\_\_(.*?)\_\_", result)
+                    if "" in llm_response:
+                        llm_response = re.findall(r'____\n(.*?)\n____', result, re.DOTALL)
+                    if len(llm_response) == 0:
+                        llm_response = re.findall(r'\n_(.*?)\_', result, re.DOTALL)
+
 
                     answers_re = re.search(r"```(.*?)```", result, re.DOTALL)
                     answers = None
@@ -209,26 +224,52 @@ class FallbackWebhook(APIView):
                         answers = answers_re.group(1)
                     convo.append(result)
 
-                    message.content = llm_response[0]
-                    message.sent_by = "Robot"
-                    message.sent_on = timezone.now()
-                    message.thread = thread
-                    message.save()
-
-                    return Response(
-                        {
-                            "fulfillment_response": {
-                                "messages": [
-                                    {
-                                        "text": {
-                                            "text": [llm_response[0]],
+                    try:
+                        print("<<<try>>")
+                        print(llm_response)
+                        print("<<<try>>")
+                        message.content = llm_response[0]
+                        message.sent_by = "Robot"
+                        message.sent_on = timezone.now()
+                        message.thread = thread
+                        message.save()
+                        return Response(
+                            {
+                                "fulfillment_response": {
+                                    "messages": [
+                                        {
+                                            "text": {
+                                                "text": [llm_response[0]],
+                                            },
                                         },
-                                    },
-                                ]
-                            }
-                        },
-                        status=status.HTTP_200_OK,
-                    )
+                                    ]
+                                }
+                            },
+                            status=status.HTTP_200_OK,
+                        )
+                    except Exception as error:
+                        print("<<<err>>")
+                        print(llm_response)
+                        print("<<<err>>")
+                        message.content = llm_response
+                        message.sent_by = "Robot"
+                        message.sent_on = timezone.now()
+                        message.thread = thread
+                        message.save()
+                        return Response(
+                            {
+                                "fulfillment_response": {
+                                    "messages": [
+                                        {
+                                            "text": {
+                                                "text": [llm_response],
+                                            },
+                                        },
+                                    ]
+                                }
+                            },
+                            status=status.HTTP_200_OK,
+                        )
 
                 if status_check.name == "confirmed_problem":
                     message.content = result

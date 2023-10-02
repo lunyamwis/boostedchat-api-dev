@@ -336,15 +336,13 @@ def get_second_prompt(*args, **kwargs):
             ++confirmed problem - [specific problem]++, when the problem is rejected, return
             the status ++rejected problem - [specific problem]++.
             If the conversation doesn't naturally steer towards the listed problems, proactively begin inquiring about problems one at a time(also between four underscores) from the high probability
-            list!! Please be sure not to offer Booksy as a solution.
+            list and generic problem list. Ask questions within these boundaries after exhausting the qualifying questions. Don't go astray.
+            Please be sure not to offer Booksy as a solution.
 
             Qualifying Questions:
 
             - {kwargs['booking_question']}
             - {kwargs['calendar_availability_question']}
-            - {kwargs['questions']['na_question_1']}
-            - {kwargs['questions']['na_question_2']}
-            - {kwargs['questions']['na_question_3']}
 
             [[
             High Probability Problems:
@@ -353,7 +351,15 @@ def get_second_prompt(*args, **kwargs):
             - {kwargs['potential_problems']['potential_problem_3']}
 
             Generic Problems:
-            - {kwargs['generic_problems']}
+            - the juggling act of scheduling appointments prevents from focusing on craft and might annoy clients 
+            - no Instagram Book button to convert followers into client bookings 
+            - google ads acquisition with unknown cost per client 
+            - positive reviews are not visible on Google, Facebook, Instagram, and the booking system and don't acquire more new clients 
+            - booking system's poor customer service 
+            - they don't want to receive unjust reviews from cancelled bookings but their booking system (styleseat) allows those 
+            - Instagram activity and account could be more visible with tools that support content creation 
+            - the risk of losing business due to no-shows 
+
             ]]
             Do not use more than 20 words!!
             Only use three sentences to respond!!
@@ -382,8 +388,8 @@ def get_third_prompt(*args, **kwargs):
 
             make sure to use a tone of voice in line with those characteristics: "We’re revolutionizing the way people make appointments. Barbers and stylists are frustrated from wasting too much time managing their books when they could be focusing on their craft. Booksy offers a platform for them to streamline business management. Both a reliable receptionist and a trustworthy business partner, Booksy helps merchants grow and gives them time to master their skills. CONVERSATIONAL We are a business partner and friendly neighbor recommending a service or business. Our voice needs to match our attitude. Being corporate is too rigid, and can be alienating. Speaking casually and candidly allows customers to trust us. ENCOURAGING Our customers and merchants dream of fulfilling their full personal potential, and Booksy gives them the tools to accomplish that. GENUINE Booksy makes a promise to its customers. We’re adding a new meaning to their lives by redefining what it means to manage a business. How? By being accurate, honest, transparent, and receptive to customer feedback.
 
-    ```category = barber```
-                """
+            ```category = barber```
+            """
 
 def get_fourth_prompt(*args, **kwargs):
 
@@ -424,38 +430,8 @@ Handle disinterest respectfully with professionalism and a customer-centric appr
 
 
             Conversation since proposed solution:
-
-            you: Yikes, those hidden fees on StyleSeat are a bummer! How about a straightforward $30 monthly plan on Booksy with zero hidden charges? We're all about clarity and are available around the clock to chat if you ever need help. Thoughts?
-
-            barber: I prefer styleseat
-            you: I understand where you're coming from and it's completely fine to have a preferred system. However, I'm curious if your preference for StyleSeat comes from familiarity with the system or because it truly meets all your barbering business needs.
-
-            If there are any specific features or impacts on your business operation that keep you tied to StyleSeat, I would love to know. Maybe we can match these or propose better alternatives.
-
-            For instance, two potential issues I observe with StyleSeat include allowing unjust reviews from canceled bookings and hidden fees. On the other hand, Booksy has a zero-tolerance policy for unjust reviews and sticks to a transparent $30 monthly plan without any hidden charges.
-
-            In addition to this, have you ever found scheduling appointments to be a juggling act that diverts your focus from your craft? Or do you lose business due to no-shows? Booksy has features to help manage your busy schedule effectively and offer protection against no-shows.
-
-            I'd also like to mention that Booksy provides tools that enhance your Instagram activity and visibility, which in turn could bring you more clients.
-
-            I understand that you are loyal to StyleSeat, but I'm confident Booksy can offer your barber business more efficiency and profitability.
-
-            Would you consider at least trying us out with a free trial and seeing whether Booksy suits your business better?
-            barber: I am not sure if I want to just quickly move like I have so much data and to be honest the swap can be really scary if I loose all my data
-            you: Your preference for StyleSeat's familiarity is absolutely understandable. Switching platforms can seem daunting, but Booksy is designed to make that process as smooth as possible. We offer effortless data transfer and provide a support team available 24/7 to assist with any questions or concerns you may have.
-
-            Our dedicated team goes above and beyond to ensure a seamless transition while providing comprehensive business tools, including marketing and social media management, to enhance your barber business operations. Best of all, we offer a transparent pricing of $30/month with no hidden fees, unlike StyleSeat.
-
-            Booksy also has a user-friendly app with an integrated marketing toolbox and reliable customer support that ensures you have total control over your bookings and privacy options.
-
-            I feel that Booksy can truly be a beneficial addition for your barbershop. You won't know until you try - and we offer a free trial so you can see the positive impact firsthand without any financial commitment on your part. Are you open to exploring what Booksy can do for you?
-            barber: Yeah I can explore but I want to be double sure about cost-effectiveness
-            you: I totally understand your concern about losing data. But with Booksy, we ensure a seamless, worry-free data transfer that preserves all your important information. How about we arrange an assisted free trial so you can see this process for yourself?
-            barber: ok thank you for your help but you have not answered my question I want to know about client charges, how is booksy charges better than styleseat?
-            you: I understand your concern about the costs. With Booksy, your clients book for free and you pay a transparent monthly fee of $30. Unlike StyleSeat, we have no hidden or client booking fees. Does this allay your fears about cost-effectiveness?
-            barber: ok thank you I think I am willing to give it a try
-            you: Great to hear that you're open to giving Booksy a try! We are confident that you'll find our platform a valuable addition to your business. We'll follow up shortly with details about your free trial.
-
+            {kwargs['conversation_so_far']}
+            
             Potential new problems we can help with:
 
             - the juggling act of scheduling appointments prevents from focusing on craft and might annoy clients
