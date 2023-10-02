@@ -1,17 +1,15 @@
-from datetime import datetime
 import json
 import logging
 import re
 import uuid
-from django.utils import timezone
+from datetime import datetime
 
 from django.utils import timezone
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from dialogflow.models import InstaLead, InstaMessage
-from dialogflow.serializers import InstagramMessageSerializer, CreateLeadSerializer, GetInstagramMessageSerializer, InstagramMessageSerializer
 
 from data.helpers.random_data import (
     get_matching_objection_response,
@@ -19,12 +17,18 @@ from data.helpers.random_data import (
     get_matching_solutions,
     get_potential_problems,
 )
+from dialogflow.models import InstaLead, InstaMessage
+from dialogflow.serializers import CreateLeadSerializer, GetInstagramMessageSerializer, InstagramMessageSerializer
 from instagram.helpers.llm import query_gpt
-from instagram.tasks import send_human_insta_message, send_and_save_insta_message, simulate_check_new_messages, send_and_save_insta_message_overload
-from django_celery_beat.models import CrontabSchedule, PeriodicTask
-from instagram.models import Account, OutSourced, StatusCheck, Thread, Message
+from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
+from instagram.tasks import (
+    send_and_save_insta_message,
+    send_and_save_insta_message_overload,
+    send_human_insta_message,
+    simulate_check_new_messages,
+)
 
-from .prompt import get_prompt, get_first_prompt, get_second_prompt, get_third_prompt, get_fourth_prompt
+from .prompt import get_first_prompt, get_prompt, get_second_prompt, get_third_prompt
 
 
 class FallbackWebhook(APIView):
@@ -44,7 +48,7 @@ class FallbackWebhook(APIView):
             query_result = req.get("fulfillmentInfo")
 
             query = req.get("text")
-            account_id = req.get('payload').get("account_id")
+            account_id = req.get("payload").get("account_id")
 
             if query_result.get("tag") == "fallback":
                 account = Account.objects.get(id=account_id)
@@ -117,9 +121,11 @@ class FallbackWebhook(APIView):
                             )
                         )
                     if status_check.name == "confirmed_problem":
-                        convo.append(get_third_prompt(
-                            conversation_so_far=get_conversation_so_far(thread.thread_id),
-                            solutions=solutions))
+                        convo.append(
+                            get_third_prompt(
+                                conversation_so_far=get_conversation_so_far(thread.thread_id), solutions=solutions
+                            )
+                        )
                     if status_check.name == "overcome_objections":
                         convo.append(
                             get_prompt(
@@ -144,7 +150,7 @@ class FallbackWebhook(APIView):
                 result = result.strip("\n")
 
                 if status_check.name == "sent_compliment":
-                    asked_first_question_re = re.findall(r'```(.*?)```', result)
+                    asked_first_question_re = re.findall(r"```(.*?)```", result)
 
                     message.content = result
                     message.sent_by = "Robot"
@@ -152,6 +158,9 @@ class FallbackWebhook(APIView):
                     message.thread = thread
                     message.save()
                     if len(asked_first_question_re) > 0 and asked_first_question_re[0] == "SENT-QUESTION":
+                        status_check.name = "sent_first_question"
+                        status_check.stage = 2
+                        status_check.save()
                         sent_first_question_status = StatusCheck.objects.filter(name="sent_first_question").last()
                         account.status = sent_first_question_status
                         account.save()
@@ -179,6 +188,9 @@ class FallbackWebhook(APIView):
                             confirmation_counter += 1
 
                     if confirmation_counter >= 3:
+                        status_check.name = "confirmed_problem"
+                        status_check.stage = 2
+                        status_check.save()
                         confirmed_problem_status = StatusCheck.objects.filter(name="confirmed_problem").last()
                         account.status = confirmed_problem_status
                         account.save()
@@ -220,6 +232,9 @@ class FallbackWebhook(APIView):
                     message.sent_on = timezone.now()
                     message.thread = thread
                     message.save()
+                    status_check.name = "overcome_objections"
+                    status_check.stage = 3
+                    status_check.save()
                     return Response(
                         {
                             "fulfillment_response": {
@@ -337,18 +352,17 @@ class NeedsAssesmentWebhook(APIView):
             print(error)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 def create_lead(request):
     """Creates a lead without sending the first compliment"""
     serializer = CreateLeadSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response({"errors": serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST)
+    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['PATCH'])
+@api_view(["PATCH"])
 def update_lead(request, leadId):
     """Updates a lead"""
     try:
@@ -360,11 +374,10 @@ def update_lead(request, leadId):
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response({"errors": serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST)
+    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['PATCH'])
+@api_view(["PATCH"])
 def start_lead_engagement(request, leadId):
     try:
         lead = InstaLead.objects.get(id=leadId)
@@ -394,7 +407,7 @@ def delete_lead(request):
         return Response({"message": "Lead does not exist"}, status=status.HTTP_201_CREATED)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 def create_lead_and_send_compliment(request):
     compliment_prompt = get_prompt(1, client_message="")
 
@@ -410,23 +423,21 @@ def create_lead_and_send_compliment(request):
         serializer.save()
         send_and_save_insta_message.delay(result, serializer.validated_data["id"])
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response({"errors": serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST)
+    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 def get_leads(request):
-    leads = InstaLead.objects.order_by('-updated_on')
+    leads = InstaLead.objects.order_by("-updated_on")
     serializer = CreateLeadSerializer(leads, many=True)
     return Response(serializer.data)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 def send_human_insta_message(request, leadId):
     content = request.data.get("content")
     if leadId is None or content is None:
-        return Response({"message": "Please provide lead id and message content"},
-                        status=status.HTTP_400_BAD_REQUEST)
+        return Response({"message": "Please provide lead id and message content"}, status=status.HTTP_400_BAD_REQUEST)
     try:
         lead_obj = InstaLead.objects.get(pk=leadId)
     except InstaLead.DoesNotExist:
@@ -434,29 +445,23 @@ def send_human_insta_message(request, leadId):
 
     send_human_insta_message.delay(content, lead_obj.igname)
 
-    message_data = {
-        "content": content,
-        "lead_id": leadId,
-        "sent_by": "Human",
-        "sent_on": datetime.now()
-    }
+    message_data = {"content": content, "lead_id": leadId, "sent_by": "Human", "sent_on": datetime.now()}
 
     serializer = InstagramMessageSerializer(data=message_data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response({"errors": serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST)
+    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 def simulate_check_message(request):
     """Creates a lead without sending the first compliment"""
-    lead_id = request.data.get('lead_id')
+    lead_id = request.data.get("lead_id")
 
     try:
         lead = InstaLead.objects.get(id=lead_id)
-        simulate_check_new_messages(request.data.get('message'), lead)
+        simulate_check_new_messages(request.data.get("message"), lead)
         return Response({"message": "Simulation success"}, status=status.HTTP_201_CREATED)
     except InstaLead.DoesNotExist:
         return Response({"message": "Lead does not exist"}, status=status.HTTP_400_BAD_REQUEST)
@@ -472,16 +477,16 @@ def delete_message(request, pk):
         return Response({"message": "Message does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 def get_messages(request):
-    messages = InstaMessage.objects.order_by('-sent_on')
+    messages = InstaMessage.objects.order_by("-sent_on")
     serializer = GetInstagramMessageSerializer(messages, many=True)
     return Response(serializer.data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 def get_messages_by_lead(request, leadId):
-    messages = InstaMessage.objects.filter(lead_id=leadId).order_by('-sent_on')
+    messages = InstaMessage.objects.filter(lead_id=leadId).order_by("-sent_on")
     serializer = InstagramMessageSerializer(messages, many=True)
     return Response(serializer.data)
 
