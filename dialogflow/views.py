@@ -151,8 +151,8 @@ class FallbackWebhook(APIView):
 
                 if status_check.name == "sent_compliment":
                     asked_first_question_re = re.findall(r"```(.*?)```", result)
-
-                    message.content = result
+                    matches_not_within_backticks = re.findall(r"(?<!```)([^`]+)(?!```)", result, re.DOTALL)
+                    message.content = matches_not_within_backticks[-1]
                     message.sent_by = "Robot"
                     message.sent_on = timezone.now()
                     message.thread = thread
@@ -171,7 +171,7 @@ class FallbackWebhook(APIView):
                                 "messages": [
                                     {
                                         "text": {
-                                            "text": [result],
+                                            "text": [matches_not_within_backticks[-1]],
                                         },
                                     },
                                 ]
