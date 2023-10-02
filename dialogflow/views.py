@@ -44,7 +44,8 @@ class FallbackWebhook(APIView):
             query_result = req.get("fulfillmentInfo")
 
             query = req.get("text")
-            account_id = req.get('payload').get("account_id")
+            # account_id = req.get('payload').get("account_id")
+            account_id = "-NeCzVITeCfyMeaZMaUw"
 
             if query_result.get("tag") == "fallback":
                 account = Account.objects.get(id=account_id)
@@ -122,7 +123,7 @@ class FallbackWebhook(APIView):
                             solutions=solutions))
                     if status_check.name == "overcome_objections":
                         convo.append(
-                            get_prompt(
+                            get_fourth_prompt(
                                 conversation_so_far=get_conversation_so_far(thread.thread_id),
                                 objection=objection_response,
                                 objection_system=outsourced_data.source,
@@ -153,8 +154,10 @@ class FallbackWebhook(APIView):
                     message.save()
                     if len(asked_first_question_re) > 0 and asked_first_question_re[0] == "SENT-QUESTION":
                         sent_first_question_status = StatusCheck.objects.filter(name="sent_first_question").last()
+
                         account.status = sent_first_question_status
                         account.save()
+                        print(account)
 
                     return Response(
                         {
@@ -552,4 +555,4 @@ def get_conversation_so_far(thread_id):
         else:
             formatted_message = f"You: {message.content}"
         formatted_messages.append(formatted_message)
-    return formatted_messages
+    return "\n".join(formatted_messages)
