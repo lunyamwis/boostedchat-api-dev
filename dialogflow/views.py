@@ -48,8 +48,9 @@ class FallbackWebhook(APIView):
             query_result = req.get("fulfillmentInfo")
 
             query = req.get("text")
-            # account_id = req.get("payload").get("account_id")
-            account_id = "-NeCzVITeCfyMeaZMaUw"
+
+            account_id = req.get("payload").get("account_id")
+
             if query_result.get("tag") == "fallback":
                 account = Account.objects.get(id=account_id)
                 thread = Thread.objects.get(account=account)
@@ -124,7 +125,9 @@ class FallbackWebhook(APIView):
                     if status_check.name == "confirmed_problem":
                         convo.append(
                             get_third_prompt(
-                                conversation_so_far=get_conversation_so_far(thread.thread_id), solutions=solutions
+                                conversation_so_far=get_conversation_so_far(thread.thread_id),
+                                 confirmed_problems = account.confirmed_problems,
+                                 solutions=solutions
                             )
                         )
 
@@ -187,15 +190,21 @@ class FallbackWebhook(APIView):
                 if status_check.name == "sent_first_question":
                     confirmed_rejected_problems_arr = re.findall(r"\+\+(.*?)\+\+", result)
                     confirmation_counter = 0
+                    # for problem in confirmed_rejected_problems_arr:
+                    #     if "confirmed" in problem:
+                    #         list_conf_pr = problem.split(",")
+                    #         if len(list_conf_pr) == 3:
+                    #             confirmation_counter = 3
+
                     for problem in confirmed_rejected_problems_arr:
                         if "confirmed" in problem:
                             confirmation_counter += 1
 
-                    if confirmation_counter >= 3:
+                    if confirmation_counter >= 2:
                         confirmed_problem_status = StatusCheck.objects.get(name="confirmed_problem")
                         problems = re.findall(r"```(.*?)```", result, re.DOTALL)
-                        account.confirmed_problems = [problem for problem in problems if "confirmed" in problem]
-                        account.rejected_problems = [problem for problem in problems if "rejected" in problem]
+                        account.confirmed_problems = [problem for problem in confirmed_rejected_problems_arr if "confirmed" in problem]
+                        account.rejected_problems = [problem for problem in confirmed_rejected_problems_arr if "rejected" in problem]
                         account.status = confirmed_problem_status
                         account.save()
                     try:
@@ -212,6 +221,8 @@ class FallbackWebhook(APIView):
                         llm_response = re.findall(r"____\n(.*?)\n____", result, re.DOTALL)
                     if len(llm_response) == 0:
                         llm_response = re.findall(r"\n_(.*?)\_", result, re.DOTALL)
+                    if len(llm_response) == 0:
+                        llm_response = re.findall(r"\_(.*?)\_", result)
 
                     answers_re = re.search(r"```(.*?)```", result, re.DOTALL)
                     answers = None
@@ -274,7 +285,7 @@ class FallbackWebhook(APIView):
                     message.save()
                     overcome_objection_status = StatusCheck.objects.get(name="overcome_objections")
                     account.status = overcome_objection_status
-                    status_check.save()
+                    account.save()
                     return Response(
                         {
                             "fulfillment_response": {
@@ -588,7 +599,11 @@ def update_check_message_periodic_task(request):
 
 
 def get_conversation_so_far(thread_id):
-    messages = Message.objects.filter(thread=thread_id)
+    messages = Message.objects.filter(thread__thread_id=thread_id)
+    print("conversation so far")
+    print(thread_id)
+    print(messages)
+    print("conversation so far")
     formatted_messages = []
     for message in messages:
         formatted_message = ""
