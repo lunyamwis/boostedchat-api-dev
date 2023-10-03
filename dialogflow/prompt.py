@@ -1,5 +1,3 @@
-
-
 def get_prompt(prompt_number, *args, **kwargs):
 
     prompts = {
