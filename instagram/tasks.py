@@ -133,38 +133,64 @@ def generate_and_send_response():
 
     for thread_ in Thread.objects.all():
         instagrapi_messages = cl.direct_messages(thread_id=thread_.thread_id)
-        saved_messages_arr = Message.objects.filter(thread=thread_.thread_id).order_by("-sent_on")
-        if instagrapi_messages[0].text == saved_messages_arr[0].content:
-            continue
-        for instagrapi_message in instagrapi_messages:
-            if instagrapi_message != saved_messages_arr[0].content:
-                username = cl.username_from_user_id(instagrapi_message.user_id)
-
-                sent_by = "Robot"
-                if username == thread_.account.igname:
-                    sent_by = "Client"
-                message = Message()
-                message.content = instagrapi_message.text
-                message.sent_by = sent_by
-                message.sent_on = instagrapi_message.timestamp
+        saved_messages_arr = Message.objects.filter(thread__thread_id=thread_.thread_id).order_by("-sent_on")
+        try:
+            
+            message = Message()
+            if not saved_messages_arr.exists():
+                message.content = instagrapi_messages[0].text
+                message.sent_by = "Client"
+                message.sent_on = instagrapi_messages[0].timestamp
                 message.thread = thread_
                 message.save()
-            else:
-                break
+                generated_response = detect_intent(
+                    project_id="boostedchatapi",
+                    session_id=str(uuid.uuid4()),
+                    message=instagrapi_messages[0].text,
+                    language_code="en",
+                    account_id=thread_.account.id
+                )
 
-        generated_response = detect_intent(
-            project_id="boostedchatapi",
-            session_id=str(uuid .uuid4()),
-            message=instagrapi_messages[0].text,
-            language_code="en",
-        )
+                send_message.delay(
+                    " ".join(map(str,generated_response)),
+                    thread_id=thread_.thread_id,
+                )
+            if instagrapi_messages[0].timestamp == saved_messages_arr[0].sent_on:
+                print("Bypassed")
+                continue
+            for instagrapi_message in instagrapi_messages:
+                print(instagrapi_message.timestamp)
+                print(saved_messages_arr[0].sent_on)
+                if instagrapi_message.timestamp != saved_messages_arr[0].sent_on:
+                    username = cl.username_from_user_id(instagrapi_message.user_id)
 
-        send_message.delay(
-            f"""
-            {generated_response},\n
-            """,
-            thread_id=thread_.thread_id,
-        )
+                    sent_by = "Robot"
+                    if username == thread_.account.igname:
+                        sent_by = "Client"
+                    message.content = instagrapi_message.text
+                    message.sent_by = sent_by
+                    message.sent_on = instagrapi_message.timestamp
+                    message.thread = thread_
+                    message.save()
+                else:
+                    break
+
+            generated_response = detect_intent(
+                project_id="boostedchatapi",
+                session_id=str(uuid .uuid4()),
+                message=instagrapi_messages[0].text,
+                language_code="en",
+                account_id=thread_.account.id
+            )
+            print(generated_response)
+            print(" ".join(map(str, generated_response)))
+
+            send_message.delay(
+                " ".join(map(str, generated_response)),
+                thread_id=thread_.thread_id,
+            )
+        except Exception as error:
+            print(error)
 
 
 @shared_task()

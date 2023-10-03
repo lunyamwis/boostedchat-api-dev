@@ -4,7 +4,7 @@ from django.conf import settings
 from setup.token import acquire_token
 
 
-def detect_intent(project_id, session_id, message, language_code):
+def detect_intent(project_id, session_id, message, language_code, account_id):
     api_url = (
         f"{settings.DIALOGFLOW_BASE_URL}agents/75e6b858-16b4-428f-92ed-3b53930144a1/sessions/{session_id}:detectIntent"
     )
@@ -22,7 +22,7 @@ def detect_intent(project_id, session_id, message, language_code):
         },
         "queryParams": {
             "payload": {
-                "account_id": "-NeCzVITeCfyMeaZMaUw",
+                "account_id": account_id,
             }
         }
         }
