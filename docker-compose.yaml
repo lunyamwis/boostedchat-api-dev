@@ -27,7 +27,7 @@ services:
       - letsencrypt:/etc/letsencrypt # Mount LetsEncrypt certificates
     links:
       - web:web
-    command: ["/bin/sh", "-c", "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"] # Renew SSL certificates every 6 hours
+    command: ["/bin/sh", "-c", "certbot certonly --non-interactive --agree-tos --nginx -m 'tomek@boostedchat.com' -d 'api.boostedchat.com'"] # Renew SSL certificates every 6 hours
 
 
   certbot:
