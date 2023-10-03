@@ -31,7 +31,7 @@ ALLOWED_HOSTS = [
     "api.boostedchat.com",
     "127.0.0.1",
 ]
-
+CSRF_TRUSTED_ORIGINS = ["https://api.boostedchat.com"]
 DIALOGFLOW_BASE_URL = (
     "https://us-central1-dialogflow.googleapis.com/v3beta1/projects/boostedchatapi/locations/us-central1/"
 )
