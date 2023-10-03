@@ -14,8 +14,8 @@ server {
     server_name api.boostedchat.com;
     charset utf-8;
 
-    ssl_certificate /etc/letsencrypt/live/api.boostedchat.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.boostedchat.com/privkey.pem;
+    // ssl_certificate /etc/letsencrypt/live/api.boostedchat.com/fullchain.pem;
+    // ssl_certificate_key /etc/letsencrypt/live/api.boostedchat.com/privkey.pem;
 
     location ~ /.well-known  {
         allow all;
