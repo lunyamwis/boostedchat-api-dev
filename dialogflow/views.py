@@ -53,7 +53,7 @@ class FallbackWebhook(APIView):
 
             if query_result.get("tag") == "fallback":
                 account = Account.objects.get(id=account_id)
-                thread = Thread.objects.get(account=account)
+                thread = Thread.objects.filter(account=account).last()
 
                 outsourced_data = OutSourced.objects.filter(account=account).last()
                 thread.account = account
@@ -126,8 +126,8 @@ class FallbackWebhook(APIView):
                         convo.append(
                             get_third_prompt(
                                 conversation_so_far=get_conversation_so_far(thread.thread_id),
-                                 confirmed_problems = account.confirmed_problems,
-                                 solutions=solutions
+                                confirmed_problems=account.confirmed_problems,
+                                solutions=solutions,
                             )
                         )
 
@@ -159,6 +159,9 @@ class FallbackWebhook(APIView):
 
                 if status_check.name == "sent_compliment":
                     asked_first_question_re = re.findall(r"```(.*?)```", result)
+                    print("<<<<<<<<<<<question>>>>>>>>>>>>>")
+                    print(asked_first_question_re)
+                    print("<<<<<<<<<<<question>>>>>>>>>>>>>")
                     # matches_not_within_backticks = re.findall(r"(?<!```)([^`]+)(?!```)", result, re.DOTALL)
                     robot_message = Message()
                     robot_message.content = result
@@ -166,8 +169,9 @@ class FallbackWebhook(APIView):
                     robot_message.sent_on = timezone.now()
                     robot_message.thread = thread
                     robot_message.save()
-                    if len(asked_first_question_re) > 0 and asked_first_question_re[0] == "SENT-QUESTION":
-                        sent_first_question_status = StatusCheck.objects.get(name="sent_first_question")
+
+                    if len(asked_first_question_re) > 0 and asked_first_question_re[0] == "SENT-QUESTION!":
+                        sent_first_question_status = StatusCheck.objects.filter(name="sent_first_question").last()
                         account.status = sent_first_question_status
                         account.save()
                         print(account)
@@ -178,7 +182,7 @@ class FallbackWebhook(APIView):
                                 "messages": [
                                     {
                                         "text": {
-                                            "text": [result],
+                                            "text": [result.replace("```SENT-QUESTION!```", "")],
                                         },
                                     },
                                 ]
@@ -201,10 +205,14 @@ class FallbackWebhook(APIView):
                             confirmation_counter += 1
 
                     if confirmation_counter >= 2:
-                        confirmed_problem_status = StatusCheck.objects.get(name="confirmed_problem")
+                        confirmed_problem_status = StatusCheck.objects.filter(name="confirmed_problem").last()
                         problems = re.findall(r"```(.*?)```", result, re.DOTALL)
-                        account.confirmed_problems = [problem for problem in confirmed_rejected_problems_arr if "confirmed" in problem]
-                        account.rejected_problems = [problem for problem in confirmed_rejected_problems_arr if "rejected" in problem]
+                        account.confirmed_problems = [
+                            problem for problem in confirmed_rejected_problems_arr if "confirmed" in problem
+                        ]
+                        account.rejected_problems = [
+                            problem for problem in confirmed_rejected_problems_arr if "rejected" in problem
+                        ]
                         account.status = confirmed_problem_status
                         account.save()
                     try:
@@ -223,6 +231,9 @@ class FallbackWebhook(APIView):
                         llm_response = re.findall(r"\n_(.*?)\_", result, re.DOTALL)
                     if len(llm_response) == 0:
                         llm_response = re.findall(r"\_(.*?)\_", result)
+
+                    if len(llm_response) == 0:
+                        llm_response = response.get("choices")[0].get("message").get("content")
 
                     answers_re = re.search(r"```(.*?)```", result, re.DOTALL)
                     answers = None
@@ -283,7 +294,7 @@ class FallbackWebhook(APIView):
                     message.sent_on = timezone.now()
                     message.thread = thread
                     message.save()
-                    overcome_objection_status = StatusCheck.objects.get(name="overcome_objections")
+                    overcome_objection_status = StatusCheck.objects.filter(name="overcome_objections").last()
                     account.status = overcome_objection_status
                     account.save()
                     return Response(
@@ -312,11 +323,11 @@ class FallbackWebhook(APIView):
 
                         status_check.save()
 
-                    matches_not_within_backticks = re.findall(r"(?<!```)([^`]+)(?!```)", result, re.DOTALL)
+                    matches_not_within_backticks = result.replace("```", "")
                     print(matches_not_within_backticks)
                     account.status = status_check
                     account.save()
-                    message.content = matches_not_within_backticks[-1]
+                    message.content = matches_not_within_backticks.replace("\n".join(matches_within_backticks), "")
                     message.sent_by = "Robot"
                     message.sent_on = timezone.now()
                     message.thread = thread
@@ -327,7 +338,11 @@ class FallbackWebhook(APIView):
                                 "messages": [
                                     {
                                         "text": {
-                                            "text": [matches_not_within_backticks[-1]],
+                                            "text": [
+                                                matches_not_within_backticks.replace(
+                                                    "\n".join(matches_within_backticks), ""
+                                                )
+                                            ],
                                         },
                                     },
                                 ]

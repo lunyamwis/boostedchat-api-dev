@@ -1,14 +1,13 @@
-import json
 import math
 import random
 
 from django.db.models import Q
-from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 from authentication.models import User
 from data.helpers.random_data import get_random_compliment
@@ -81,9 +80,6 @@ class SalesRepManager(viewsets.ModelViewSet):
                     account = get_object_or_404(Account, id=allocations[j])
 
                     salesreps[i].instagram.add(account)
-
-                    statuscheck, _ = StatusCheck.objects.update_or_create(stage=1, name="sent_first_compliment")
-                    account.status = statuscheck
 
                     account.save()
                     print(account.igname)
