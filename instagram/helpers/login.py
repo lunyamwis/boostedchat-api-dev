@@ -71,7 +71,7 @@ def login_user(username=os.getenv("IG_USERNAME"), password=os.getenv("IG_PASSWOR
     cl.challenge_code_handler = challenge_code_handler(username, 1)
     cl.delay_range = [1, 3]
     max_attempts = 5
-    session_file_path = Path("session.json")
+    session_file_path = Path(f"{username}.json")
     if os.path.exists(session_file_path):
         for attempt in range(1, max_attempts + 1):
             session = cl.load_settings(session_file_path)
