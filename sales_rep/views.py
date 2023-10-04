@@ -14,7 +14,7 @@ from data.helpers.random_data import get_random_compliment
 from instagram.helpers.llm import query_gpt
 from instagram.helpers.login import login_user
 from instagram.models import Account, StatusCheck
-from instagram.tasks import send_message
+from instagram.tasks import send_first_compliment
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x
 from .models import SalesRep
@@ -124,7 +124,7 @@ class SalesRepManager(viewsets.ModelViewSet):
                                 random_compliment = (
                                     random_compliment_state.get("choices")[0].get("message").get("content")
                                 )
-                                send_message.delay(random_compliment, username=account.igname)
+                                send_first_compliment.delay(random_compliment, username=account.igname)
                                 sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
                                 account.status = sent_compliment_status
                                 account.save()
