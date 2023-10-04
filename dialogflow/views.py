@@ -366,7 +366,21 @@ class FallbackWebhook(APIView):
                 status=status.HTTP_200_OK,
             )
         except Exception as error:
-            print(error)
+            logging.warn(error)
+            return Response(
+                {
+                    "fulfillment_response": {
+                        "messages": [
+                            {
+                                "text": {
+                                    "text": ["Come again"],
+                                },
+                            },
+                        ]
+                    }
+                },
+                status=status.HTTP_200_OK,
+            )
 
 
 class NeedsAssesmentWebhook(APIView):
