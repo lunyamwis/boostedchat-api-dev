@@ -5,6 +5,7 @@ from .views import (
     CommentViewSet,
     DMViewset,
     HashTagViewSet,
+    MessageViewSet,
     PhotoViewSet,
     ReelViewSet,
     StoryViewSet,
@@ -20,6 +21,7 @@ router.register(r"video", VideoViewSet, basename="video")
 router.register(r"reel", ReelViewSet, basename="reel")
 router.register(r"story", StoryViewSet, basename="story")
 router.register(r"dm", DMViewset, basename="dm")
+router.register(r"message", MessageViewSet, basename="message")
 urlpatterns = router.urls
 
 # [

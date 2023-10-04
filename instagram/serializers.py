@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message
 
 
 class AccountSerializer(serializers.ModelSerializer):
@@ -81,3 +81,8 @@ class ThreadSerializer(serializers.ModelSerializer):
         model = Thread
         fields = ["id", "username", "thread_id", "replied", "replied_at"]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = "__all__"

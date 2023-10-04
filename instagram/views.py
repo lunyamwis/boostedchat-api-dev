@@ -13,9 +13,10 @@ from rest_framework.response import Response
 from base.helpers.push_id import PushID
 from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
+from sales_rep.models import SalesRep
 
 from .helpers.check_response import CheckResponse
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message
 from .serializers import (
     AccountSerializer,
     AddContentSerializer,
@@ -27,6 +28,7 @@ from .serializers import (
     ThreadSerializer,
     UploadSerializer,
     VideoSerializer,
+    MessageSerializer,
 )
 from .tasks import send_comment, send_message
 
@@ -155,6 +157,21 @@ class AccountViewSet(viewsets.ModelViewSet):
         account.stage = 2
         account.save()
         return Response({"stage": 2, "success": True})
+
+    @action(detail=True, methods=['post'], url_path="reset-account")
+    def reset_account(self, request, pk=None):
+        account = self.get_object()
+
+        Thread.objects.filter(account=account).delete()
+        account.status = None
+        account.confirmed_problems = ""
+        account.rejected_problems = ""
+        account.save()
+        salesReps = SalesRep.objects.filter(instagram = account)
+        for salesRep in salesReps:
+            salesRep.instagram.remove(account)
+        return Response({"message": "Account reset successfully"})
+
 
 
 class HashTagViewSet(viewsets.ModelViewSet):
@@ -802,6 +819,8 @@ class DMViewset(viewsets.ModelViewSet):
         except Exception as error:
             return Response({"error": str(error)})
 
+
+
     @action(detail=True, methods=["post"], url_path="send-message")
     def send_message(self, request, pk=None):
 
@@ -839,3 +858,37 @@ class DMViewset(viewsets.ModelViewSet):
                     "replied_at": thread.replied_at,
                 }
             )
+
+
+    @action(detail=True, methods=["get"], url_path="get-thread-messages")
+    def get_thread_messages(self, request, pk=None):
+
+        thread = self.get_object()
+        messages = Message.objects.filter(thread=thread)
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
+    
+
+    @action(detail=True, methods=["post"], url_path="delete-all-thread-messages")
+    def delete_thread_messages(self, request, pk=None):
+
+        thread = self.get_object()
+        Message.objects.filter(thread=thread).delete()
+        return Response({"message": "Messages deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+    
+
+
+class MessageViewSet(viewsets.ModelViewSet):
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+
+    def get_serializer_class(self):
+        return self.serializer_class
+
+
+    @action(detail=True, methods=["delete"], url_path="delete-message")
+    def delete_message(self, request, pk=None):
+
+        message = self.get_object()
+        message.delete()
+        return Response({"message": "Message deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
