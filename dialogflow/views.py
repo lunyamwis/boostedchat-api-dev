@@ -317,11 +317,13 @@ class FallbackWebhook(APIView):
                     print(matches_within_backticks)
                     for objection in matches_within_backticks:
                         if "OVERCAME".upper() in objection:
-                            status_check.name = "overcome"
+                            overcome_status = StatusCheck.objects.filter(name="overcome").last()
+                            account.status = overcome_status
                         if "DEFERRED".upper() in objection:
-                            status_check.name = "deferred"
+                            deferred_status = StatusCheck.objects.filter(name="deferred").last()
+                            account.status = deferred_status
 
-                        status_check.save()
+                        account.save()
 
                     matches_not_within_backticks = result.replace("```", "")
                     print(matches_not_within_backticks)
