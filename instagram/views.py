@@ -766,7 +766,7 @@ class DMViewset(viewsets.ModelViewSet):
             f"""
             {generated_response},\n
             """,
-            thread_id=thread.thread_id,
+            thread=thread,
         )
         return Response(
             {
@@ -834,7 +834,7 @@ class DMViewset(viewsets.ModelViewSet):
                 f"""
                 {generated_response},\n
                 """,
-                thread_id=thread.thread_id,
+                thread=thread,
             )
 
             return Response(
@@ -846,7 +846,7 @@ class DMViewset(viewsets.ModelViewSet):
                 }
             )
         else:
-            send_message.delay(serializer.data.get("human_response"), thread_id=thread.thread_id)
+            send_message.delay(serializer.data.get("human_response"), thread=thread)
 
             return Response(
                 {
