@@ -41,7 +41,6 @@ class FallbackWebhook(APIView):
         convo = []
         status_check = None
         thread = Thread()
-        message = Message()
 
         try:
             req = request.data
@@ -163,12 +162,6 @@ class FallbackWebhook(APIView):
                     print(asked_first_question_re)
                     print("<<<<<<<<<<<question>>>>>>>>>>>>>")
                     # matches_not_within_backticks = re.findall(r"(?<!```)([^`]+)(?!```)", result, re.DOTALL)
-                    robot_message = Message()
-                    robot_message.content = result
-                    robot_message.sent_by = "Robot"
-                    robot_message.sent_on = timezone.now()
-                    robot_message.thread = thread
-                    robot_message.save()
 
                     if len(asked_first_question_re) > 0 and asked_first_question_re[0] == "SENT-QUESTION!":
                         sent_first_question_status = StatusCheck.objects.filter(name="sent_first_question").last()
@@ -245,11 +238,6 @@ class FallbackWebhook(APIView):
                         print("<<<try>>")
                         print(llm_response)
                         print("<<<try>>")
-                        message.content = llm_response[0]
-                        message.sent_by = "Robot"
-                        message.sent_on = timezone.now()
-                        message.thread = thread
-                        message.save()
                         return Response(
                             {
                                 "fulfillment_response": {
@@ -268,11 +256,6 @@ class FallbackWebhook(APIView):
                         print("<<<err>>")
                         print(llm_response)
                         print("<<<err>>")
-                        message.content = llm_response
-                        message.sent_by = "Robot"
-                        message.sent_on = timezone.now()
-                        message.thread = thread
-                        message.save()
                         return Response(
                             {
                                 "fulfillment_response": {
@@ -289,11 +272,6 @@ class FallbackWebhook(APIView):
                         )
 
                 if status_check.name == "confirmed_problem":
-                    message.content = result
-                    message.sent_by = "Robot"
-                    message.sent_on = timezone.now()
-                    message.thread = thread
-                    message.save()
                     overcome_objection_status = StatusCheck.objects.filter(name="overcome_objections").last()
                     account.status = overcome_objection_status
                     account.save()
@@ -329,11 +307,6 @@ class FallbackWebhook(APIView):
                     print(matches_not_within_backticks)
                     account.status = status_check
                     account.save()
-                    message.content = matches_not_within_backticks.replace("\n".join(matches_within_backticks), "")
-                    message.sent_by = "Robot"
-                    message.sent_on = timezone.now()
-                    message.thread = thread
-                    message.save()
                     return Response(
                         {
                             "fulfillment_response": {
