@@ -54,6 +54,7 @@ def send_first_compliment(message_content, username):
     if type(user_id) != list:
         user_id = [user_id]
 
+    account = None
     try:
         account = Account.objects.get(igname=username)
     except Exception as error:
@@ -83,58 +84,37 @@ def send_first_compliment(message_content, username):
 def check_response():
     cl = login_user()
 
-    for thread_ in Thread.objects.all():
-        instagrapi_messages = cl.direct_messages(thread_id=thread_.thread_id)
-        saved_messages_arr = Message.objects.filter(thread=thread_.thread_id).order_by("-sent_on")
-        if instagrapi_messages[0].text != saved_messages_arr[0].content:
-            for instagrapi_message in instagrapi_messages:
-                if instagrapi_message != saved_messages_arr[0].content:
-                    username = cl.username_from_user_id(instagrapi_message.user_id)
+    for thread in Thread.objects.all():
+        instagrapi_messages = cl.direct_messages(thread_id=thread.thread_id)
+        saved_messages_arr = Message.objects.filter(
+            Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")
+        ).order_by("-sent_on")
+        print(saved_messages_arr)
+        check_response = CheckResponse(status=thread.account.status.name, thread=thread)
+        try:
 
-                    sent_by = "Robot"
-                    if username == thread_.account.igname:
-                        sent_by = "Client"
-                    message = Message()
-                    message.content = instagrapi_message.text
-                    message.sent_by = sent_by
-                    message.sent_on = instagrapi_message.timestamp
-                    message.thread = thread_
-                    message.save()
-                else:
-                    break
-            continue
+            username = cl.username_from_user_id(instagrapi_messages[0].user_id)
+            print(username)
+            if not saved_messages_arr.exists() and username == thread.account.igname:
+                print("first_messages")
+                check_response.follow_up_if_sent_first_compliment()
+            if instagrapi_messages[0].text == saved_messages_arr[0].content and username == thread.account.igname:
+                print("reached_here")
+                if check_response.status == "overcome":
+                    check_response.follow_up_after_presentation()
+                    check_response.follow_up_if_sent_email_first_attempt()
+                    check_response.follow_up_ready_switch()
+                    check_response.follow_up_share_flyer()
+                    check_response.follow_up_highest_impact_actions()
+                    check_response.follow_up_greeting_day()
+                    check_response.follow_up_after_4_weeks()
+                    check_response.follow_up_after_4_weeks_2_days()
+                    check_response.follow_up_get_clients()
+                elif check_response.status == "deferred":
+                    check_response.follow_up_if_deferred()
 
-        check_responses = CheckResponse(status=thread_.account.status.name, thread=thread_)
-
-        if check_responses.status == "responded_to_first_compliment":
-            check_responses.follow_up_if_responded_to_first_compliment()
-        elif check_responses.status == "sent_first_compliment":
-            check_responses.follow_up_if_sent_first_compliment()
-        elif check_responses.status == "sent_first_question":
-            check_responses.follow_up_if_sent_first_question()
-        elif check_responses.status == "sent_second_question":
-            check_responses.follow_up_if_sent_second_question()
-        elif check_responses.status == "sent_third_question":
-            check_responses.follow_up_if_sent_third_question()
-        elif check_responses.status == "sent_first_needs_assessment_question":
-            check_responses.follow_up_if_sent_first_needs_assessment_question()
-        elif check_responses.status == "sent_second_needs_assessment_question":
-            check_responses.follow_up_if_sent_second_needs_assessment_question()
-        elif check_responses.status == "sent_third_needs_assessment_question":
-            check_responses.follow_up_if_sent_third_needs_assessment_question()
-        elif check_responses.status == "sent_follow_up_after_presentation":
-            check_responses.follow_up_after_presentation()
-        elif check_responses.status == "sent_email_first_attempt":
-            check_responses.follow_up_if_sent_email_first_attempt()
-        elif check_responses.status == "sent_uninterest":
-            check_responses.follow_up_if_sent_uninterest()
-        elif check_responses.status == "sent_objection":
-            check_responses.follow_up_if_sent_objection()
-        elif check_responses.status == "overcome":
-            check_responses.follow_up_after_solutions_presented()
-            check_responses.follow_up_if_sent_email_first_attempt()
-        elif check_responses.status == "deferred":
-            check_responses.follow_up_if_deferred()
+        except Exception as error:
+            print(error)
 
 
 @shared_task()
@@ -190,43 +170,6 @@ def generate_and_send_response():
                     " ".join(map(str, generated_response)),
                     thread=thread_,
                 )
-
-            # for instagrapi_message in instagrapi_messages:
-            #     print(instagrapi_message.text)
-            #     print(saved_messages_arr[0].content)
-            #     if instagrapi_message.text != saved_messages_arr[0].content:
-            #         username = cl.username_from_user_id(instagrapi_message.user_id)
-
-            #         sent_by = "Robot"
-            #         if username == thread_.account.igname:
-            #             sent_by = "Client"
-            #             message.content = instagrapi_message.text
-            #             message.sent_by = sent_by
-            #             message.sent_on = instagrapi_message.timestamp
-            #             message.thread = thread_
-            #             message.save()
-            #             generated_response = detect_intent(
-            #                 project_id="boostedchatapi",
-            #                 session_id=str(uuid .uuid4()),
-            #                 message=instagrapi_messages[0].text,
-            #                 language_code="en",
-            #                 account_id=thread_.account.id
-            #             )
-            #             print(generated_response)
-            #             print(" ".join(map(str, generated_response)))
-
-            #             send_message.delay(
-            #                 " ".join(map(str, generated_response)),
-            #                 thread_id=thread_.thread_id,
-            #             )
-            #         else:
-            #             message.content = instagrapi_message.text
-            #             message.sent_by = sent_by
-            #             message.sent_on = instagrapi_message.timestamp
-            #             message.thread = thread_
-            #             message.save()
-            #     else:
-            #         break
 
         except Exception as error:
             print(error)

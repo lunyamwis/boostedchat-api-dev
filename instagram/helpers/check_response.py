@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import uuid
 from datetime import timedelta
 
@@ -7,8 +8,9 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
-from data.helpers.random_data import get_follow_up_messages, get_random_compliment
-from instagram.models import Account, StatusCheck, Thread
+from data.helpers.random_data import get_follow_up_messages
+from dialogflow.helpers.conversations import get_client_conversation_so_far
+from instagram.models import Account, Message, StatusCheck, Thread
 
 from .llm import query_gpt
 
@@ -17,22 +19,63 @@ class CheckResponse(object):
     def __init__(self, status: str, thread: Thread) -> None:
         self.status = status
         self.daily_schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute="*/30",
+            minute="*",
             hour="*",
-            day_of_week="*",
+            day_of_week="*/1",
             day_of_month="*",
             month_of_year="*",
         )
         self.monthly_schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute="*/40",
+            minute="*",
             hour="*",
             day_of_week="*",
-            day_of_month="*",
+            day_of_month="*/1",
             month_of_year="*",
         )
         self.instance = thread
 
-    def follow_up_task(self, message):
+    def if_followup_task_delete(self):
+        try:
+            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{self.instance.account.igname}")
+            followup_task.delete()
+        except Exception as error:
+            print(error)
+
+    def follow_up_task_simple(self, message, time=1, task=None):
+        message_object = Message()
+        message_object.sent_by = "Robot"
+        message_object.thread = self.instance
+        message_object.content = message
+        message_object.sent_on = timezone.now()
+        schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute="*",
+            hour="*",
+            day_of_week=f"*/{time}",
+            day_of_month="*",
+            month_of_year="*",
+        )
+        try:
+            PeriodicTask.objects.get_or_create(
+                name=f"FollowupTask-{self.instance.account.igname}-{task}",
+                crontab=schedule,
+                task="instagram.tasks.send_message",
+                args=json.dumps([[message], [self.instance.thread_id]]),
+                start_time=timezone.now() + timedelta(days=time),
+            )
+            message_object.save()
+        except Exception as error:
+            task = PeriodicTask.objects.get(name=f"FollowupTask-{self.instance.account.igname}")
+            task.args = json.dumps([[message], [self.instance.thread_id]])
+            task.save()
+            message_object.save()
+            print(error)
+
+    def follow_up_task(self, message, flip_to_monthly_schedule=True):
+        message_object = Message()
+        message_object.sent_by = "Robot"
+        message_object.thread = self.instance
+        message_object.content = message
+        message_object.sent_on = timezone.now()
         task = None
         try:
             task, _ = PeriodicTask.objects.get_or_create(
@@ -40,21 +83,23 @@ class CheckResponse(object):
                 crontab=self.daily_schedule,
                 task="instagram.tasks.send_message",
                 args=json.dumps([[message], [self.instance.thread_id]]),
-                start_time=timezone.now(),
+                start_time=timezone.now() + timedelta(days=1),
             )
+            message_object.save()
         except Exception as error:
             task = PeriodicTask.objects.get(name=f"FollowupTask-{self.instance.account.igname}")
             task.args = json.dumps([[message], [self.instance.thread_id]])
             task.save()
+            message_object.save()
             logging.warning(str(error))
 
-        if timezone.now() >= task.start_time + timedelta(minutes=35):
-            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{self.instance.account.igname}")
-            followup_task.crontab = self.monthly_schedule
-            followup_task.save()
-
-    def follow_up_if_responded_to_first_compliment(self, thread):
-        pass
+        if flip_to_monthly_schedule:
+            if timezone.now() >= task.start_time + timedelta(weeks=4):
+                followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{self.instance.account.igname}")
+                followup_task.args = json.dumps([[message], [self.instance.thread_id]])
+                followup_task.crontab = self.monthly_schedule
+                followup_task.save()
+                message_object.save()
 
     def follow_up_if_sent_first_compliment(self):
         prompt = f"""
@@ -69,70 +114,29 @@ class CheckResponse(object):
 
             Mission Goal:
             The ultimate goal for this conversation is to get the barber to respond. How will you know if a barber has responded. This is how you shall
-            detect if the barber has responded. I am going to attach historical conversation in double backticks below and if the conversation is one way
-            that is to mean that you are the only one who is talking and there is no response from the barber where if there is no response you will notice by
-            the fact that the barber will have the following response barber:None
-            then please engage the barber until they get to respond, compliment them with the data given within the
+            detect if the barber has responded. I am going to attach historical data in double backticks below and if the conversation is one way
+            that is to mean that you are the only one who is talking and there is no response from the barber you will notice by
+            the fact that there will be no historical data within the triple backticks
+            then please engage the barber until they get to respond (that is there is historical data exists within the double backticks),
+            compliment them with the data given within the
             triple backticks as much as possible till you get them to respond. Do not use more than 20 words. Be simple and encouraging.
             Here is the historical data:
             ``
-            you: Hey there! 👋 I hope you're doing well. I just wanted to remind you that your\n
-            clients have been leaving some truly amazing reviews for your business, The Fine Grooming Studio.\n
-            I'm sure you remember the positive feedback, but I wanted to highlight a particular review from \n
-            Jeff T. on Feb 25, 2023. He mentioned that meeting you and experiencing your services was a great \n
-            pleasure. Jeff also emphasized the chill and relaxing atmosphere of your place, along with your great \n
-            attention to detail. This kind of review really stands out and is likely to generate plenty of \n
-            referrals from satisfied clients. \n
-            Keep up the fantastic work, and I'm confident that your business will continue to thrive! 😊🚀
-            barber: None
+            {get_client_conversation_so_far(self.instance.thread_id)}
             ``
-            if mission is accomplished then return
-            ACCOMPLISHED in triple backticks and if the mission is not accomplished then return
+            if mission is accomplished then return the word
+            ACCOMPLISHED in triple backticks and
+            if the mission is not accomplished then return the word
             UNACCOMPLISHED in triple backticks as well.
 
             """
         enforced_shared_compliment = query_gpt(prompt=prompt)
-
         compliment = enforced_shared_compliment.get("choices")[0].get("message").get("content")
-
-        self.follow_up_task(message=compliment)
-
-    def follow_up_if_sent_first_question(self):
-        salesrep = self.instance.account.salesrep_set.get(instagram=self.instance.account)
-        compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-        self.follow_up_task(message=compliment)
-
-    def follow_up_if_sent_second_question(self):
-        salesrep = self.instance.account.salesrep_set.get(instagram=self.instance.account)
-        random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-        self.folow_up_task(message=random_compliment)
-
-    def follow_up_if_sent_third_question(self):
-        salesrep = self.instance.account.salesrep_set.get(instagram=self.instance.account)
-        random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-        self.folow_up_task(message=random_compliment)
-
-    def follow_up_if_sent_first_needs_assessment_question(self):
-        salesrep = self.instance.account.salesrep_set.get(instagram=self.instance.account)
-        random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-        self.folow_up_task(message=random_compliment)
-
-    def follow_up_if_sent_second_needs_assessment_question(self):
-        salesrep = self.instance.account.salesrep_set.get(instagram=self.instance.account)
-        random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-        self.folow_up_task(message=random_compliment)
-
-    def follow_up_if_sent_third_needs_assessment_question(self):
-        salesrep = self.instance.account.salesrep_set.get(instagram=self.instance.account)
-        random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
-        self.follow_up_task(message=random_compliment)
-
-    def follow_up_after_solutions_presented(self):
-        random_compliment = f""""
-            What do you think about booksy?\n
-            Would you like to give it a try?
-            """
-        self.follow_up_task(message=random_compliment)
+        accomplished_status = re.findall(r"```(.*?)```", compliment)
+        if len(accomplished_status) > 0 and accomplished_status[0] == "ACCOMPLISHED":
+            self.if_followup_task_delete()
+        if len(accomplished_status) > 0 and accomplished_status[0] == "UNACCOMPLISHED":
+            self.follow_up_task(message=compliment, flip_to_monthly_schedule=True)
 
     def follow_up_after_presentation(self):
         if self.instance.account.dormant_profile_created:
@@ -149,7 +153,7 @@ class CheckResponse(object):
                 [solution to combination of problems]
                 DM: let me know what you think and I’ll guide you for a month to grow it like crazy:)
                 """
-            self.follow_up_task(message=random_compliment)
+            self.follow_up_task_simple(message=random_compliment, task="after_presentation")
 
     def follow_up_if_sent_email_first_attempt(self):
         combination_of_problems = []
@@ -167,18 +171,22 @@ class CheckResponse(object):
                 start_time=timezone.now(),
             )
         except Exception as error:
-            task = PeriodicTask.objects.get(name=f"FollowupTask-{self.instance.account.igname}")
+            task = PeriodicTask.objects.get(
+                name=f"FollowupTask-{self.instance.account.igname}-sent_email_first_attempt"
+            )
             task.args = json.dumps([[random_compliment], [self.instance.thread_id]])
             task.save()
             logging.warning(str(error))
 
-        if timezone.now() >= task.start_time + timedelta(minutes=4):
+        if timezone.now() >= task.start_time + timedelta(days=1):
             second_attempt = """
                 When you see your profile on Booksy you won’t believe that you
                 used to [combination of problems].
                 What’s your valid email address?
                 """
-            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{self.instance.account.igname}")
+            followup_task = PeriodicTask.objects.get(
+                name=f"FollowupTask-{self.instance.account.igname}-sent_email_second_attempt"
+            )
             followup_task.crontab = self.monthly_schedule
             task.args = json.dumps([[second_attempt], [self.instance.thread_id]])
             followup_task.save()
@@ -188,13 +196,15 @@ class CheckResponse(object):
             account.status = status_after_response
             account.save()
 
-        if timezone.now() >= task.start_time + timedelta(minutes=3):
+        if timezone.now() >= task.start_time + timedelta(days=2):
             third_attempt = """
                 I can see you’re pretty busy and wanted to create profile on Booksy for you to
                 elevate your business,
                 I’ll just need your email address:)
                 """
-            followup_task = PeriodicTask.objects.get(name=f"FollowupTask-{self.instance.account.igname}")
+            followup_task = PeriodicTask.objects.get(
+                name=f"FollowupTask-{self.instance.account.igname}-sent_email_last_attempt"
+            )
             followup_task.crontab = self.monthly_schedule
             task.args = json.dumps([[third_attempt], [self.instance.thread_id]])
             followup_task.save()
@@ -207,15 +217,10 @@ class CheckResponse(object):
     def follow_up_if_sent_uninterest(self):
         rephrase_defined_problem = query_gpt(
             """
-                ask for the more detailed reason why they are not interested
-                """
+            ask for the more detailed reason why they are not interested in Booksy as a solution
+            """
         )
         random_compliment = rephrase_defined_problem.get("choices")[0].get("message").get("content")
-        self.follow_up_task(message=random_compliment)
-
-    def follow_up_if_sent_objection(self):
-        salesrep = self.instance.account.salesrep_set.get(instagram=self.instance.account)
-        random_compliment = get_random_compliment(salesrep=salesrep, compliment_type="first_compliment")
         self.follow_up_task(message=random_compliment)
 
     def follow_up_profile_review(self):
@@ -231,7 +236,7 @@ class CheckResponse(object):
                 crontab=self.daily_schedule,
                 task="instagram.tasks.send_message",
                 args=json.dumps([[random_compliment], [self.instance.thread_id]]),
-                start_time=timezone.now(),
+                start_time=timezone.now() + timedelta(days=1),
             )
         except Exception as error:
             task = PeriodicTask.objects.get(name=f"FollowupTask-{self.instance.account.igname}")
@@ -239,7 +244,7 @@ class CheckResponse(object):
             task.save()
             logging.warning(str(error))
 
-        if timezone.now() >= task.start_time + timedelta(minutes=4):
+        if timezone.now() >= task.start_time + timedelta(days=1):
             second_attempt = f"""
                 What's up {self.instance.account.igname}! I wanted to\n
                 make sure you got into the account all okay yesterday? How
@@ -257,7 +262,7 @@ class CheckResponse(object):
             account.status = status_after_response
             account.save()
 
-        if timezone.now() >= task.start_time + timedelta(minutes=5):
+        if timezone.now() >= task.start_time + timedelta(days=2):
             second_attempt = f"""
                 Hey {self.instance.account.igname} what's up? Just double\n
                 checking with you if everything is ok and how is the app working\n
@@ -279,36 +284,36 @@ class CheckResponse(object):
         calendar_availability = "full"
         migration_available = False
         if calendar_availability == "empty":
-            random_compliment = f""""
+            message = f""""
                 I will work closely with you for a month to help you\n
                 [solution to combination of problems]. Before we unlock advanced features\n
                 like promoting you to new clients we have to focus on clients you already\n
                 have to book with you.
                 """
 
-            self.follow_up_task(random_compliment)
+            self.follow_up_task_simple(message, task="calendar_availability")
 
         if calendar_availability == "full":
             if migration_available:
-                random_compliment = f""""
+                message = f""""
                     I'll work closely with you for a month to ensure\n
                     smooth transition & [solution to combination of problems]🗓️\n
                     Are you able to make a switch today?🚀 \n
                     Do you need help to transfer your biz from [competitor]?
                     """
 
-                self.follow_up_task(random_compliment)
+                self.follow_up_task_simple(message, task="calendar_availability")
             else:
-                random_compliment = f""""
+                message = f""""
                     I'll work closely with you for a month to \n
                     ensure smooth transition & [solution to combination of problems]🗓️\n
                     Are you able to make a switch today?
                     """
 
-                self.follow_up_task(random_compliment)
+                self.follow_up_task_simple(message, task="calendar_availability")
 
     def follow_up_ready_switch(self):
-        random_compliment = f""""
+        message = f""""
             Alright, let's do this! 🔥🔥🔥\n
             Time is money so I'd recommend we focus on \n
             inviting your existing clients to book with you first. \n
@@ -316,10 +321,10 @@ class CheckResponse(object):
             no-show protection, mobile payments, and more.
             """
 
-        self.follow_up_task(random_compliment)
+        self.follow_up_task_simple(message, task="ready_switch")
 
     def follow_up_highest_impact_actions(self):
-        random_compliment = f""""
+        message = f""""
             Highest impact actions for today:\n
             ☑️ Import & Invite Clients\n
             ☑️ IG book button \n
@@ -327,10 +332,10 @@ class CheckResponse(object):
             ☑️ share flyer with followers
             """
 
-        self.follow_up_task(random_compliment)
+        self.follow_up_task_simple(message, task="high_impact_action")
 
     def follow_up_get_clients(self):
-        random_compliment = f""""
+        message = f""""
             📞 Got your client details handy on your phone? \n
             Add them to Booksy like 1-2-3:\n
             1. Head to Clients and click '+' https://dl.booksy.com/4ch9X4Vyprb\n
@@ -338,10 +343,10 @@ class CheckResponse(object):
             3. Select your peeps and hit Add clients. Easy, right? 👍
             """
 
-        self.follow_up_task(random_compliment)
+        self.follow_up_task_simple(message, task="get_clients")
 
     def follow_up_instagram(self):
-        random_compliment = f""""
+        message = f""""
             📸 Making booking a breeze on Instagram:
             1. Ensure your IG is synced with the same email as your Booksy (or ask our Support to change it).\n
             2. Set up an IG business account (Here's a handy guide: fb.com/help/instagram/502981923235522) \n
@@ -349,7 +354,7 @@ class CheckResponse(object):
             Psst! Add [subdomain] and “book me via IG below 👇” to your IG bio for that extra oomph! 🌟
             """
 
-        self.follow_up_task(random_compliment)
+        self.follow_up_task_simple(message, task="instagram")
 
     def follow_up_share_flyer(self):
         random_compliment = f"""
@@ -361,13 +366,13 @@ class CheckResponse(object):
             Succeeding in the first days will set you up for a long term success💯 \n
             Let me know how it goes!💪🏻
         """
-        self.follow_up_task(random_compliment)
+        self.follow_up_task_simple(random_compliment, task="share_flyer")
 
     def follow_up_greeting_day(self):
         salesrep = self.instance.account.salesrep_set.get(instagram=self.instance.account)
         for i in range(0, 18):
             followup_message = get_follow_up_messages(salesrep=salesrep, day=f"day_{i}")
-            self.follow_up_task(followup_message)
+            self.follow_up_task_simple(followup_message, 1, task=f"day_greeting_{i}")
 
     def follow_up_after_4_weeks(self):
         message = f"""
@@ -376,14 +381,14 @@ class CheckResponse(object):
             Is there anything we could improve? \n
             Your feedback is very important to us and much appreciated!
         """
-        self.follow_up_task(message)
+        self.follow_up_task_simple(message, 28, task="after_4_weeks")
 
     def follow_up_after_4_weeks_2_days(self):
         message = f"""
             Who are your closest [category] friends? \n
             I'm always on the lookout for talent - anyone I should follow?
         """
-        self.follow_up_task(message)
+        self.follow_up_task_simple(message, 30, task="after_4_weeks_2_days")
 
     def follow_up_after_referral_positive(self):
         message = f"""
@@ -391,7 +396,7 @@ class CheckResponse(object):
             I'd love to spend a month taking [recommended lead IG handle]'s business to another level.\n
             Can you introduce me? Your referral will naturally be rewarded;)
         """
-        self.follow_up_task(message)
+        self.follow_up_task_simple(message, task="referral_positive")
 
     def follow_up_after_referral_negative(self):
         message = f"""
@@ -400,7 +405,7 @@ class CheckResponse(object):
             Maybe someone who still spends time manually booking their appointments\n
             and could save a few hours a week? 🤔
         """
-        self.follow_up_task(message)
+        self.follow_up_task_simple(message, task="referral_negative")
 
     def follow_up_if_account_not_blocked(self):
         message = f"""
@@ -410,9 +415,9 @@ class CheckResponse(object):
             Would it make sense to send another message blast or digital \n
             flyer today to keep those bookings coming in? 🤔
         """
-        self.follow_up_task(message)
+        self.follow_up_task_simple(message)
 
-    def follow_up_if_deferred(self):
+    def follow_up_if_deferred(self, defferred_time=1):
         prompt = f"""
         Scenario Context:
         You are a sales representative for Booksy, a leading appointment booking system and beauty marketplace. Your goal is to re-engage with a US-based barber via Instagram DMs. You aim to proceed with the sales conversation, understanding the stage you're at and following up effectively. Your approach needs to be considerate of the barber's time and needs, and you should continue the conversation by referencing the main point of the previous messages.
@@ -435,4 +440,4 @@ class CheckResponse(object):
 
         text = deffered_followup_text.get("choices")[0].get("message").get("content")
 
-        self.follow_up_task(message=text)
+        self.follow_up_task_simple(message=text, time=defferred_time, task="deferred")
