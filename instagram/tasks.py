@@ -34,9 +34,13 @@ def follow_user(username):
 
 @shared_task()
 def send_message(message_content, thread, sent_by="Robot"):
+    print("thread")
+    print(thread)
+    print("Call send message")
     cl = login_user()
 
     direct_message = cl.direct_send(message_content, thread_ids=[thread.thread_id])
+
     message = Message()
     message.content = message_content
     message.sent_by = sent_by
@@ -143,17 +147,54 @@ def generate_and_send_response():
 
     for thread_ in Thread.objects.all():
         instagrapi_messages = cl.direct_messages(thread_id=thread_.thread_id)
-        print(thread_)
+        
+        client_user_id = cl.user_id_from_username(username=thread_.account.igname)
+
+
         saved_messages_arr = Message.objects.filter(
             Q(thread__thread_id=thread_.thread_id) & Q(sent_by="Client")
         ).order_by("-sent_on")
+
         try:
 
             message = Message()
             username = cl.username_from_user_id(instagrapi_messages[0].user_id)
-            print(username)
-            if not saved_messages_arr.exists() and username == thread_.account.igname:
+            if username != thread_.account.igname:
+                # Sender of last message is not the lead so move on to the next thread in next iteration
+                continue
+            if saved_messages_arr.exists():
+                client_temp_messages = []
+                for instagrapi_message in instagrapi_messages:
+                    if instagrapi_message.text != saved_messages_arr[0].content:
+                        if instagrapi_message.user_id == client_user_id:
+                            client_temp_messages.append(instagrapi_message.text)
+                        else:
+                            message = Message()
+                            message.content = instagrapi_message.text
+                            message.sent_by = "Robot"
+                            message.sent_on = instagrapi_message.timestamp
+                            message.thread = thread_
+                            message.save()
 
+                if len(client_temp_messages) > 0:
+                    generated_response = detect_intent(
+                        project_id="boostedchatapi",
+                        session_id=str(uuid.uuid4()),
+                        message=". ".join(client_temp_messages),
+                        language_code="en",
+                        account_id=thread_.account.id,
+                    )
+                    print(generated_response)
+                    print(" ".join(map(str, generated_response)))
+
+                    send_message.delay(
+                        " ".join(map(str, generated_response)),
+                        thread=thread_,
+                    )
+            else:
+                print("Messages do not exist and username is true")
+                print(instagrapi_messages)
+                print("Messages do not exist and username is true")
                 message.content = instagrapi_messages[0].text
                 message.sent_by = "Client"
                 message.sent_on = instagrapi_messages[0].timestamp
@@ -166,25 +207,12 @@ def generate_and_send_response():
                     language_code="en",
                     account_id=thread_.account.id,
                 )
-
-                send_message.delay(
-                    " ".join(map(str, generated_response)),
-                    thread=thread_,
-                )
-            if instagrapi_messages[0].text == saved_messages_arr[0].content:
-                print("Bypassed")
-                continue
-
-            if instagrapi_messages[0].text != saved_messages_arr[0].content and username == thread_.account.igname:
-                generated_response = detect_intent(
-                    project_id="boostedchatapi",
-                    session_id=str(uuid.uuid4()),
-                    message=instagrapi_messages[0].text,
-                    language_code="en",
-                    account_id=thread_.account.id,
-                )
+                print("Generated")
                 print(generated_response)
-                print(" ".join(map(str, generated_response)))
+                print("Generated")
+                print(
+                    " ".join(map(str, generated_response)),
+                )
 
                 send_message.delay(
                     " ".join(map(str, generated_response)),

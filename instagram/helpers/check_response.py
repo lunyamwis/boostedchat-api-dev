@@ -322,7 +322,7 @@ class CheckResponse(object):
         random_compliment = f""""
             Highest impact actions for today:\n
             ☑️ Import & Invite Clients\n
-            ☑️ IG book button \n
+            ☑️ IG book button\n
             ☑️ Booksy link in IG bio + bio inviting to book you\n
             ☑️ share flyer with followers
             """
@@ -335,7 +335,7 @@ class CheckResponse(object):
             Add them to Booksy like 1-2-3:\n
             1. Head to Clients and click '+' https://dl.booksy.com/4ch9X4Vyprb\n
             2. Choose Import & Invite.\n
-            3. Select your peeps and hit Add clients. Easy, right? 👍
+            3. Select your peeps and hit Add clients.Easy, right? 👍
             """
 
         self.follow_up_task(random_compliment)
@@ -345,7 +345,7 @@ class CheckResponse(object):
             📸 Making booking a breeze on Instagram:
             1. Ensure your IG is synced with the same email as your Booksy (or ask our Support to change it).\n
             2. Set up an IG business account (Here's a handy guide: fb.com/help/instagram/502981923235522) \n
-            3. Then, in IG: Edit profile 👉🏻 Action buttons  👉🏻 Book Now 👉🏻 Booksy 👉🏻 Select Country & sign in to Booksy 👉🏻 Continue 
+            3. Then, in IG: Edit profile 👉🏻 Action buttons  👉🏻 Book Now 👉🏻 Booksy 👉🏻 Select Country & sign in to Booksy 👉🏻 Continue
             Psst! Add [subdomain] and “book me via IG below 👇” to your IG bio for that extra oomph! 🌟
             """
 
@@ -354,7 +354,7 @@ class CheckResponse(object):
     def follow_up_share_flyer(self):
         random_compliment = f"""
             share with followers your flyer or customize it first with your \n
-            logo/ background in the app (⚡ ⟶ Social Post Creator)  I'll \n
+            logo/ background in the app (⚡ ⟶ Social Post Creator)I'll \n
             happily repost something like:\n
             Book your next appointment with me on Booksy.\n
             Link in bio. #booksy #onlinebooking @[sales repss ig handle]\n
