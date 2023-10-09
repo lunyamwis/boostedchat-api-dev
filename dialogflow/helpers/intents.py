@@ -34,6 +34,9 @@ def detect_intent(project_id, session_id, message, language_code, account_id):
         print(response_data)
         print("<<<<Resopins>>>>")
         fulfillment_text = response_data["queryResult"]["responseMessages"][0].get("text").get("text")
+        print("<<<<Fulfill>>>>")
+        print(fulfillment_text)
+        print("<<<<fulfil>>>>")
         return fulfillment_text
     except requests.exceptions.RequestException as error:
         error_message = str(error)

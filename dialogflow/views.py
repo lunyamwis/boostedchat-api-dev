@@ -47,6 +47,9 @@ class FallbackWebhook(APIView):
             req = request.data
             query_result = req.get("fulfillmentInfo")
 
+            print("Request 49")
+            print(req)
+            print("Request 49")
             query = req.get("text")
 
             account_id = req.get("payload").get("account_id")
