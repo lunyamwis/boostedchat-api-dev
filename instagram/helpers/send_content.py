@@ -19,7 +19,7 @@ class SendContent(object):
         account.save()
 
     def send_first_compliment(self, generated_response):
-        send_message.delay(generated_response, thread=self.instance)
+        send_message.delay(generated_response, thread_id=self.instance.thread_id)
         self.change_status(status_level=1, status_name="responded_to_first_compliment")
 
     def send_first_question(self, generated_response):
@@ -31,7 +31,7 @@ class SendContent(object):
             f"""
             {generated_response},\n
             """,
-            thread=self.instance,
+            thread_id=self.instance.thread_id,
         )
         self.change_status(status_level=2, status_name="sent_first_question")
 
@@ -43,7 +43,7 @@ class SendContent(object):
             How about your clients? Is managing current ones
             more difficult than attracting new clients?
             """,
-            thread=self.instance,
+            thread_id=self.instance.thread_id,
         )
         self.change_status(status_level=2, status_name="sent_second_question")
 
@@ -54,7 +54,7 @@ class SendContent(object):
             by the way could you please help me understand,
             How do you manage your calendar?
             """,
-            thread=self.instance,
+            thread_id=self.instance.thread_id,
         )
         self.change_status(status_level=2, status_name="sent_third_question")
 
@@ -66,7 +66,7 @@ class SendContent(object):
             Seems like you are starting a great career, {self.instance.account.igname} 🔥
             If you don’t mind me asking... How do you market yourself? 🤔
             """,
-            thread=self.instance,
+            thread_id=self.instance.thread_id,
         )
         self.change_status(status_level=2, status_name="sent_first_needs_assessment_question")
 
@@ -78,7 +78,7 @@ class SendContent(object):
             Did you consider social post creator tools to make your IG account more visible? you
             have amazing potential and could easily convert your followers into clients with IG Book Button
             """,
-            thread=self.instance,
+            thread_id=self.instance.thread_id,
         )
 
     def send_third_needs_assessment_question(self, generated_response):
@@ -89,7 +89,7 @@ class SendContent(object):
             Returning clients are critical for long-term success,
             are you able to invite back to your chair the clients who stopped booking? 🤔
             """,
-            thread=self.instance,
+            thread_id=self.instance.thread_id,
         )
         self.change_status(status_level=2, status_name="sent_third_needs_assessment_question")
 
@@ -100,7 +100,7 @@ class SendContent(object):
             I hope you are comfortable with me asking,
             What do you think about booksy? would you like to give it a try?
             """,
-            thread=self.instance,
+            thread_id=self.instance.thread_id,
         )
         self.change_status(status_level=2, status_name="sent_follow_up_after_presentation")
 
@@ -112,20 +112,20 @@ class SendContent(object):
             I can quickly setup an account for you to check it out - what’s your email address?
             The one you use on IG will help with IG book button
             """,
-            thread=self.instance,
+            thread_id=self.instance.thread_id,
         )
         self.change_status(status_level=2, status_name="sent_email_first_attempt")
 
     def get_reason_why_uninterested(self, generated_response):
         send_message.delay(
             generated_response,
-            thread=self.instance,
+            thread_id=self.instance.thread_id,
         )
         self.change_status(status_level=3, status_name="sent_uninterest")
 
     def respond_to_objection(self, generated_response):
         send_message.delay(
             generated_response,
-            thread=self.instance,
+            thread_id=self.instance.thread_id,
         )
         self.change_status(status_level=3, status_name="sent_objection")
