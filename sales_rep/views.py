@@ -150,6 +150,27 @@ class SalesRepManager(viewsets.ModelViewSet):
                                 except Exception as error:
                                     print(error)
 
+                                try:
+                                    schedule, _ = CrontabSchedule.objects.get_or_create(
+                                        minute="*/1",
+                                        hour="*",
+                                        day_of_week="*",
+                                        day_of_month="*",
+                                        month_of_year="*",
+                                    )
+                                except Exception as error:
+                                    print(error)
+
+                                try:
+                                    PeriodicTask.objects.get_or_create(
+                                        name="CheckResponse",
+                                        crontab=schedule,
+                                        task="instagram.tasks.check_response",
+                                        start_time=timezone.now(),
+                                    )
+                                except Exception as error:
+                                    print(error)
+
                             except Exception as error:
                                 print(error)
 

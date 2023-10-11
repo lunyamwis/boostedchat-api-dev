@@ -15,6 +15,7 @@ from data.helpers.random_data import (
     get_matching_solutions,
     get_potential_problems,
 )
+from dialogflow.helpers.conversations import get_conversation_so_far
 from instagram.helpers.llm import query_gpt
 from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
 
@@ -431,18 +432,34 @@ def set_check_message_periodic_task(request):
         return Response({"message": "Periodic task created successfully"}, status=status.HTTP_201_CREATED)
 
 
-def get_conversation_so_far(thread_id):
-    messages = Message.objects.filter(thread__thread_id=thread_id)
-    print("conversation so far")
-    print(thread_id)
-    print(messages)
-    print("conversation so far")
-    formatted_messages = []
-    for message in messages:
-        formatted_message = ""
-        if message.sent_by == "Client":
-            formatted_message = f"Respondent: {message.content}"
-        else:
-            formatted_message = f"You: {message.content}"
-        formatted_messages.append(formatted_message)
-    return "\n".join(formatted_messages)
+@api_view(["POST"])
+def update_check_message_periodic_task(request):
+    try:
+        task = PeriodicTask.objects.get(name="CheckNewMessageCron")
+
+        schedule = CrontabSchedule.objects.save(
+            minute="*/5",
+            hour="*",
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        )
+        task.crontab = schedule
+        task.save()
+        return Response({"message": "Periodic task updated successfully"}, status=status.HTTP_201_CREATED)
+    except PeriodicTask.DoesNotExist:
+        schedule = CrontabSchedule.objects.save(
+            minute="*/5",
+            hour="*",
+            day_of_week="*",
+            day_of_month="*",
+            month_of_year="*",
+        )
+        PeriodicTask.objects.save(
+            name="CheckNewMessageCron",
+            crontab=schedule,
+            task="instagram.tasks.check_new_message",
+            args=json.dumps([[""], [""]]),
+            start_time=timezone.now(),
+        )
+        return Response({"message": "Periodic task created successfully"}, status=status.HTTP_201_CREATED)
