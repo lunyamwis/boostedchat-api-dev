@@ -1,8 +1,6 @@
 import json
 import logging
 import re
-import uuid
-from datetime import datetime
 
 from django.utils import timezone
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
@@ -17,16 +15,8 @@ from data.helpers.random_data import (
     get_matching_solutions,
     get_potential_problems,
 )
-from dialogflow.models import InstaLead, InstaMessage
-from dialogflow.serializers import CreateLeadSerializer, GetInstagramMessageSerializer, InstagramMessageSerializer
 from instagram.helpers.llm import query_gpt
 from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
-from instagram.tasks import (
-    send_and_save_insta_message,
-    send_and_save_insta_message_overload,
-    send_human_insta_message,
-    simulate_check_new_messages,
-)
 
 from .prompt import get_first_prompt, get_fourth_prompt, get_prompt, get_second_prompt, get_third_prompt
 
@@ -411,182 +401,10 @@ class NeedsAssesmentWebhook(APIView):
 
 
 @api_view(["POST"])
-def create_lead(request):
-    """Creates a lead without sending the first compliment"""
-    serializer = CreateLeadSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["PATCH"])
-def update_lead(request, leadId):
-    """Updates a lead"""
-    try:
-        lead = InstaLead.objects.get(id=leadId)
-    except InstaLead.DoesNotExist:
-        return Response({"message": "Lead does not exist"}, status=status.HTTP_201_CREATED)
-
-    serializer = CreateLeadSerializer(lead, data=request.data, partial=True)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["PATCH"])
-def start_lead_engagement(request, leadId):
-    try:
-        lead = InstaLead.objects.get(id=leadId)
-        compliment_prompt = get_prompt(1, conversation_so_far="")
-
-        response = query_gpt(compliment_prompt)
-
-        result = response.get("choices")[0].get("message").get("content")
-
-        result = result.strip("\n")
-
-        send_and_save_insta_message_overload(result, lead)
-        lead.is_engaged = True
-        lead.save()
-        return Response({"message": "Engagement started successfully"}, status=status.HTTP_201_CREATED)
-    except InstaLead.DoesNotExist:
-        return Response({"message": "Lead does not exist"}, status=status.HTTP_201_CREATED)
-
-
-@api_view(["DELETE"])
-def delete_lead(request):
-    try:
-        lead = InstaLead.objects.get(igname=request.data.get("igname"))
-        lead.delete()
-        return Response({"message": "Lead deleted successfully"}, status=status.HTTP_201_CREATED)
-    except InstaLead.DoesNotExist:
-        return Response({"message": "Lead does not exist"}, status=status.HTTP_201_CREATED)
-
-
-@api_view(["POST"])
-def create_lead_and_send_compliment(request):
-    compliment_prompt = get_prompt(1, client_message="")
-
-    response = query_gpt(compliment_prompt)
-
-    result = response.get("choices")[0].get("message").get("content")
-
-    result = result.strip("\n")
-
-    create_data = {**request.data, **{"id": uuid.uuid4(), "is_engaged": True}}
-    serializer = CreateLeadSerializer(data=create_data)
-    if serializer.is_valid():
-        serializer.save()
-        send_and_save_insta_message.delay(result, serializer.validated_data["id"])
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["GET"])
-def get_leads(request):
-    leads = InstaLead.objects.order_by("-updated_on")
-    serializer = CreateLeadSerializer(leads, many=True)
-    return Response(serializer.data)
-
-
-@api_view(["POST"])
-def send_human_insta_message(request, leadId):
-    content = request.data.get("content")
-    if leadId is None or content is None:
-        return Response({"message": "Please provide lead id and message content"}, status=status.HTTP_400_BAD_REQUEST)
-    try:
-        lead_obj = InstaLead.objects.get(pk=leadId)
-    except InstaLead.DoesNotExist:
-        return Response({"message": "Lead does not exist"}, status=status.HTTP_201_CREATED)
-
-    send_human_insta_message.delay(content, lead_obj.igname)
-
-    message_data = {"content": content, "lead_id": leadId, "sent_by": "Human", "sent_on": datetime.now()}
-
-    serializer = InstagramMessageSerializer(data=message_data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["POST"])
-def simulate_check_message(request):
-    """Creates a lead without sending the first compliment"""
-    lead_id = request.data.get("lead_id")
-
-    try:
-        lead = InstaLead.objects.get(id=lead_id)
-        simulate_check_new_messages(request.data.get("message"), lead)
-        return Response({"message": "Simulation success"}, status=status.HTTP_201_CREATED)
-    except InstaLead.DoesNotExist:
-        return Response({"message": "Lead does not exist"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["DELETE"])
-def delete_message(request, pk):
-    try:
-        message = InstaMessage.objects.get(id=pk)
-        message.delete()
-        return Response({"message": "Message deleted successfully"}, status=status.HTTP_200_OK)
-    except InstaLead.DoesNotExist:
-        return Response({"message": "Message does not exist"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["GET"])
-def get_messages(request):
-    messages = InstaMessage.objects.order_by("-sent_on")
-    serializer = GetInstagramMessageSerializer(messages, many=True)
-    return Response(serializer.data)
-
-
-@api_view(["GET"])
-def get_messages_by_lead(request, leadId):
-    messages = InstaMessage.objects.filter(lead_id=leadId).order_by("-sent_on")
-    serializer = InstagramMessageSerializer(messages, many=True)
-    return Response(serializer.data)
-
-
-@api_view(["POST"])
 def set_check_message_periodic_task(request):
     try:
         PeriodicTask.objects.get(name="CheckNewMessageCron")
         return Response({"message": "Periodic task already exists"}, status=status.HTTP_201_CREATED)
-    except PeriodicTask.DoesNotExist:
-        schedule = CrontabSchedule.objects.save(
-            minute="*/5",
-            hour="*",
-            day_of_week="*",
-            day_of_month="*",
-            month_of_year="*",
-        )
-        PeriodicTask.objects.save(
-            name="CheckNewMessageCron",
-            crontab=schedule,
-            task="instagram.tasks.check_new_message",
-            args=json.dumps([[""], [""]]),
-            start_time=timezone.now(),
-        )
-        return Response({"message": "Periodic task created successfully"}, status=status.HTTP_201_CREATED)
-
-
-@api_view(["POST"])
-def update_check_message_periodic_task(request):
-    try:
-        task = PeriodicTask.objects.get(name="CheckNewMessageCron")
-
-        schedule = CrontabSchedule.objects.save(
-            minute="*/5",
-            hour="*",
-            day_of_week="*",
-            day_of_month="*",
-            month_of_year="*",
-        )
-        task.crontab = schedule
-        task.save()
-        return Response({"message": "Periodic task updated successfully"}, status=status.HTTP_201_CREATED)
     except PeriodicTask.DoesNotExist:
         schedule = CrontabSchedule.objects.save(
             minute="*/5",

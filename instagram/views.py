@@ -9,6 +9,7 @@ from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.decorators import api_view
 
 from base.helpers.push_id import PushID
 from dialogflow.helpers.intents import detect_intent
@@ -16,6 +17,7 @@ from instagram.helpers.login import login_user
 from sales_rep.models import SalesRep
 
 from .helpers.check_response import CheckResponse
+from .helpers.init_db import init_db
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message
 from .serializers import (
     AccountSerializer,
@@ -892,3 +894,9 @@ class MessageViewSet(viewsets.ModelViewSet):
         message = self.get_object()
         message.delete()
         return Response({"message": "Message deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+def initialize_db(request):
+   init_db() 
+   return Response({"message": "Db initialized successfully"})
