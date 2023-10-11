@@ -29,10 +29,8 @@ def follow_user(username):
 
 
 @shared_task()
-def send_message(message_content, thread, sent_by="Robot"):
-    print("thread")
-    print(thread)
-    print("Call send message")
+def send_message(message_content, thread_id, sent_by="Robot"):
+    thread = Thread.objects.get(thread_id=thread_id)
     cl = login_user()
 
     direct_message = cl.direct_send(message_content, thread_ids=[thread.thread_id])
@@ -49,6 +47,7 @@ def send_message(message_content, thread, sent_by="Robot"):
 def send_first_compliment(message_content, username):
     cl = login_user()
     thread_obj = None
+    first_message = f"Hey {username}, IG just suggested to me your account and I love your work! I can see that a few quick additions to the way you post on IG will get even more people to book you and I was wondering if you’re open to feedback?"
 
     user_id = cl.user_id_from_username(username)
     if type(user_id) != list:
@@ -59,7 +58,8 @@ def send_first_compliment(message_content, username):
     except Exception as error:
         print(error)
 
-    direct_message = cl.direct_send(message_content, user_ids=user_id)
+    # cl.user_follow(user_id)
+    direct_message = cl.direct_send(first_message, user_ids=user_id)
     try:
         thread_obj, _ = Thread.objects.get_or_create(thread_id=direct_message.thread_id)
     except Exception as error:
@@ -72,7 +72,7 @@ def send_first_compliment(message_content, username):
     thread_obj.save()
 
     message = Message()
-    message.content = message_content
+    message.content = first_message
     message.sent_by = "Robot"
     message.sent_on = direct_message.timestamp
     message.thread = thread_obj
@@ -185,7 +185,7 @@ def generate_and_send_response():
 
                     send_message.delay(
                         " ".join(map(str, generated_response)),
-                        thread=thread_,
+                        thread_id=thread_.thread_id,
                     )
             else:
                 print("Messages do not exist and username is true")
@@ -212,7 +212,7 @@ def generate_and_send_response():
 
                 send_message.delay(
                     " ".join(map(str, generated_response)),
-                    thread=thread_,
+                    thread_id=thread_.thread_id,
                 )
 
 

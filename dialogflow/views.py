@@ -18,7 +18,7 @@ from data.helpers.random_data import (
 from instagram.helpers.llm import query_gpt
 from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
 
-from .prompt import get_first_prompt, get_fourth_prompt, get_prompt, get_second_prompt, get_third_prompt
+from .prompt import get_first_prompt, get_fourth_prompt, get_next_first_prompt, get_second_prompt, get_third_prompt
 
 
 class FallbackWebhook(APIView):
@@ -42,6 +42,7 @@ class FallbackWebhook(APIView):
             query = req.get("text")
 
             account_id = req.get("payload").get("account_id")
+            # account_id = "-Nfk45iSnYh1r3qnI9kA"
 
             if query_result.get("tag") == "fallback":
                 account = Account.objects.get(id=account_id)
@@ -102,7 +103,7 @@ class FallbackWebhook(APIView):
                 # convo.append("DM:" + query)
                 if status_check.stage in range(0, 4):
                     if status_check.name == "sent_compliment":
-                        convo.append(get_first_prompt(conversation_so_far=get_conversation_so_far(thread.thread_id)))
+                        convo.append(get_next_first_prompt(conversation_so_far=get_conversation_so_far(thread.thread_id)))
                     if status_check.name == "sent_first_question":
                         convo.append(
                             get_second_prompt(
@@ -156,7 +157,14 @@ class FallbackWebhook(APIView):
                     print("<<<<<<<<<<<question>>>>>>>>>>>>>")
                     # matches_not_within_backticks = re.findall(r"(?<!```)([^`]+)(?!```)", result, re.DOTALL)
 
-                    if len(asked_first_question_re) > 0 and asked_first_question_re[0] == "SENT-QUESTION!":
+                    # message = Message()
+                    # message.content = result.replace("```QUESTION_SHARED```", "")
+                    # message.sent_by = "Robot"
+                    # message.sent_on = timezone.now()
+                    # message.thread = thread
+                    # message.save()
+
+                    if len(asked_first_question_re) > 0 and asked_first_question_re[0] == "QUESTION SHARED":
                         sent_first_question_status = StatusCheck.objects.filter(name="sent_first_question").last()
                         account.status = sent_first_question_status
                         account.save()
@@ -168,7 +176,7 @@ class FallbackWebhook(APIView):
                                 "messages": [
                                     {
                                         "text": {
-                                            "text": [result.replace("```SENT-QUESTION!```", "")],
+                                            "text": [result.replace("```QUESTION_SHARED```", "")],
                                         },
                                     },
                                 ]
