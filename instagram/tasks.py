@@ -84,7 +84,7 @@ def send_message(message, thread_id=None, user_id=None, username=None, thread=Tr
 def send_first_compliment(username):
     cl = login_user()
     thread_obj = None
-    first_message = f"Hey {username},IG recommended your account and I love your work! As a barber marketing coach I see some areas where I can help you get more bookings. Are you open to hearing them?"
+    first_message = f"Hey {str(uuid.uuid4())},IG recommended your account and I love your work on {str(uuid.uuid4())}! As a {str(uuid.uuid4())} marketing coach I see some areas where I can help you get more bookings. Are you open to hearing them?"
 
     user_id = cl.user_id_from_username(username)
     if type(user_id) != list:
