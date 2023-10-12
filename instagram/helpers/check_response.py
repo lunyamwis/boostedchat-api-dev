@@ -4,13 +4,12 @@ import re
 import uuid
 from datetime import timedelta
 
-from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 from data.helpers.random_data import get_follow_up_messages
 from dialogflow.helpers.conversations import get_client_conversation_so_far
-from instagram.models import Account, Message, StatusCheck, Thread
+from instagram.models import Message, Thread
 
 from .llm import query_gpt
 
@@ -140,11 +139,11 @@ class CheckResponse(object):
 
     def follow_up_after_presentation(self):
         if self.instance.account.dormant_profile_created:
-            booksy_status, _ = StatusCheck.objects.get_or_create(stage=2, name="Trial")
+            # booksy_status, _ = StatusCheck.objects.get_or_create(stage=2, name="Trial")
 
-            account = get_object_or_404(Account, id=self.instance.account.id)
-            account.status = booksy_status
-            account.save()
+            # account = get_object_or_404(Account, id=self.instance.account.id)
+            # account.status = booksy_status
+            # account.save()
 
             random_compliment = f""""
                 What's up {self.instance.account.igname} let us make the most of your free trial account?
@@ -191,10 +190,10 @@ class CheckResponse(object):
             task.args = json.dumps([[second_attempt], [self.instance.thread_id]])
             followup_task.save()
 
-            status_after_response, _ = StatusCheck.objects.get_or_create(stage=2, name="sent_email_second_attempt")
-            account = get_object_or_404(Account, id=self.instance.account.id)
-            account.status = status_after_response
-            account.save()
+            # status_after_response, _ = StatusCheck.objects.get_or_create(stage=2, name="sent_email_second_attempt")
+            # account = get_object_or_404(Account, id=self.instance.account.id)
+            # account.status = status_after_response
+            # account.save()
 
         if timezone.now() >= task.start_time + timedelta(days=2):
             third_attempt = """
@@ -209,10 +208,10 @@ class CheckResponse(object):
             task.args = json.dumps([[third_attempt], [self.instance.thread_id]])
             followup_task.save()
 
-            status_after_response, _ = StatusCheck.objects.get_or_create(stage=3, name="sent_email_last_attempt")
-            account = get_object_or_404(Account, id=self.instance.account.id)
-            account.status = status_after_response
-            account.save()
+            # status_after_response, _ = StatusCheck.objects.get_or_create(stage=3, name="sent_email_last_attempt")
+            # account = get_object_or_404(Account, id=self.instance.account.id)
+            # account.status = status_after_response
+            # account.save()
 
     def follow_up_if_sent_uninterest(self):
         rephrase_defined_problem = query_gpt(
@@ -255,12 +254,12 @@ class CheckResponse(object):
             task.args = json.dumps([[second_attempt], [self.instance.thread_id]])
             followup_task.save()
 
-            status_after_response, _ = StatusCheck.objects.get_or_create(
-                stage=2, name="sent_profile_review_second_attempt"
-            )
-            account = get_object_or_404(Account, id=self.instance.account.id)
-            account.status = status_after_response
-            account.save()
+            # status_after_response, _ = StatusCheck.objects.get_or_create(
+            #     stage=2, name="sent_profile_review_second_attempt"
+            # )
+            # account = get_object_or_404(Account, id=self.instance.account.id)
+            # account.status = status_after_response
+            # account.save()
 
         if timezone.now() >= task.start_time + timedelta(days=2):
             second_attempt = f"""
@@ -273,12 +272,12 @@ class CheckResponse(object):
             task.args = json.dumps([[second_attempt], [self.instance.thread_id]])
             followup_task.save()
 
-            status_after_response, _ = StatusCheck.objects.get_or_create(
-                stage=2, name="sent_profile_review_third_attempt"
-            )
-            account = get_object_or_404(Account, id=self.instance.account.id)
-            account.status = status_after_response
-            account.save()
+            # status_after_response, _ = StatusCheck.objects.get_or_create(
+            #     stage=2, name="sent_profile_review_third_attempt"
+            # )
+            # account = get_object_or_404(Account, id=self.instance.account.id)
+            # account.status = status_after_response
+            # account.save()
 
     def follow_up_calendar_availability(self):
         calendar_availability = "full"
