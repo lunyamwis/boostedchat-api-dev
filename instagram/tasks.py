@@ -1,6 +1,4 @@
-import re
 import uuid
-from datetime import datetime, timezone
 
 from celery import shared_task
 from django.db.models import Q
@@ -29,18 +27,57 @@ def follow_user(username):
 
 
 @shared_task()
-def send_message(message_content, thread_id, sent_by="Robot"):
-    thread = Thread.objects.get(thread_id=thread_id)
+def send_message(message, thread_id=None, user_id=None, username=None, thread=True):
     cl = login_user()
+    user_id = None
+    print("<<<<<<<<<<message<<<<<<<<<")
+    print(message)
+    print("<<<<<<<<<<username<<<<<<<<<")
+    print(username)
 
-    direct_message = cl.direct_send(message_content, thread_ids=[thread.thread_id])
+    if username:
+        user_id = cl.user_id_from_username(username)
+        print("<<<<<<<<<<userid<<<<<<<<<")
+        print(user_id)
+        try:
+            account = Account.objects.get(igname=username)
+        except Exception as error:
+            print(error)
+        if type(user_id) == list:
 
-    message = Message()
-    message.content = message_content
-    message.sent_by = sent_by
-    message.sent_on = direct_message.timestamp
-    message.thread = thread
-    message.save()
+            message = cl.direct_send(message, user_ids=user_id)
+            thread = None
+            try:
+                thread, _ = Thread.objects.get_or_create(thread_id=message.thread_id)
+            except Exception as error:
+                try:
+                    thread = Thread.objects.get(thread_id=message.thread_id)
+                except Exception as error:
+                    print(error)
+            thread.thread_id = message.thread_id
+            thread.account = account
+            thread.save()
+        elif type(user_id) == str:
+            message = cl.direct_send(message, user_ids=[user_id])
+            thread = None
+            try:
+                thread, _ = Thread.objects.get_or_create(thread_id=message.thread_id)
+            except Exception as error:
+                try:
+                    thread = Thread.objects.get(thread_id=message.thread_id)
+                except Exception as error:
+                    print(error)
+            thread.thread_id = message.thread_id
+            thread.account = account
+            thread.save()
+
+    if thread_id and thread:
+        if type(thread_id) == list:
+            message = cl.direct_send(message, thread_ids=thread_id)
+            print(message.text)
+        elif type(thread_id) == str:
+            message = cl.direct_send(message, thread_ids=[thread_id])
+            print(message.text)
 
 
 @shared_task()
@@ -149,7 +186,7 @@ def generate_and_send_response():
 
                 send_message.delay(
                     " ".join(map(str, generated_response)),
-                    thread=thread_,
+                    thread=thread_.thread_id,
                 )
             if instagrapi_messages[0].text == saved_messages_arr[0].content:
                 print("Bypassed")
@@ -168,9 +205,8 @@ def generate_and_send_response():
 
                 send_message.delay(
                     " ".join(map(str, generated_response)),
-                    thread=thread_,
+                    thread=thread_.thread_id,
                 )
-
 
         except Exception as error:
             print(error)
