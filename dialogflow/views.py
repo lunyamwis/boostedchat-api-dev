@@ -19,7 +19,7 @@ from dialogflow.helpers.conversations import get_conversation_so_far
 from instagram.helpers.llm import query_gpt
 from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
 
-from .prompt import get_first_prompt, get_fourth_prompt, get_next_first_prompt, get_second_prompt, get_third_prompt
+from .prompt import get_first_prompt, get_second_prompt, get_third_prompt, get_fourth_prompt
 
 
 class FallbackWebhook(APIView):
@@ -104,7 +104,7 @@ class FallbackWebhook(APIView):
                 # convo.append("DM:" + query)
                 if status_check.stage in range(0, 4):
                     if status_check.name == "sent_compliment":
-                        convo.append(get_next_first_prompt(conversation_so_far=get_conversation_so_far(thread.thread_id)))
+                        convo.append(get_first_prompt(conversation_so_far=get_conversation_so_far(thread.thread_id)))
                     if status_check.name == "sent_first_question":
                         convo.append(
                             get_second_prompt(
