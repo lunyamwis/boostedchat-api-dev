@@ -105,26 +105,8 @@ class SalesRepManager(viewsets.ModelViewSet):
                             }
                             accounts_complimented.append(ready_accounts)
                         elif serializer.data.get("reaction") == 2:
-                            first_compliment_prompt = f"""
-                                Act as if you were an Instagram DM-based sales representative for the biggest beauty appointment management system & marketplace called Booksy. Recommend the personalized compliment to the US-based [get category from the data within the triple backticks] at the beginning of our Instagram DM-based conversation that will help establish the relationship and win the right to ask questions about their problems.
-                                Each message needs to be a short DM message in a way that sounds natural and engaging, confirming that we believe that the[get category from the data within the triple backticks] is a great professional and we understand their point of view. make sure to use a tone of voice in line with those characteristics: "We’re revolutionizing the way people make appointments. [get category from the data within the triple backticks] are frustrated from wasting too much time managing their books when they could be focusing on their craft. Booksy offers a platform for them to streamline business management. Both a reliable receptionist and a trustworthy business partner, Booksy helps merchants grow and gives them time to master their skills. CONVERSATIONAL We are a business partner and friendly neighbor recommending a service or business. Our voice needs to match our attitude. Being corporate is too rigid, and can be alienating. Speaking casually and candidly allows customers to trust us. ENCOURAGING Our customers and merchants dream of fulfilling their full personal potential, and Booksy gives them the tools to accomplish that. GENUINE Booksy makes a promise to its customers. We’re adding a new meaning to their lives by redefining what it means to manage a business. How? By being accurate, honest, transparent, and receptive to customer feedback."
-                                Possibly relevant information about the person you talk to & their business that you can use: ```
-                                {[o_data.results['reviews'] for o_data in account.outsourced_set.all()]}
-                                ``` Also don't present booksy at this stage at all, it is only about praising them. Don't let them know that we are booking
-                                service provider, check out this examples to help you better frame the compliment:
-                                example: Hey [get name from the data within the triple backticks],
-                                🌟 I just checked out your profile on [get name from the data within the triple backticks], and I'm seriously impressed with the amazing
-                                services you offer at [get business name from the data within the triple backticks]. Your  [Include some of the adjectives or their synonyms
-                                [get adjectives from the aboutClientAdjectives within the data in the triple backticks above ] and use them in the conversation.
-                                Those are opinions from their clients and they are what distinguish the best professionals. Conclude by wishing them best of luck.
-                                Remember the tone of voice above that we mentioned. Don't repeat yourself when using adjectives.] really shine through. 💈✂️.Do not sign off.
-                            """
                             try:
-                                random_compliment_state = query_gpt(first_compliment_prompt)
-                                random_compliment = (
-                                    random_compliment_state.get("choices")[0].get("message").get("content")
-                                )
-                                send_first_compliment.delay(random_compliment, username=account.igname)
+                                send_first_compliment.delay(username=account.igname)
                                 sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
                                 account.status = sent_compliment_status
                                 account.save()
