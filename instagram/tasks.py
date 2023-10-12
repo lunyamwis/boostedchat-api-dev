@@ -186,7 +186,7 @@ def generate_and_send_response():
 
                 send_message.delay(
                     " ".join(map(str, generated_response)),
-                    thread=thread_.thread_id,
+                    thread_id=thread_.thread_id,
                 )
             if instagrapi_messages[0].text == saved_messages_arr[0].content:
                 print("Bypassed")
@@ -205,7 +205,7 @@ def generate_and_send_response():
 
                 send_message.delay(
                     " ".join(map(str, generated_response)),
-                    thread=thread_.thread_id,
+                    thread_id=thread_.thread_id,
                 )
 
         except Exception as error:
