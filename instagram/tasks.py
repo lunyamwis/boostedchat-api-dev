@@ -84,7 +84,7 @@ def send_message(message, thread_id=None, user_id=None, username=None, thread=Tr
 def send_first_compliment(username):
     cl = login_user()
     thread_obj = None
-    first_message = f"Hey Simon,IG recommended your account and I love your work! As a barber marketing coach I see some areas where I can help you get more bookings. Are you open to hearing them?"
+    first_message = f"Hey Simon, IG threw your profile my way — love what you're doing with those shears! I've been helping barbers up their marketing game a bit. Got a few ideas that might be up your alley. Open to some tips?"
 
     user_id = cl.user_id_from_username(username)
     if type(user_id) != list:
@@ -134,7 +134,7 @@ def check_response():
             print(username)
             if not saved_messages_arr.exists() and username == thread.account.igname:
                 print("first_messages")
-                check_response.follow_up_if_sent_first_compliment()
+                # check_response.follow_up_if_sent_first_compliment()
             if instagrapi_messages[0].text == saved_messages_arr[0].content and username == thread.account.igname:
                 print("reached_here")
                 if check_response.status == "overcome":

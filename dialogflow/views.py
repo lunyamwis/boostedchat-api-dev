@@ -204,7 +204,8 @@ class FallbackWebhook(APIView):
                         account.save()
 
                     matched_string = result.replace("".join(confirmed_rejected_problems_arr), "")
-                    llm_response = re.sub(r"[(+*)]", "", matched_string)
+                    llm_response_one = re.sub(r"[(+*)]", "", matched_string)
+                    llm_response = re.sub(r"[(_*)]", "", llm_response_one)
 
                     answers_re = re.search(r"```(.*?)```", result, re.DOTALL)
                     answers = None
@@ -311,7 +312,9 @@ class FallbackWebhook(APIView):
                     account.save()
 
                     message = Message()
-                    message.content = matches_not_within_backticks[-1]
+                    message.content = matches_not_within_backticks.replace(
+                                                    "\n".join(matches_within_backticks), ""
+                                    )
                     message.sent_by = "Robot"
                     message.sent_on = timezone.now()
                     message.thread = thread

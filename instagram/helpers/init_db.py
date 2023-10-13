@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 
 from django.core.files import File
@@ -87,7 +88,7 @@ def init_outsourced():
     source = "styleseat"
     outsourced = OutSourced()
     outsourced.source = source
-    outsourced.results = data
+    outsourced.results = json.dumps(data)
     account = Account()
     account.igname = "psychologistswithoutborders"
     account.save()
