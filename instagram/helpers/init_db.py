@@ -1,10 +1,13 @@
 import os
 from pathlib import Path
+
 from django.core.files import File
-from sales_rep.models import SalesRep
-from instagram.models import StatusCheck,OutSourced,Account
-from settings.models import Industry, AutomationSheet
+
 from authentication.models import User
+from instagram.models import Account, OutSourced, StatusCheck
+from sales_rep.models import SalesRep
+from settings.models import AutomationSheet, Industry
+
 
 def init_status_check():
     # stage 1
@@ -45,7 +48,6 @@ def init_status_check():
     deferred.name = "deferred"
     deferred.save()
 
-
     # stage 4
     activation = StatusCheck()
     activation.stage = 4
@@ -66,9 +68,9 @@ def init_automation_sheet():
     automation_sheet.company = "Booksy"
     automation_sheet.language = "en"
     salesrep = SalesRep()
-    salesrep.ig_username=os.getenv('IG_USERNAME')
-    salesrep.ig_password=os.getenv('IG_PASSWORD')
-    salesrep.user=User.objects.last()
+    salesrep.ig_username = os.getenv("IG_USERNAME")
+    salesrep.ig_password = os.getenv("IG_PASSWORD")
+    salesrep.user = User.objects.last()
     salesrep.save()
     automation_sheet.salesrep = SalesRep.objects.last()
     path = Path("media/Booksy_Dialogflow_Automations.xlsx")
@@ -77,8 +79,9 @@ def init_automation_sheet():
         automation_sheet.file = File(f, name=path.name)
         automation_sheet.save()
 
+
 def init_outsourced():
-    data="""
+    data = """
     {"calendar_availability": "Empty Calendar", "booking_system": "StyleSeat", "sm_activity": "SM Not Active", "book_button": "YES", "reviews": [{"reviews": "5.0 (535 Reviews)", "clientPhotosNo": "Get $50", "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“", "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL", "aboutClientLocation": "CLEAN\nEASY PARKING", "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023", "reviewServiceName": "Beard Line-up | Sculpting"}, {"reviews": "5.0 (535 Reviews)", "clientPhotosNo": "Get $50", "review_text": "”It was great to meet Paul, who gonna be my new barber, beard stylist. This guy and the whole place seemed chill and relaxing. Great service and attention to detail. Solid place to go to. I’ll be back, no doubt.“", "aboutClientAdjectives": "ATTENTIVE\nON TIME\nPROFESSIONAL", "aboutClientLocation": "CLEAN\nEASY PARKING", "reviewerNameAndDate": "JEFF T.\nFeb 25, 2023", "reviewServiceName": "Beard Line-up | Sculpting"}]}
     """
     source = "styleseat"
@@ -86,9 +89,9 @@ def init_outsourced():
     outsourced.source = source
     outsourced.results = data
     account = Account()
-    account.igname='psychologistswithoutborders'
+    account.igname = "psychologistswithoutborders"
     account.save()
-    outsourced.account=account
+    outsourced.account = account
     outsourced.save()
 
 
@@ -96,3 +99,4 @@ def init_db():
     init_status_check()
     init_industry()
     init_automation_sheet()
+    init_outsourced()
