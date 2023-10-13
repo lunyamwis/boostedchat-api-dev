@@ -3,7 +3,6 @@ import re
 
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -203,25 +202,9 @@ class FallbackWebhook(APIView):
                         ]
                         account.status = confirmed_problem_status
                         account.save()
-                    try:
-                        llm_response = re.findall(r"\_\_\_\_(.*?)\_\_\_\_", result)
-                    except Exception as error:
-                        try:
-                            llm_response = re.findall(r"____\n(.*?)\n____", result, re.DOTALL)
-                        except Exception as error:
-                            print(error)
 
-                    if len(llm_response) == 0:
-                        llm_response = re.findall(r"\_\_(.*?)\_\_", result)
-                    if "" in llm_response:
-                        llm_response = re.findall(r"____\n(.*?)\n____", result, re.DOTALL)
-                    if len(llm_response) == 0:
-                        llm_response = re.findall(r"\n_(.*?)\_", result, re.DOTALL)
-                    if len(llm_response) == 0:
-                        llm_response = re.findall(r"\_(.*?)\_", result)
-
-                    if len(llm_response) == 0:
-                        llm_response = response.get("choices")[0].get("message").get("content")
+                    matched_string = result.replace("".join(confirmed_rejected_problems_arr), "")
+                    llm_response = re.sub(r"[(+*)]", "", matched_string)
 
                     answers_re = re.search(r"```(.*?)```", result, re.DOTALL)
                     answers = None
@@ -235,7 +218,7 @@ class FallbackWebhook(APIView):
                         print("<<<try>>")
 
                         message = Message()
-                        message.content = llm_response[0]
+                        message.content = llm_response
                         message.sent_by = "Robot"
                         message.sent_on = timezone.now()
                         message.thread = thread
@@ -247,7 +230,7 @@ class FallbackWebhook(APIView):
                                     "messages": [
                                         {
                                             "text": {
-                                                "text": [llm_response[0]],
+                                                "text": [llm_response],
                                             },
                                         },
                                     ]
@@ -432,4 +415,3 @@ class NeedsAssesmentWebhook(APIView):
 
         except Exception as error:
             print(error)
-
