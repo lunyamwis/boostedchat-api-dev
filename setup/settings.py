@@ -126,7 +126,7 @@ DATABASES = {
         "USER": os.getenv("POSTGRES_USERNAME"),
         "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
         "HOST": os.getenv("POSTGRES_HOST"),
-        "PORT": 5432
+        "PORT": 5432,
     }
 }
 
@@ -200,6 +200,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://104.197.153.127",
     "https://104.197.153.127",
     "http://app.boostedchat.com",
+    "http://booksy.us.boostedchat.com",
+    "https://booksy.us.boostedchat.com",
 ]
 
 CORS_ALLOW_HEADERS = (

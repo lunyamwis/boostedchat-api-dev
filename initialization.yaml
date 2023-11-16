@@ -12,3 +12,31 @@
     updated_at: 2023-10-26T10:43:01.518487
     stage: 2
     name: sent_first_question
+- model: instagram.statuscheck
+  pk: 36m9de99-03f5-43b9-8960-9x5781ad920d
+  fields:
+    created_at: 2023-10-26T10:22:13.179198
+    updated_at: 2023-10-26T10:55:01.518587
+    stage: 2
+    name: confirmed_problem
+- model: instagram.statuscheck
+  pk: 36m9de29-03f5-43b9-8960-9x5761ad920d
+  fields:
+    created_at: 2023-10-26T10:12:13.179118
+    updated_at: 2023-10-26T10:45:01.528587
+    stage: 3
+    name: overcome_objections
+- model: instagram.statuscheck
+  pk: 36m9de29-01f5-43c9-8960-9x5761ad920d
+  fields:
+    created_at: 2023-10-26T10:02:13.173118
+    updated_at: 2023-10-26T10:25:01.518587
+    stage: 4
+    name: overcome
+- model: instagram.statuscheck
+  pk: 96m90e29-01f5-43c9-8960-9x576qad920d
+  fields:
+    created_at: 2023-10-26T11:02:13.172318
+    updated_at: 2023-10-26T11:25:01.513487
+    stage: 3
+    name: deferred
