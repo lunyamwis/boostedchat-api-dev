@@ -1,5 +1,8 @@
 import math
+import json
 import random
+import datetime
+import logging
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -49,135 +52,32 @@ class SalesRepManager(viewsets.ModelViewSet):
     def assign_accounts(self, request, pk=None):
         serializer = AccountAssignmentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        instagram_accounts_ = []
-        accounts = Account.objects.filter(Q(status=None) | ~Q(status__name="sent_first_compliment"))
-        if accounts.exists():
-            instagram_accounts_.append(accounts)
+        try:
+            account = Account.objects.get(igname="psychologistswithoutborders")
+        except:
+            return Response({"message": "Account does not exist"}, status= status.HTTP_400_BAD_REQUEST)
 
-        print(accounts)
-        instagram_accounts = []
-        for accounts_ in instagram_accounts_:
-            for account in accounts_:
-                instagram_accounts.append(account.id)
-
-        salesreps = list(SalesRep.objects.all())
-
-        if len(salesreps) == 0:
-            return Response({"message": "No sales reps"}, status=status.HTTP_400_BAD_REQUEST)
-
-        ration = math.ceil(len(instagram_accounts) / len(salesreps))
-
-        i = 0
-        accounts_complimented = []
-
-        while i < len(salesreps):
-            allocations = random.choices(instagram_accounts, k=ration)
-
-            if no_consecutives(allocations) and no_more_than_x(allocations):
-                for j in range(ration):
-                    if j > len(instagram_accounts):
-                        break
-                    account = get_object_or_404(Account, id=allocations[j])
-
-                    salesreps[i].instagram.add(account)
-
-                    account.save()
-                    print(account.igname)
-                    if account.igname:
-                        if serializer.data.get("reaction") == 1:
-                            cl = login_user(salesreps[i].ig_username, salesreps[i].ig_password)
-                            user_id = cl.user_id_from_username(account.igname)
-                            user_medias = cl.user_medias(user_id)
-
-                            try:
-                                media_id = cl.media_id(media_pk=user_medias[0].pk)
-                                random_compliment = get_random_compliment(
-                                    salesrep=salesreps[i], compliment_type="first_compliment"
-                                )
-                                comment = cl.media_comment(media_id, random_compliment)
-                            except Exception as error:
-                                print(error)
-
-                            ready_accounts = {
-                                "comment": comment.dict(),
-                                "account": account.igname,
-                                "salesrep": salesreps[i].ig_username,
-                            }
-                            accounts_complimented.append(ready_accounts)
-                        elif serializer.data.get("reaction") == 2:
-                            try:
-                                send_first_compliment.delay(username=account.igname)
-                                sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
-                                account.status = sent_compliment_status
-                                account.save()
-
-                                try:
-                                    schedule, _ = CrontabSchedule.objects.get_or_create(
-                                        minute="*/1",
+        sales_rep = SalesRep.objects.first()
+        sales_rep.instagram.add(account)
+        try:
+            schedule, _ = CrontabSchedule.objects.get_or_create(
+                                        minute="*/3",
                                         hour="*",
                                         day_of_week="*",
                                         day_of_month="*",
                                         month_of_year="*",
                                     )
-                                except Exception as error:
-                                    print(error)
+        except Exception as error:
+            logging.warning(str(error))
 
-                                try:
-                                    PeriodicTask.objects.get_or_create(
-                                        name="GenerateResponse",
-                                        crontab=schedule,
-                                        task="instagram.tasks.generate_and_send_response",
-                                        start_time=timezone.now(),
-                                    )
-                                except Exception as error:
-                                    print(error)
+        try:
+            task, _ = PeriodicTask.objects.get_or_create(
+                name=f"SendFirstCompliment-{account.igname}",
+                crontab=schedule,
+                task="instagram.tasks.send_first_compliment",
+                args=json.dumps([[account.igname]])
+            )
+        except Exception as error:
+            logging.warning(str(error))
 
-                                try:
-                                    schedule, _ = CrontabSchedule.objects.get_or_create(
-                                        minute="*/1",
-                                        hour="*",
-                                        day_of_week="*",
-                                        day_of_month="*",
-                                        month_of_year="*",
-                                    )
-                                except Exception as error:
-                                    print(error)
-
-                                try:
-                                    PeriodicTask.objects.get_or_create(
-                                        name="CheckResponse",
-                                        crontab=schedule,
-                                        task="instagram.tasks.check_response",
-                                        start_time=timezone.now(),
-                                    )
-                                except Exception as error:
-                                    print(error)
-
-                            except Exception as error:
-                                print(error)
-
-                            ready_accounts = {
-                                "account": account.igname,
-                                "salesrep": salesreps[i].ig_username,
-                            }
-                            accounts_complimented.append(ready_accounts)
-
-                        elif serializer.data.get("reaction") == 3:
-
-                            try:
-                                media_id = cl.media_id(media_pk=user_medias[0].pk)
-                                cl.media_like(media_id)
-                            except Exception as error:
-                                print(error)
-
-                            ready_accounts = {
-                                "like": True,
-                                "account": account.igname,
-                                "salesrep": salesreps[i].ig_username,
-                                "success": True,
-                            }
-                            accounts_complimented.append(ready_accounts)
-
-                i += 1
-
-        return Response({"accounts": accounts_complimented})
+        return Response({"accounts": "Set"})
