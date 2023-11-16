@@ -774,10 +774,10 @@ class DMViewset(viewsets.ModelViewSet):
             print(error)
 
         try:
-            subject = 'Hello, Samantha'
-            message = f'Please login to the system @https://elth.uk.boostedchat.com/ and respond to the following thread {account.igname}'
+            subject = 'Hello Team'
+            message = f'Please login to the system @https://booksy.us.boostedchat.com/ and respond to the following thread {account.igname}'
             from_email = 'lutherlunyamwi@gmail.com' 
-            recipient_list = ['samantha@elth.co.uk'] 
+            recipient_list = ['darwinokuku@gmail.com', 'lutherlunyamwi@gmail.com'] 
             send_mail(subject, message, from_email, recipient_list)
         except Exception as error:
             print(error)
