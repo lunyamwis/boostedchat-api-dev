@@ -1,6 +1,7 @@
 asgiref
 beautifulsoup4
 celery
+emoji
 numpy
 Django
 djangorestframework
@@ -27,9 +28,11 @@ Pillow
 pre-commit
 PyJWT
 pytz
+psycopg2
 redis
 requests
 selenium
+sentry-sdk[django]
 scrapy
 sqlparse
 coverage

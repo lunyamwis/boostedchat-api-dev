@@ -38,6 +38,7 @@ DIALOGFLOW_BASE_URL = (
 OPENAI_BASE_URL = "https://api.openai.com/v1"
 # Application definition
 
+MQTT_BASE_URL = "http://mqtt:3000"
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -109,8 +110,6 @@ ROLEPERMISSIONS_MODULE = "roles.roles"
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
-
-
 if DEBUG:
     DATABASES = {
         "default": {
@@ -122,14 +121,12 @@ if DEBUG:
 else:
     DATABASES = {
         "default": {
-            "ENGINE": "django_snowflake",
-            "NAME": "BOOSTEDCHAT",
-            "SCHEMA": "PUBLIC",
-            "WAREHOUSE": "COMPUTE_WH",
-            "USER": os.getenv("SF_USERNAME"),
-            "PASSWORD": os.getenv("SF_PASSWORD"),
-            "ACCOUNT": os.getenv("SF_ACCOUNT_IDENTIFIER"),
-            "OPTIONS": {},
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DBNAME").strip(),
+            "USER": os.getenv("POSTGRES_USERNAME").strip(),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD").strip(),
+            "HOST": os.getenv("POSTGRES_HOST").strip(),
+            "PORT": 5432
         }
     }
 

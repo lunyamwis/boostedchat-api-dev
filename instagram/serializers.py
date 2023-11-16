@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message
-
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message,StatusCheck, OutSourced
 
 class AccountSerializer(serializers.ModelSerializer):
     # account_history = serializers.CharField(source="history.latest",read_only=True)
@@ -11,8 +10,30 @@ class AccountSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "igname",
+            "full_name",
         ]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
+
+class GetAccountSerializer(serializers.ModelSerializer):
+    # status = serializers.CharField(source="account.status.name", read_only=True)
+    class Meta:
+        model = Account
+        fields = '__all__'
+        extra_kwargs = {
+            "id": {"required": False, "allow_null": True},
+        }
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        try:
+            status_ = StatusCheck.objects.get(id=data['status'])
+            data['status'] = status_.name
+        except Exception as error:
+            print(error)
+        try:
+            data['outsourced'] = OutSourced.objects.get(account__id=data['id']).results
+        except Exception as error:
+            print(error)
+        return data
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -74,12 +95,23 @@ class AddContentSerializer(serializers.Serializer):
     generated_response = serializers.CharField(max_length=1024, required=False)
 
 
+class SendManualMessageSerializer(serializers.Serializer):
+    assigned_to = serializers.CharField(default="Robot")
+    message = serializers.CharField(max_length=255, required=False)
+
+
+class GenerateMessageInputSerializer(serializers.Serializer):
+    thread_id = serializers.CharField(required=True)
+    message = serializers.CharField(max_length=255, required=True)
+
 class ThreadSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="account.igname", read_only=True)
+    assigned_to = serializers.CharField(source="account.assigned_to", read_only=True)
+    account_id = serializers.CharField(source="account.id", read_only=True)
 
     class Meta:
         model = Thread
-        fields = ["id", "username", "thread_id", "replied", "replied_at"]
+        fields = ["id", "username", "thread_id", "assigned_to", "account_id"]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 class MessageSerializer(serializers.ModelSerializer):

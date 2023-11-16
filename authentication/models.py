@@ -34,6 +34,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     modified_date = models.DateTimeField(default=timezone.now)
     created_by = models.EmailField()
     modified_by = models.EmailField()
+    status = models.TextField()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -46,3 +47,12 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     @property
     def get_full_name(self):
         return f"{self.first_name} {self.last_name}"
+
+
+class AccountRequest(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE, null=False, related_name="account_requestor")
+    requested_on = models.DateTimeField(auto_now_add=True)
+    approved_rejected_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name="account_approver")
+    approved_rejected_on = models.DateTimeField(null=True)
+    rejection_reason = models.TextField(null=True)
