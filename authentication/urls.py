@@ -19,7 +19,12 @@ from .views import (
     UserListView,
     FacebookLogin,
     TwitterLogin,
-    GoogleLogin
+    GoogleLogin,
+    get_account_requests,
+    create_account_request,
+    approve_account_request,
+    reject_account_request,
+    activate_account
 )
  
 
@@ -58,4 +63,9 @@ urlpatterns = [
     path('password/reset/', PasswordResetView.as_view(), name='rest_password_reset'),
     path('password/reset/confirm/<str:uidb64>/<str:token>', PasswordResetConfirmView.as_view(),
             name='password_reset_confirm'),
+    path('account-request/all/', get_account_requests, name="get_account_request"),
+    path('account-request/create/', create_account_request, name="create_account_request"),
+    path('account-request/approve/<request_id>/', approve_account_request, name="approve_account_request"),
+    path('account-request/reject/<request_id>/', reject_account_request, name="reject_account_request"),
+    path('account-request/activate/<user_id>/', activate_account, name="activate_account")
 ]

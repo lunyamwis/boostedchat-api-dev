@@ -13,9 +13,9 @@ echo "<<<<<<<< Database Setup and Migrations Starts >>>>>>>>>"
 python3 manage.py migrate &
 
 sleep 5
-echo "<<<<<<< Database Setup and Migrations Complete >>>>>>>>>>"
+echo "<<<<<<< Initializing the Database >>>>>>>>>>"
 echo " "
-
+python manage.py loaddata initialization.yaml
 echo " "
 echo "<<<<<<<<<<<<<<<<<<<< START Celery >>>>>>>>>>>>>>>>>>>>>>>>"
 

@@ -3,6 +3,8 @@ import csv
 import io
 import logging
 import uuid
+import json
+import requests
 from urllib.parse import urlparse
 
 from instagrapi.exceptions import UserNotFound
@@ -10,13 +12,17 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from django.utils import timezone
+from django.shortcuts import get_object_or_404
+from django.core.mail import send_mail
+from django.conf import settings
+
 
 from base.helpers.push_id import PushID
 from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
 from sales_rep.models import SalesRep
 
-from .helpers.check_response import CheckResponse
 from .helpers.init_db import init_db
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message
 from .serializers import (
@@ -31,8 +37,9 @@ from .serializers import (
     UploadSerializer,
     VideoSerializer,
     MessageSerializer,
+    SendManualMessageSerializer,
+    GetAccountSerializer,
 )
-from .tasks import send_comment, send_message
 
 
 class AccountViewSet(viewsets.ModelViewSet):
@@ -46,13 +53,33 @@ class AccountViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "batch_uploads":
             return UploadSerializer
+        elif self.action == "update": # override update serializer
+            return GetAccountSerializer
         return self.serializer_class
 
     def list(self, request, *args, **kwargs):
 
-        accounts = self.queryset.values()
+        accounts = []
+        
+        for account in self.queryset:
+            account_ = {
+                "id":account.id,
+                "assigned_to":account.assigned_to,
+                "confirmed_problems":account.confirmed_problems,
+                "full_name":account.full_name or None,
+                "igname":account.igname,
+                "status":account.status.name if account.status else None,
+                "outsourced_data":account.outsourced_set.values()
 
-        return Response({"accounts": accounts})
+            }
+            accounts.append(account_)
+        return Response(accounts)
+
+    def retrieve(self, request, pk=None):
+        queryset = Account.objects.all()
+        user = get_object_or_404(queryset, pk=pk)
+        serializer = GetAccountSerializer(user)
+        return Response(serializer.data)
 
     @action(detail=True, methods=["get"], url_path="potential-buy")
     def potential_buy(self, request, pk=None):
@@ -169,11 +196,10 @@ class AccountViewSet(viewsets.ModelViewSet):
         account.confirmed_problems = ""
         account.rejected_problems = ""
         account.save()
-        salesReps = SalesRep.objects.filter(instagram = account)
+        salesReps = SalesRep.objects.filter(instagram=account)
         for salesRep in salesReps:
             salesRep.instagram.remove(account)
         return Response({"message": "Account reset successfully"})
-
 
 
 class HashTagViewSet(viewsets.ModelViewSet):
@@ -295,34 +321,6 @@ class PhotoViewSet(viewsets.ModelViewSet):
             }
         )
 
-    @action(detail=True, methods=["post"], url_path="add-comment")
-    def add_comment(self, request, pk=None):
-        photo = self.get_object()
-        serializer = AddContentSerializer(data=request.data)
-        valid = serializer.is_valid(raise_exception=True)
-        generated_response = serializer.data.get("generated_response")
-        if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
-            send_comment.delay(photo.link, generated_response)
-            return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
-        else:
-            send_comment.delay(photo.link, serializer.data.get("human_response"))
-            return Response(
-                {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
-            )
-
-    @action(detail=True, methods=["get"], url_path="retrieve-commenters")
-    def retrieve_commenters(self, request, pk=None):
-        photo = self.get_object()
-        cl = login_user()
-
-        media_pk = cl.media_pk_from_url(photo.link)
-        comments = cl.media_comments(media_pk)
-        for comment in comments:
-            account = Account()
-            account.igname = comment.user.username
-            account.save()
-        return Response(comments)
-
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
         serializer = UploadSerializer(data=request.data)
@@ -395,24 +393,6 @@ class VideoViewSet(viewsets.ModelViewSet):
             }
         )
 
-    @action(detail=True, methods=["post"], url_path="add-comment")
-    def add_comment(self, request, pk=None):
-        video = self.get_object()
-        cl = login_user()
-
-        media_pk = cl.media_pk_from_url(video.link)
-        media_id = cl.media_id(media_pk=media_pk)
-        serializer = AddContentSerializer(data=request.data)
-        valid = serializer.is_valid(raise_exception=True)
-        generated_response = serializer.data.get("generated_response")
-        if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
-            send_comment(media_id, generated_response)
-            return Response({"status": status.HTTP_200_OK, "message": generated_response, "success": True})
-        else:
-            send_comment(media_id, serializer.data.get("human_response"))
-            return Response(
-                {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
-            )
 
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
@@ -711,155 +691,104 @@ class DMViewset(viewsets.ModelViewSet):
             return AddContentSerializer
         return self.serializer_class
 
-    @action(detail=True, methods=["get"], url_path="fetch-messages")
-    def fetch_messages(self, request, pk=None):
-        thread = self.get_object()
-        cl = login_user()
-        message_info = []
-        try:
 
-            # Iterate through the threads and access messages
-            messages = cl.direct_messages(thread_id=thread.thread_id)
-
-            for message in messages:
-                message_response = {
-                    "username": cl.username_from_user_id(message.user_id),
-                    "text": message.text,
-                    "timestamp": message.timestamp,
-                }
-                message_info.append(message_response)
-            return Response(message_info, status=status.HTTP_200_OK)
-        except Exception as error:
-            error_message = str(error)
-            return Response({"error": error_message})
-
-    @action(detail=True, methods=["post"], url_path="generate-response")
-    def generate_response(self, request, pk=None):
+    @action(detail=True, methods=["post"], url_path="send-message-manually")
+    def send_message_manually(self, request, pk=None):
         thread = self.get_object()
 
-        generated_response = detect_intent(
-            project_id="boostedchatapi",
-            session_id=str(uuid.uuid4()),
-            message=request.data.get("text"),
-            language_code="en",
-        )
-        return Response(
-            {
-                "status": status.HTTP_200_OK,
-                "generated_comment": generated_response,
-                "text": request.data.get("text"),
-                "success": True,
-                "replied": thread.replied,
-            }
-        )
+        serializer = SendManualMessageSerializer(data=request.data)
 
-    @action(detail=True, methods=["post"], url_path="generate-send-response")
-    def generate_and_send_response(self, request, pk=None):
+        if serializer.is_valid(raise_exception=True):
 
-        thread = self.get_object()
+            account = thread.account
+            data={"message":serializer.data.get("message"),"username":account.igname}
+            response = requests.post(settings.MQTT_BASE_URL+"/send-message",data=json.dumps(data))
 
-        generated_response = detect_intent(
-            project_id="boostedchatapi",
-            session_id=str(uuid.uuid4()),
-            message=request.data.get("text"),
-            language_code="en",
-        )
-        send_message.delay(
-            f"""
-            {generated_response},\n
-            """,
-            thread_id=thread.thread_id,
-        )
-        return Response(
-            {
-                "status": status.HTTP_200_OK,
-                "generated_comment": generated_response,
-                "text": request.data.get("text"),
-                "success": True,
-                "replied": thread.replied,
-            }
-        )
+            if response.status_code == 200:
 
-    @action(detail=False, methods=["get"], url_path="check-response")
-    def check_response(self, request, pk=None):
+                account.assigned_to = serializer.data.get("assigned_to")
+                account.save()
 
-        try:
+                message = Message()
+                message.content = serializer.data.get("message")
+                message.sent_by = "Robot"
+                message.sent_on = timezone.now()
+                message.thread = thread
+                message.save()
 
-            for thread_ in self.queryset.all():
-                check_responses = CheckResponse(status=thread_.account.status.name, thread=thread_)
-                if check_responses.status == "responded_to_first_compliment":
-                    check_responses.follow_up_if_responded_to_first_compliment()
-                elif check_responses.status == "sent_first_compliment":
-                    check_responses.follow_up_if_sent_first_compliment()
-                elif check_responses.status == "sent_first_question":
-                    check_responses.follow_up_if_sent_first_question()
-                elif check_responses.status == "sent_second_question":
-                    check_responses.follow_up_if_sent_second_question()
-                elif check_responses.status == "sent_third_question":
-                    check_responses.follow_up_if_sent_third_question()
-                elif check_responses.status == "sent_first_needs_assessment_question":
-                    check_responses.follow_up_if_sent_first_needs_assessment_question()
-                elif check_responses.status == "sent_second_needs_assessment_question":
-                    check_responses.follow_up_if_sent_second_needs_assessment_question()
-                elif check_responses.status == "sent_third_needs_assessment_question":
-                    check_responses.follow_up_if_sent_third_needs_assessment_question()
-                elif check_responses.status == "sent_follow_up_after_presentation":
-                    check_responses.follow_up_after_presentation()
-                elif check_responses.status == "sent_email_first_attempt":
-                    check_responses.follow_up_if_sent_email_first_attempt()
-                elif check_responses.status == "sent_uninterest":
-                    check_responses.follow_up_if_sent_uninterest()
-                elif check_responses.status == "sent_objection":
-                    check_responses.follow_up_if_sent_objection()
-                elif check_responses.status == "overcome":
-                    check_responses.follow_up_after_solutions_presented()
-                    check_responses.follow_up_if_sent_email_first_attempt()
-                elif check_responses.status == "deferred":
-                    check_responses.follow_up_if_deferred()
-
-            return Response({"success": True}, status=status.HTTP_200_OK)
-        except Exception as error:
-            return Response({"error": str(error)})
-
-
-
-    @action(detail=True, methods=["post"], url_path="send-message")
-    def send_message(self, request, pk=None):
-
-        thread = self.get_object()
-        serializer = AddContentSerializer(data=request.data)
-        valid = serializer.is_valid(raise_exception=True)
-        generated_response = serializer.data.get("generated_response")
-        if valid and serializer.data.get("assign_robot") and serializer.data.get("approve"):
-
-            send_message.delay(
-                f"""
-                {generated_response},\n
-                """,
-                thread_id=thread.thread_id,
-            )
-
-            return Response(
-                {
-                    "status": status.HTTP_200_OK,
-                    "message": generated_response,
-                    "thread_id": thread.thread_id,
-                    "success": True,
-                }
-            )
+                return Response(
+                    {
+                        "status": status.HTTP_200_OK,
+                        "message": "Message sent successfully",
+                        "thread_id": thread.thread_id,
+                        "success": True,
+                    }
+                )
+            else:
+                return Response(
+                    {
+                        "status": status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        "message": "There was a problem sending your message",
+                        "thread_id": thread.thread_id,
+                        "success": True
+                    }
+                )
         else:
-            send_message.delay(serializer.data.get("human_response"), thread_id=thread.thread_id)
-
             return Response(
                 {
                     "status": status.HTTP_200_OK,
-                    "message": serializer.data.get("human_response"),
+                    "message": serializer.errors(),
                     "thread_id": thread.thread_id,
-                    "success": True,
-                    "replied": thread.replied,
-                    "replied_at": thread.replied_at,
+                    "success": True
                 }
             )
+
+    
+    def generate_response(self, request, *args, **kwargs):
+        thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
+        generated_response = detect_intent(
+            project_id="boostedchatapi",
+            session_id=str(uuid.uuid4()),
+            message=request.data.get('message'),
+            language_code="en",
+            account_id=thread.account.id,
+        )
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "generated_comment": " ".join(map(str, generated_response)),
+                "text": request.data.get("message"),
+                "success": True,
+                "username": thread.account.igname
+            }
+        )
+
+
+    def assign_operator(self,request, *args, **kwargs):
+        try:
+            thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
+            account = get_object_or_404(Account,id=thread.account.id)
+            account.assigned_to = request.data.get("assigned_to") if request.data.get('assigned_to') else 'Human'
+            account.save()
+        except Exception as error:
+            print(error)
+
+        try:
+            subject = 'Hello, Samantha'
+            message = f'Please login to the system @https://elth.uk.boostedchat.com/ and respond to the following thread {account.igname}'
+            from_email = 'lutherlunyamwi@gmail.com' 
+            recipient_list = ['samantha@elth.co.uk'] 
+            send_mail(subject, message, from_email, recipient_list)
+        except Exception as error:
+            print(error)
+
+        return Response(
+            {
+                "status": status.HTTP_200_OK,
+                "assign_operator":True
+            }
+
+        )
 
 
     @action(detail=True, methods=["get"], url_path="get-thread-messages")
@@ -869,7 +798,6 @@ class DMViewset(viewsets.ModelViewSet):
         messages = Message.objects.filter(thread=thread)
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
-    
 
     @action(detail=True, methods=["post"], url_path="delete-all-thread-messages")
     def delete_thread_messages(self, request, pk=None):
@@ -877,7 +805,6 @@ class DMViewset(viewsets.ModelViewSet):
         thread = self.get_object()
         Message.objects.filter(thread=thread).delete()
         return Response({"message": "Messages deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-    
 
 
 class MessageViewSet(viewsets.ModelViewSet):
@@ -886,7 +813,6 @@ class MessageViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         return self.serializer_class
-
 
     @action(detail=True, methods=["delete"], url_path="delete-message")
     def delete_message(self, request, pk=None):
@@ -898,5 +824,5 @@ class MessageViewSet(viewsets.ModelViewSet):
 
 @api_view(['POST'])
 def initialize_db(request):
-   init_db() 
-   return Response({"message": "Db initialized successfully"})
+    init_db()
+    return Response({"message": "Db initialized successfully"})

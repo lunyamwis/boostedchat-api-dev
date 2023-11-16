@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   web:
@@ -13,7 +13,7 @@ services:
       - web-static:/usr/src/app/static
     env_file: .env
     environment:
-      DEBUG: 'true'
+      DEBUG: "true"
     entrypoint: ["/bin/bash", "+x", "/entrypoint.sh"]
 
   nginx:
@@ -29,14 +29,12 @@ services:
       - web:web
     # command: ["/bin/sh", "-c", "while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"] # Renew SSL certificates every 6 hours
 
-
   certbot:
     image: certbot/certbot
     volumes:
       - letsencrypt:/etc/letsencrypt
       - web-static:/static/
     command: certonly --non-interactive --agree-tos --nginx -m "tomek@boostedchat.com" -d "webhook.boostedchat.com"
-
 
   redis:
     restart: always
@@ -45,6 +43,21 @@ services:
       - "6379:6379"
     volumes:
       - redisdata:/data
+
+  mqtt:
+    image: darwinokuku909/bst-mqt
+    restart: always
+    depends_on:
+      - web
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+      - "3000:3000"
+    environment:
+      - IG_USERNAME=${IG_USERNAME}
+      - IG_PASSWORD=${IG_PASSWORD}
+      - API_BASE_URL=${API_BASE_URL}
+      - IG_PROXY=${IG_PROXY}
 
 volumes:
   web-django:

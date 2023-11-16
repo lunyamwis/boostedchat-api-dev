@@ -4,7 +4,7 @@ from django.contrib.auth.models import update_last_login
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import User
+from .models import User, AccountRequest
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -73,3 +73,23 @@ class UserListSerializer(serializers.ModelSerializer):
             'last_name',
             'role'
         )
+
+class RelatedUserSerializer(serializers.ModelSerializer):
+
+    def to_representation(self, value):
+        return {'id': value.id,
+                'first_name': value.first_name,
+                'last_name': value.last_name,
+                'email': value.email
+                }
+
+
+class GetAccountRequestSerializer(serializers.ModelSerializer):
+    user_id = RelatedUserSerializer()
+    class Meta:
+        model = AccountRequest
+        fields = "__all__"
+
+class ActivateAccountSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True, required=True)
+    current_password = serializers.CharField(write_only=True, required=True)
