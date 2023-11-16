@@ -71,39 +71,3 @@ def send_first_compliment(username):
     else:
         raise Exception("There is something wrong with mqtt")
     
-
-
-    cl = login_user()
-    thread_obj = None
-    first_message = f"Hey Simon, IG threw your profile my way — love what you're doing with those shears! I've been helping barbers up their marketing game a bit. Got a few ideas that might be up your alley. Open to some tips?"
-
-    user_id = cl.user_id_from_username(username)
-    if type(user_id) != list:
-        user_id = [user_id]
-
-    account = None
-    try:
-        account = Account.objects.get(igname=username)
-    except Exception as error:
-        print(error)
-
-    # cl.user_follow(user_id)
-    direct_message = cl.direct_send(first_message, user_ids=user_id)
-    try:
-        thread_obj, _ = Thread.objects.get_or_create(thread_id=direct_message.thread_id)
-    except Exception as error:
-        try:
-            thread_obj = Thread.objects.get(thread_id=direct_message.thread_id)
-        except Exception as error:
-            print(error)
-    thread_obj.thread_id = direct_message.thread_id
-    thread_obj.account = account
-    thread_obj.save()
-
-    message = Message()
-    message.content = first_message
-    message.sent_by = "Robot"
-    message.sent_on = direct_message.timestamp
-    message.thread = thread_obj
-    message.save()
-
