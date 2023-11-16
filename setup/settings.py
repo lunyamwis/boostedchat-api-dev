@@ -110,25 +110,26 @@ ROLEPERMISSIONS_MODULE = "roles.roles"
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
-if DEBUG:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "boostedchatdb",  # This is where you put the name of the db file.
-            # If one doesn't exist, it will be created at migration time.
-        }
+# if DEBUG:
+#     DATABASES = {
+#         "default": {
+#             "ENGINE": "django.db.backends.sqlite3",
+#             "NAME": BASE_DIR / "boostedchatdb",  # This is where you put the name of the db file.
+#             # If one doesn't exist, it will be created at migration time.
+#         }
+#     }
+# else:
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DBNAME"),
+        "USER": os.getenv("POSTGRES_USERNAME"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+        "HOST": os.getenv("POSTGRES_HOST"),
+        "PORT": 5432
     }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("POSTGRES_DBNAME").strip(),
-            "USER": os.getenv("POSTGRES_USERNAME").strip(),
-            "PASSWORD": os.getenv("POSTGRES_PASSWORD").strip(),
-            "HOST": os.getenv("POSTGRES_HOST").strip(),
-            "PORT": 5432
-        }
-    }
+}
+
 
 AUTH_USER_MODEL = "authentication.User"
 
