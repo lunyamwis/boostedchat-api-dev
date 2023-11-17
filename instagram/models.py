@@ -30,7 +30,7 @@ class StatusCheck(BaseModel):
 class Account(BaseModel):
     igname = models.CharField(max_length=255, null=True, unique=False, blank=True)
     assigned_to = models.TextField(default="Robot")
-    full_name=models.CharField(max_length=1024, null=True, blank=True)
+    full_name = models.CharField(max_length=1024, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=255, null=True, blank=True)
     profile_url = models.URLField(null=True, blank=True)
@@ -45,7 +45,7 @@ class Account(BaseModel):
         return self.igname
 
 
-class OutSourced(models.Model):
+class OutSourced(BaseModel):
     source = models.CharField(null=True, blank=True, max_length=255)
     results = models.JSONField()
     account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
