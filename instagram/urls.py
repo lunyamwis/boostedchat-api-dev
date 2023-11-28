@@ -1,4 +1,5 @@
 from rest_framework.routers import DefaultRouter
+from django.urls import path,include
 
 from .views import (
     AccountViewSet,
@@ -24,12 +25,18 @@ router.register(r"dm", DMViewset, basename="dm")
 router.register(r"message", MessageViewSet, basename="message")
 urlpatterns = router.urls
 
-# [
-#     path("instagram/", include(router.urls)),
-#     # path(
-#     #     'retrieve',
-#     #     PhotoViewSet.as_view({'post': 'retrieve_photo'}),
-#     #     name='Create Foo',
-#     # ),
+urlpatterns = [
+    path("", include(router.urls)),
+    path(
+        'dflow/<str:thread_id>/generate-response/',
+        DMViewset.as_view({'post': 'generate_response'}),
+        name='generate_response',
+    ),
+    path(
+        'fallback/<str:thread_id>/assign-operator/',
+        DMViewset.as_view({'post': 'assign_operator'}),
+        name='assign_operator',
+    ),
 
-# ]
+]
+

@@ -122,10 +122,10 @@ ROLEPERMISSIONS_MODULE = "roles.roles"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DBNAME"),
-        "USER": os.getenv("POSTGRES_USERNAME"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-        "HOST": os.getenv("POSTGRES_HOST"),
+        "NAME": os.getenv("POSTGRES_DBNAME").strip(),
+        "USER": os.getenv("POSTGRES_USERNAME").strip(),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD").strip(),
+        "HOST": os.getenv("POSTGRES_HOST").strip(),
         "PORT": 5432,
     }
 }
