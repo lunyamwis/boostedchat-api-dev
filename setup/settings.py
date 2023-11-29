@@ -27,14 +27,15 @@ SECRET_KEY = "@yxw+2^(foid*3-@@uvjpm)!to+63zo4-%^3&_@((-+5%po=p-"
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "*",
+    # "*",
     "api.boostedchat.com",
     "127.0.0.1",
     "a69c-105-60-202-188.ngrok-free.app",
-    "3e6a-62-8-92-218.ngrok-free.app"
+    "3e6a-62-8-92-218.ngrok-free.app",
+    "3e6a-62-8-92-218.ngrok-fr"
 ]
 CSRF_TRUSTED_ORIGINS = ["https://api.boostedchat.com","https://a69c-105-60-202-188.ngrok-free.app",
-"https://3e6a-62-8-92-218.ngrok-free.app"]
+"https://3e6a-62-8-92-218.ngrok-free.app","https://3e6a-62-8-92-218.ngrok-fr"]
 DIALOGFLOW_BASE_URL = (
     "https://us-central1-dialogflow.googleapis.com/v3beta1/projects/boostedchatapi/locations/us-central1/"
 )
