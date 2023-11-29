@@ -47,31 +47,37 @@ def send_first_compliment(username):
         account.status = sent_compliment_status
         account.save()
         print(f"response============{response}")
-        print(f"json======================{response.json()}")
-        returned_data = response.json()
-
         try:
-            thread_obj, _ = Thread.objects.get_or_create(thread_id=returned_data["thread_id"])
-        except Exception as error:
-            print(error)
+            
+            print(f"json======================{response.json()}")
+            returned_data = response.json()
+
             try:
-                thread_obj = Thread.objects.get(thread_id=returned_data["thread_id"])
+                thread_obj, _ = Thread.objects.get_or_create(thread_id=returned_data["thread_id"])
             except Exception as error:
                 print(error)
-        thread_obj.thread_id = returned_data["thread_id"]
-        thread_obj.account = account
-        thread_obj.save()
+                try:
+                    thread_obj = Thread.objects.get(thread_id=returned_data["thread_id"])
+                except Exception as error:
+                    print(error)
+            thread_obj.thread_id = returned_data["thread_id"]
+            thread_obj.account = account
+            thread_obj.save()
 
-        message = Message()
-        message.content = first_message
-        message.sent_by = "Robot"
-        message.sent_on = datetime.datetime.fromtimestamp(int(returned_data["timestamp"]) / 1000000)
-        message.thread = thread_obj
-        message.save()
-        try:
-            PeriodicTask.objects.get(name=f"SendFirstCompliment-{account.igname}").delete()
+            message = Message()
+            message.content = first_message
+            message.sent_by = "Robot"
+            message.sent_on = datetime.datetime.fromtimestamp(int(returned_data["timestamp"]) / 1000000)
+            message.thread = thread_obj
+            message.save()
+            try:
+                PeriodicTask.objects.get(name=f"SendFirstCompliment-{account.igname}").delete()
+            except Exception as error:
+                logging.warning(error)
         except Exception as error:
-            logging.warning(error)
+            print(error)
+            print("message not received")
+
 
     else:
         raise Exception("There is something wrong with mqtt")
