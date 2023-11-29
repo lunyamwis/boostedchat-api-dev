@@ -40,7 +40,7 @@ def send_first_compliment(username):
 
     print(f"data=============={data}")
     print(f"data=============={json.dumps(data)}")
-    response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", data=json.dumps(data))
+    response = requests.post(settings.MQTT_BASE_URL + "/send-link", data=json.dumps(data))
     if response.status_code == 200:
         print(f"actually worked for --------------- {account.igname}")
         sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
@@ -76,7 +76,7 @@ def send_first_compliment(username):
                 logging.warning(error)
         except Exception as error:
             print(error)
-            print("message not received")
+            print("message not saved")
 
 
     else:
