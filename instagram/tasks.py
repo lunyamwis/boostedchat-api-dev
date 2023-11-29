@@ -38,12 +38,16 @@ def send_first_compliment(username):
     media_id = outsourced_data.last().results.get("media_id", "")
     data = {"message": first_message, "username": account.igname, "media_id": media_id}
 
+    print(f"data=============={data}")
+    print(f"data=============={json.dumps(data)}")
     response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", data=json.dumps(data))
     if response.status_code == 200:
         print(f"actually worked for --------------- {account.igname}")
         sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
         account.status = sent_compliment_status
         account.save()
+        print(f"response============{response}")
+        print(f"json======================{response.json()}")
         returned_data = response.json()
 
         try:
