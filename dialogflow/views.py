@@ -33,7 +33,7 @@ class FallbackWebhook(APIView):
             if query_result.get("tag") == "fallback":
                 account = Account.objects.get(id=account_id)
                 thread = Thread.objects.filter(account=account).last()
-                url = os.getenv("SCRIPT_URL")
+                url = os.getenv("SCRIPTING_URL")
                 payload = {
                     "prompt_index": account.index,
                     "company_index": os.getenv("COMPANY_INDEX"),

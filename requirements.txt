@@ -28,7 +28,7 @@ Pillow
 pre-commit
 PyJWT
 pytz
-psycopg2
+psycopg2-binary
 redis
 requests
 selenium
