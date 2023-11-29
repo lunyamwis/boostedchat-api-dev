@@ -36,7 +36,7 @@ def send_first_compliment(username):
                         I've been helping barbers up their marketing game a bit.
                         Got a few ideas that might be up your alley. Open to some tips?"""
     media_id = outsourced_data.last().results.get("media_id", "")
-    data = {"message": first_message, "username": account.igname, "media_id": media_id}
+    data = {"message": first_message, "username": account.igname, "mediaId": media_id}
 
     print(f"data=============={data}")
     print(f"data=============={json.dumps(data)}")
