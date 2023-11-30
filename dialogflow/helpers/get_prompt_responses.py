@@ -3,6 +3,7 @@ import os
 import json
 import requests
 from instagram.helpers.llm import query_gpt
+from urllib.parse import urlparse
 
 def get_status_number(val, pattern=r"\d+"):
     list_of_values = re.findall(pattern=pattern, string=val)
@@ -21,7 +22,9 @@ def get_if_asked_first_question(val, pattern=r"`([^`]+)`"):
 
 def get_gpt_response(account):
     app_url = os.getenv("APP_URL")
-    subdomains = app_url.split('.')
+    parsed_app_url = urlparse(app_url)
+    parsed_app_url_to_split = parsed_app_url.netloc
+    subdomains = parsed_app_url_to_split.split('.')
     payload = {
         "prompt_index": account.index,
         "company_name": subdomains[1],
