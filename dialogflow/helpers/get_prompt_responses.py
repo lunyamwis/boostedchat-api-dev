@@ -30,7 +30,7 @@ def get_gpt_response(account):
         "company_name": subdomains[1],
         "product_name": subdomains[2]
     }
-    url = os.getenv("SCRIPTING_URL")
+    url = os.getenv("SCRIPTING_URL") + '/get-prompt/'
     response = requests.post(url, data=payload)
     prompt = response.get("prompt")
     steps = int(response.get("steps"))
