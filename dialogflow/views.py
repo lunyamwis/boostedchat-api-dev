@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import json
 
 import requests
 from django.utils import timezone
@@ -8,7 +9,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from instagram.helpers.llm import query_gpt
+from dialogflow.helpers.get_prompt_responses import get_gpt_response
 from instagram.models import Account, Message, Thread
 
 
@@ -19,7 +20,6 @@ class FallbackWebhook(APIView):
 
     def post(self, request, format=None):
 
-        convo = []
         thread = Thread()
 
         try:
@@ -33,46 +33,31 @@ class FallbackWebhook(APIView):
             if query_result.get("tag") == "fallback":
                 account = Account.objects.get(id=account_id)
                 thread = Thread.objects.filter(account=account).last()
-                url = os.getenv("SCRIPTING_URL")
-                payload = {
-                    "prompt_index": account.index,
-                    "company_index": os.getenv("COMPANY_INDEX"),
-                }
-                response = requests.post(url, data=payload)
-                prompt = response.get("prompt")
-                steps = int(response.get("steps"))
+                
+                Message.objects.create(
+                    content = query,
+                    sent_by = "Client",
+                    sent_on = timezone.now(),
+                    thread = thread
+                )
+                
+                gpt_resp = get_gpt_response(account)
 
-                client_message = Message()
-                client_message.content = query
-                client_message.sent_by = "Client"
-                client_message.sent_on = timezone.now()
-                client_message.thread = thread
-                client_message.save()
-
-                prompt = ("\n").join(convo)
-                response = query_gpt(prompt)
-
-                result = response.get("choices")[0].get("message").get("content")
-                completed = re.findall(r"```(.*?)```", result)
-                if completed and account.index <= steps:
-                    account.index = account.index + 1
-                    account.save()
-
-                result = result.strip("\n")
-                robot_message = Message()
-                robot_message.content = result
-                robot_message.sent_by = "Robot"
-                robot_message.sent_on = timezone.now()
-                robot_message.thread = thread
-                robot_message.save()
-
+                result = gpt_resp.get('text')
+                Message.objects.create(
+                    content = result,
+                    sent_by = "Robot",
+                    sent_on = timezone.now(),
+                    thread = thread
+                )
+                
                 return Response(
                     {
                         "fulfillment_response": {
                             "messages": [
                                 {
                                     "text": {
-                                        "text": [result.replace("```QUESTION SHARED```", "")],
+                                        "text": [result],
                                     },
                                 },
                             ]

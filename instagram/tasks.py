@@ -8,6 +8,7 @@ from django.conf import settings
 from django_celery_beat.models import PeriodicTask
 
 from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
+from dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from .helpers.format_username import format_full_name
 
@@ -31,12 +32,11 @@ def send_first_compliment(username):
 
     outsourced_data = OutSourced.objects.filter(account=account)
 
-    first_message = f"""Hey {full_name}, IG threw your profile my way — love
-                        what you're doing with those shears!
-                        I've been helping barbers up their marketing game a bit.
-                        Got a few ideas that might be up your alley. Open to some tips?"""
+    
+    first_message = get_gpt_response(account)
+    
     media_id = outsourced_data.last().results.get("media_id", "")
-    data = {"message": first_message, "username": account.igname, "mediaId": media_id}
+    data = {"message": first_message.get('text'), "username": account.igname, "mediaId": media_id}
 
     print(f"data=============={data}")
     print(f"data=============={json.dumps(data)}")
