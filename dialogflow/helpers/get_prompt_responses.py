@@ -31,7 +31,8 @@ def get_gpt_response(account):
         "product_name": subdomains[2]
     }
     url = os.getenv("SCRIPTING_URL") + '/get-prompt/'
-    response = requests.post(url, data=payload)
+    resp = requests.post(url, data=payload)
+    response = resp.json()
     prompt = response.get("prompt")
     steps = int(response.get("steps"))
     response = query_gpt(prompt)
