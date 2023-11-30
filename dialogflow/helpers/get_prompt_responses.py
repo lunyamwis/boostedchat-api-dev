@@ -35,9 +35,8 @@ def get_gpt_response(account):
     response = resp.json()
     prompt = response.get("prompt")
     steps = int(response.get("steps"))
-    response = query_gpt(prompt)
-
-    result = json.loads(response.get("choices")[0].get("message").get("content"))
+    response_ = query_gpt(prompt)
+    result = json.loads(response_.get("choices")[0].get("message").get("content"))
     completed = int(result.get('completed'))
     if completed and account.index <= steps:
         account.index = account.index + 1
