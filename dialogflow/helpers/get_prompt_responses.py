@@ -20,9 +20,12 @@ def get_if_asked_first_question(val, pattern=r"`([^`]+)`"):
 
 
 def get_gpt_response(account):
+    app_url = os.getenv("APP_URL")
+    subdomains = app_url.split('.')
     payload = {
         "prompt_index": account.index,
-        "company_index": os.getenv("COMPANY_INDEX"),
+        "company_name": subdomains[1],
+        "product_name": subdomains[2]
     }
     url = os.getenv("SCRIPTING_URL")
     response = requests.post(url, data=payload)
