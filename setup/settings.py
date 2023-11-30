@@ -36,7 +36,7 @@ ALLOWED_HOSTS = [
     "api.booksy.us.boostedchat.com",
     "ce2d-105-161-11-162.ngrok-free.app"
 ]
-CSRF_TRUSTED_ORIGINS = ["https://api.boostedchat.com","https://a69c-105-60-202-188.ngrok-free.app",
+CSRF_TRUSTED_ORIGINS = ["https://api.boostedchat.com","https://api.booksy.us.boostedchat.com","https://a69c-105-60-202-188.ngrok-free.app",
 "https://3e6a-62-8-92-218.ngrok-free.app","https://3e6a-62-8-92-218.ngrok-fr","https://ce2d-105-161-11-162.ngrok-free.app"]
 DIALOGFLOW_BASE_URL = (
     "https://us-central1-dialogflow.googleapis.com/v3beta1/projects/boostedchatapi/locations/us-central1/"
