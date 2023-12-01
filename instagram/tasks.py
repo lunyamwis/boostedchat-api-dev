@@ -65,7 +65,7 @@ def send_first_compliment(username):
             thread_obj.save()
 
             message = Message()
-            message.content = first_message
+            message.content = first_message.get('text')
             message.sent_by = "Robot"
             message.sent_on = datetime.datetime.fromtimestamp(int(returned_data["timestamp"]) / 1000000)
             message.thread = thread_obj
