@@ -30,6 +30,7 @@ ALLOWED_HOSTS = [
     # "*",
     "api.boostedchat.com",
     "127.0.0.1",
+    "34.74.147.25",
     "a69c-105-60-202-188.ngrok-free.app",
     "3e6a-62-8-92-218.ngrok-free.app",
     "3e6a-62-8-92-218.ngrok-fr",
