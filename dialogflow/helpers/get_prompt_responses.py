@@ -24,7 +24,7 @@ def save_gpt_response(result,payload):
     payload.update({
         "dynamic_content": result.get("dynamic_content","")
     })
-    url = os.getenv("SCRIPTING_URL") + '/get-prompt/'
+    url = os.getenv("SCRIPTING_URL") + '/save-response/'
     resp = requests.post(url, data=payload)
     return resp.status_code
 
