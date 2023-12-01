@@ -20,6 +20,16 @@ def get_if_asked_first_question(val, pattern=r"`([^`]+)`"):
     return str(list_of_values[0])
 
 
+def save_gpt_response(result,payload):
+    payload.update({
+        "dynamic_content": result.get("dynamic_content","")
+    })
+    url = os.getenv("SCRIPTING_URL") + '/get-prompt/'
+    resp = requests.post(url, data=payload)
+    return resp.status_code
+
+
+
 def get_gpt_response(account):
     app_url = os.getenv("APP_URL")
     parsed_app_url = urlparse(app_url)
@@ -41,4 +51,6 @@ def get_gpt_response(account):
     if completed and account.index <= steps:
         account.index = account.index + 1
         account.save()
+        if result.get("dynamic_content"):
+            save_gpt_response(result, payload)
     return result
