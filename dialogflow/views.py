@@ -34,12 +34,14 @@ class FallbackWebhook(APIView):
                 account = Account.objects.get(id=account_id)
                 thread = Thread.objects.filter(account=account).last()
                 
-                Message.objects.create(
-                    content = query,
-                    sent_by = "Client",
-                    sent_on = timezone.now(),
-                    thread = thread
-                )
+                client_messages = query.split("#*eb4*#")
+                for client_message in client_messages:
+                    Message.objects.create(
+                        content = client_message,
+                        sent_by = "Client",
+                        sent_on = timezone.now(),
+                        thread = thread
+                    )
                 
                 gpt_resp = get_gpt_response(account)
 
