@@ -38,18 +38,18 @@ def get_gpt_response(account, thread_id=None):
     parsed_app_url_to_split = parsed_app_url.netloc
     subdomains = parsed_app_url_to_split.split('.')
 
-    outsourced = None
-    try:
-        outsourced = OutSourced.objects.get(account__igname = account.igname).results
-    except Exception as error:
-        print(error)
+    # outsourced = None
+    # try:
+    #     outsourced = OutSourced.objects.get(account__igname = account.igname).results
+    # except Exception as error:
+    #     print(error)
 
     payload = {
         "prompt_index": account.index,
         "company_name": subdomains[1],
         "product_name": subdomains[2],
         "conversations": get_conversation_so_far(thread_id=thread_id),
-        "outsourced": "",
+        "outsourced": "informations",
     }
     url = os.getenv("SCRIPTING_URL") + '/get-prompt/'
     resp = requests.post(url, data=payload)
