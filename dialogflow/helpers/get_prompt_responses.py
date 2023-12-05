@@ -69,7 +69,10 @@ def get_gpt_response(account, thread_id=None):
     if completed and account.index <= steps:
         account.index = account.index + 1
         account.save()
-        if result.get("confirmed_problems"):
-            save_gpt_response(result, payload)
+    
+    if len(result.get("confirmed_problems")) >= 2:
+        account.index = account.index + 1
+        account.save()
+        save_gpt_response(result, payload)
 
     return result
