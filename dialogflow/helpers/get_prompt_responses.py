@@ -40,7 +40,7 @@ def get_gpt_response(account, thread_id=None):
 
     outsourced = None
     try:
-        outsourced = OutSourced.objects.get(account__igname = account.igname)
+        outsourced = OutSourced.objects.get(account__igname = account.igname).results
     except Exception as error:
         print(error)
 
@@ -70,6 +70,8 @@ def get_gpt_response(account, thread_id=None):
         account.index = account.index + 1
         account.save()
     
+
+    print("these are the confirmed problems in number: ",len(result.get("confirmed_problems")))
     if len(result.get("confirmed_problems")) >= 2:
         account.index = account.index + 1
         account.save()
