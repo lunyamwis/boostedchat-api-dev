@@ -49,7 +49,7 @@ def get_gpt_response(account, thread_id=None):
         "company_name": subdomains[1],
         "product_name": subdomains[2],
         "conversations": get_conversation_so_far(thread_id=thread_id),
-        "outsourced": outsourced,
+        "outsourced": "",
     }
     url = os.getenv("SCRIPTING_URL") + '/get-prompt/'
     resp = requests.post(url, data=payload)
