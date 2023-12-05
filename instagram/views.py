@@ -795,7 +795,7 @@ class DMViewset(viewsets.ModelViewSet):
     def get_thread_messages(self, request, pk=None):
 
         thread = self.get_object()
-        messages = Message.objects.filter(thread=thread)
+        messages = Message.objects.filter(thread=thread).order_by('sent_on')
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 
