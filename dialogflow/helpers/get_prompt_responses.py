@@ -24,7 +24,7 @@ def get_if_asked_first_question(val, pattern=r"`([^`]+)`"):
 
 def save_gpt_response(result,payload):
     payload.update({
-        "dynamic_content": result.get("dynamic_content","")
+        "confirmed_problems": result.get("confirmed_problems","")
     })
     url = os.getenv("SCRIPTING_URL") + '/save-response/'
     resp = requests.post(url, data=payload)
@@ -59,6 +59,7 @@ def get_gpt_response(account, thread_id=None):
     print(prompt)
     print("End Prompt")
     steps = int(response.get("steps"))
+    print(steps)
     response_ = query_gpt(prompt)
     print("Start response")
     print(response_)
@@ -68,6 +69,7 @@ def get_gpt_response(account, thread_id=None):
     if completed and account.index <= steps:
         account.index = account.index + 1
         account.save()
-        if result.get("dynamic_content"):
+        if result.get("confirmed_problems"):
             save_gpt_response(result, payload)
+
     return result
