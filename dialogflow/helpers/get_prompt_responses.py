@@ -71,10 +71,11 @@ def get_gpt_response(account, thread_id=None):
         account.save()
     
 
-    print("these are the confirmed problems in number: ",len(result.get("confirmed_problems")))
-    if len(result.get("confirmed_problems")) >= 2:
-        account.index = account.index + 1
-        account.save()
-        save_gpt_response(result, payload)
+    if "confirmed_problems" in result:
+        print("these are the confirmed problems in number: ",len(result.get("confirmed_problems")))
+        if len(result.get("confirmed_problems")) >= 2:
+            account.index = account.index + 1
+            account.save()
+            save_gpt_response(result, payload)
 
     return result
