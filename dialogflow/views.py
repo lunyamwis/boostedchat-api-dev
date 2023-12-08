@@ -69,7 +69,6 @@ class FallbackWebhook(APIView):
                 )
 
         except Exception as error:
-            logging.warn(error)
             print(error)
             return Response(
                 {

@@ -53,7 +53,7 @@ class SalesRepManager(viewsets.ModelViewSet):
         serializer = AccountAssignmentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            account = Account.objects.get(igname="psychologistswithoutborders")
+            account = Account.objects.get(igname="inspirationsbydzign")
         except:
             return Response({"message": "Account does not exist"}, status= status.HTTP_400_BAD_REQUEST)
 

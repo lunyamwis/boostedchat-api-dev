@@ -67,9 +67,12 @@ def get_gpt_response(account, thread_id=None):
     print("End Response")
     result = json.loads(response_.get("choices")[0].get("message").get("content"))
     completed = int(result.get('completed'))
-    if completed and account.index <= steps:
-        account.index = account.index + 1
-        account.save()
+    if completed:
+        if account.index == steps:
+            raise Exception("Lead is interested and has been transferred to human takeover")
+        elif account.index < steps:
+            account.index = account.index + 1
+            account.save()
     
 
     if "confirmed_problems" in result:
