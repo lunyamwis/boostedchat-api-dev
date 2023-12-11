@@ -11,6 +11,7 @@ from .views import (
     ReelViewSet,
     StoryViewSet,
     VideoViewSet,
+    update_thread_details,
 )
 
 router = DefaultRouter()
@@ -37,6 +38,10 @@ urlpatterns = [
         DMViewset.as_view({'post': 'assign_operator'}),
         name='assign_operator',
     ),
+    path(
+        'update-thread-details/',
+        update_thread_details
+    )
 
 ]
 

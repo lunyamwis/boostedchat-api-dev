@@ -42,6 +42,10 @@ class FallbackWebhook(APIView):
                         sent_on = timezone.now(),
                         thread = thread
                     )
+                thread.last_message_content = client_messages[len(client_messages)-1]
+                thread.unread_message_count = len(client_messages)
+                thread.last_message_at = timezone.now()
+                thread.save()
                 
                 gpt_resp = get_gpt_response(account, thread.thread_id)
 
