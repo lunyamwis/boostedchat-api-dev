@@ -13,6 +13,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.utils import timezone
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
@@ -696,6 +697,22 @@ class DMViewset(viewsets.ModelViewSet):
         serializer = ThreadSerializer(queryset, many=True)
         
         return Response(serializer.data)
+
+
+    @action(detail=True, methods=["post"], url_path="save-salerep-message")
+    def save_salesrep_message(self, request, pk=None):
+        thread = self.get_object()
+        
+        last_message = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by='Robot')).order_by('-sent_on').first()
+        if request.data.get("text") != last_message.content:
+            Message.objects.create(
+                    content = request.data.get("text"),
+                    sent_by = "Robot",
+                    sent_on = timezone.now(),
+                    thread = thread
+                )
+        return Response({"success":True}, status=status.HTTP_201_CREATED)
+
 
     @action(detail=True, methods=["post"], url_path="send-message-manually")
     def send_message_manually(self, request, pk=None):
