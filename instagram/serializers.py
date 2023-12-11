@@ -111,7 +111,7 @@ class ThreadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Thread
-        fields = ["id", "username", "thread_id", "assigned_to", "account_id"]
+        fields = ["id", "username", "thread_id", "assigned_to", "account_id", "unread_message_count", "last_message_content", "last_message_at"]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 class MessageSerializer(serializers.ModelSerializer):

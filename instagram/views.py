@@ -691,6 +691,11 @@ class DMViewset(viewsets.ModelViewSet):
             return AddContentSerializer
         return self.serializer_class
 
+    def list(self, request, pk=None):
+        queryset = Thread.objects.all().order_by("-last_message_at")
+        serializer = ThreadSerializer(queryset, many=True)
+        
+        return Response(serializer.data)
 
     @action(detail=True, methods=["post"], url_path="send-message-manually")
     def send_message_manually(self, request, pk=None):
@@ -715,6 +720,10 @@ class DMViewset(viewsets.ModelViewSet):
                 message.sent_on = timezone.now()
                 message.thread = thread
                 message.save()
+
+                thread.last_message_content = serializer.data.get("message")
+                thread.unread_message_count = 1
+                thread.last_message_at = timezone.now()
 
                 return Response(
                     {
@@ -806,6 +815,13 @@ class DMViewset(viewsets.ModelViewSet):
         Message.objects.filter(thread=thread).delete()
         return Response({"message": "Messages deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
+    @action(detail=True, methods=["post"], url_path="reset-thread-count")
+    def reset_thread_count(self, request, pk=None):
+
+        thread = self.get_object()
+        thread.unread_message_count = 0
+        thread.save()
+        return Response({"message": "OK"}, status=status.HTTP_204_NO_CONTENT)
 
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
@@ -826,3 +842,18 @@ class MessageViewSet(viewsets.ModelViewSet):
 def initialize_db(request):
     init_db()
     return Response({"message": "Db initialized successfully"})
+
+
+@api_view(['POST'])
+def update_thread_details(request):
+   threads = Thread.objects.filter()
+   for thread in threads:
+    messages = Message.objects.filter(thread=thread).order_by("-sent_on")
+
+    if len(messages) > 0 :
+        thread.unread_message_count = len(messages)
+        thread.last_message_content = messages[0].content
+        thread.last_message_at = messages[0].sent_on
+        thread.save()
+    
+   return Response({"message": "Db initialized successfully"})
