@@ -739,8 +739,8 @@ class DMViewset(viewsets.ModelViewSet):
                 message.save()
 
                 thread.last_message_content = serializer.data.get("message")
-                thread.unread_message_count = 1
                 thread.last_message_at = timezone.now()
+                thread.save()
 
                 return Response(
                     {
