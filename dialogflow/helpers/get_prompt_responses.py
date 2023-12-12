@@ -51,6 +51,7 @@ def get_gpt_response(account, thread_id=None):
         "product_name": subdomains[2],
         "conversations": get_conversation_so_far(thread_id=thread_id),
         "outsourced": outsourced,
+        "checklist": ["book_button","is_popular","external_url"]
     }
     url = os.getenv("SCRIPTING_URL") + '/get-prompt/'
     resp = requests.post(url, data=payload)

@@ -699,7 +699,7 @@ class DMViewset(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-    @action(detail=True, methods=["post"], url_path="save-salerep-message")
+    @action(detail=True, methods=["post"], url_path="save-salesrep-message")
     def save_salesrep_message(self, request, pk=None):
         thread = self.get_object()
         
