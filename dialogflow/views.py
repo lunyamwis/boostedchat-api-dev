@@ -49,6 +49,10 @@ class FallbackWebhook(APIView):
                 
                 gpt_resp = get_gpt_response(account, thread.thread_id)
 
+                thread.last_message_content = gpt_resp.get('text')
+                thread.last_message_at = timezone.now()
+                thread.save()
+
                 result = gpt_resp.get('text')
                 Message.objects.create(
                     content = result,
