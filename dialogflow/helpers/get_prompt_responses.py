@@ -35,7 +35,8 @@ def save_gpt_response(result,payload):
             "confirmed_problems": [result.get("confirmed_problems")]
         })
     url = os.getenv("SCRIPTING_URL") + '/save-response/'
-    resp = requests.post(url, data=payload)
+    resp = requests.post(url, data=json.dumps(payload))
+    print(resp.request.body)
     return resp.status_code
 
 
@@ -92,6 +93,6 @@ def get_gpt_response(account, thread_id=None):
             
             account.index = account.index + 1
             account.save()
-            save_gpt_response(result, payload)
+            save_gpt_response(result, payload, result.get("confirmed_problems"))
 
     return result
