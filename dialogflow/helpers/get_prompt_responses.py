@@ -93,6 +93,6 @@ def get_gpt_response(account, thread_id=None):
             
             account.index = account.index + 1
             account.save()
-            save_gpt_response(result, payload, result.get("confirmed_problems"))
+            save_gpt_response(result, payload)
 
     return result
