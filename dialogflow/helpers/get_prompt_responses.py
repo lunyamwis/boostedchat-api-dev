@@ -23,9 +23,14 @@ def get_if_asked_first_question(val, pattern=r"`([^`]+)`"):
 
 
 def save_gpt_response(result,payload):
-    payload.update({
-        "confirmed_problems": result.get("confirmed_problems","")
-    })
+    if isinstance(result.get("confirmed_problems"),list):
+        payload.update({
+            "confirmed_problems": result.get("confirmed_problems")
+        })
+    else:
+        payload.update({
+            "confirmed_problems": [result.get("confirmed_problems")]
+        })
     url = os.getenv("SCRIPTING_URL") + '/save-response/'
     resp = requests.post(url, data=payload)
     return resp.status_code
