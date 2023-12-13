@@ -35,9 +35,13 @@ def save_gpt_response(result,payload):
             "confirmed_problems": [result.get("confirmed_problems")]
         })
     url = os.getenv("SCRIPTING_URL") + '/save-response/'
-    resp = requests.post(url, data=json.dumps(payload))
-    print(resp.request.body)
-    return resp.status_code
+    headers = {'Content-Type': 'application/json'}  # Adjust based on your payload type
+
+    response = requests.post(url, json=payload, headers=headers)
+
+    
+    print(response.request.body)
+    return response.status_code
 
 
 
