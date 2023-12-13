@@ -23,6 +23,9 @@ def get_if_asked_first_question(val, pattern=r"`([^`]+)`"):
 
 
 def save_gpt_response(result,payload):
+    print("===========now============")
+    print(result.get("confirmed_problems"))
+    print(payload.get("prompt_index"))
     if isinstance(result.get("confirmed_problems"),list):
         payload.update({
             "confirmed_problems": result.get("confirmed_problems")
@@ -84,6 +87,9 @@ def get_gpt_response(account, thread_id=None):
     if "confirmed_problems" in result:
         print("these are the confirmed problems in number: ",len(result.get("confirmed_problems")))
         if len(result.get("confirmed_problems")) >= 2:
+            print("=========================STET===================")
+            print(result.get("confirmed_problems"))
+            
             account.index = account.index + 1
             account.save()
             save_gpt_response(result, payload)
