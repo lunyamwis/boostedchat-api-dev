@@ -788,13 +788,14 @@ class DMViewset(viewsets.ModelViewSet):
     
     def generate_response(self, request, *args, **kwargs):
         thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
-        generated_response = detect_intent(
-            project_id="boostedchatapi",
-            session_id=str(uuid.uuid4()),
-            message=request.data.get('message'),
-            language_code="en",
-            account_id=thread.account.id,
-        )
+        if thread.account.assigned_to == "Robot":
+            generated_response = detect_intent(
+                project_id="boostedchatapi",
+                session_id=str(uuid.uuid4()),
+                message=request.data.get('message'),
+                language_code="en",
+                account_id=thread.account.id,
+            )
         return Response(
             {
                 "status": status.HTTP_200_OK,
