@@ -841,7 +841,7 @@ class DMViewset(viewsets.ModelViewSet):
             Message.objects.update_or_create(
                 thread=thread,
                 content = request.data.get("message"),
-                sent_by = request.data.get("sent_by")
+                sent_by = request.data.get("sent_by"),
                 sent_on = timezone.now()
             )
             return Response(
