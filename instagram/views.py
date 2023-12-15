@@ -834,7 +834,7 @@ class DMViewset(viewsets.ModelViewSet):
         )
 
     
-    @action(detail=True, methods=["get"], url_path="save-failed-messages")
+    @action(detail=True, methods=["post"], url_path="save-failed-messages")
     def save_failed_messages(self, request, pk=None):
         try:
             thread = Thread.objects.get(thread_id=pk)
