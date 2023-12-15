@@ -833,6 +833,35 @@ class DMViewset(viewsets.ModelViewSet):
 
         )
 
+    
+    @action(detail=True, methods=["get"], url_path="save-failed-messages")
+    def save_failed_messages(self, request, pk=None):
+        try:
+            thread = Thread.objects.get(thread_id=pk)
+            Message.objects.update_or_create(
+                thread=thread,
+                content = request.data.get("message"),
+                sent_by = request.data.get("sent_by")
+                sent_on = timezone.now()
+            )
+            return Response(
+                {
+                    "status": status.HTTP_200_OK,
+                    "save":True
+                }
+
+            )
+        except Exception as error:
+            logging.warning(error)
+            return Response(
+                {
+                    "status": status.HTTP_200_OK,
+                    "save":False
+                }
+
+            )
+
+            
 
     @action(detail=True, methods=["get"], url_path="get-thread-messages")
     def get_thread_messages(self, request, pk=None):
