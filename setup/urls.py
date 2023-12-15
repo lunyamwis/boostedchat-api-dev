@@ -15,6 +15,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.conf import settings
+from django.conf.urls.static import static
 
 admin.site.site_header = "BoostedChat Admin"
 
@@ -27,4 +29,4 @@ urlpatterns = [
     path("api/v1/leads/", include("leads.urls")),
     path("api/v1/logs/", include("audittrails.urls")),
     path("api/v1/dialogflow/", include("dialogflow.urls")),
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
