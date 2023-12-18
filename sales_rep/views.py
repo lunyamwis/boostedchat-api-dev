@@ -42,7 +42,8 @@ class SalesRepManager(viewsets.ModelViewSet):
         user_info = []
         for rep in reps:
             if User.objects.filter(id=rep.user.id).exists():
-                info = {"user": User.objects.filter(id=rep.user.id).values(), "instagram": rep.instagram.values()}
+                info = {"user": User.objects.filter(id=rep.user.id).values(), "instagram": rep.instagram.values(),
+                "ig_username":rep.ig_username, "ig_password":rep.ig_password}
                 user_info.append(info)
 
         response = {"status_code": status.HTTP_200_OK, "info": user_info}
