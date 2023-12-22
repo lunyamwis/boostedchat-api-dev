@@ -739,7 +739,8 @@ class DMViewset(viewsets.ModelViewSet):
         if serializer.is_valid(raise_exception=True):
 
             account = thread.account
-            data={"message":serializer.data.get("message"),"username":account.igname}
+            salesrep = account.salesrep_set.last().igname
+            data={"message":serializer.data.get("message"),"username_to":account.igname,"username_from":salesrep}
             response = requests.post(settings.MQTT_BASE_URL+"/send-message",data=json.dumps(data))
 
             if response.status_code == 200:
