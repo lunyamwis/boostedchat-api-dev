@@ -6,8 +6,10 @@ import requests
 from celery import shared_task
 from django.conf import settings
 from django_celery_beat.models import PeriodicTask
+from django.shortcuts import get_object_or_404
 
 from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
+from sales_rep.models import SalesRep
 from dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from .helpers.format_username import format_full_name
@@ -36,7 +38,8 @@ def send_first_compliment(username):
     first_message = get_gpt_response(account)
     
     media_id = outsourced_data.last().results.get("media_id", "")
-    data = {"message": first_message.get('text'), "username": account.igname, "mediaId": media_id}
+    salesrep = account.salesrep_set.last()
+    data = {"username_from":salesrep.ig_username,"message": first_message.get('text'), "username_to": account.igname, "mediaId": media_id}
 
     print(f"data=============={data}")
     print(f"data=============={json.dumps(data)}")
