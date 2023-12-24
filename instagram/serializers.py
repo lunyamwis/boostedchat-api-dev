@@ -97,12 +97,12 @@ class AddContentSerializer(serializers.Serializer):
 
 class SendManualMessageSerializer(serializers.Serializer):
     assigned_to = serializers.CharField(default="Robot")
-    message = serializers.CharField(max_length=255, required=False)
+    message = serializers.CharField(required=False)
 
 
 class GenerateMessageInputSerializer(serializers.Serializer):
     thread_id = serializers.CharField(required=True)
-    message = serializers.CharField(max_length=255, required=True)
+    message = serializers.CharField(required=True)
 
 class ThreadSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="account.igname", read_only=True)
