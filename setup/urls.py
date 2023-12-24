@@ -23,10 +23,10 @@ admin.site.site_header = "BoostedChat Admin"
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),  # new
-    path("api/v1/authentication/", include("authentication.urls")),
-    path("api/v1/instagram/", include("instagram.urls")),
-    path("api/v1/sales/", include("sales_rep.urls")),
-    path("api/v1/leads/", include("leads.urls")),
-    path("api/v1/logs/", include("audittrails.urls")),
-    path("api/v1/dialogflow/", include("dialogflow.urls")),
+    path("v1/authentication/", include("authentication.urls")),
+    path("v1/instagram/", include("instagram.urls")),
+    path("v1/sales/", include("sales_rep.urls")),
+    path("v1/leads/", include("leads.urls")),
+    path("v1/logs/", include("audittrails.urls")),
+    path("v1/dialogflow/", include("dialogflow.urls")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
