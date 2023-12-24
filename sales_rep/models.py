@@ -12,6 +12,8 @@ class SalesRep(BaseModel):
     ig_password = models.CharField(max_length=255, null=True, blank=True)
     instagram = models.ManyToManyField(Account, blank=True)
     available = models.BooleanField(default=True)
+    country = models.TextField(default="US")
+    city = models.TextField(default="Pasadena")
 
     def __str__(self) -> str:
         return self.user.email
