@@ -168,3 +168,4 @@ boosetedchat
 boostedchatdb
 
 *.json
+fixtures.yaml

@@ -44,7 +44,7 @@ docker.postgres:
 	docker run -d \
 		--name boostedchat-db-booksy-us \
 		-e POSTGRES_USER=postgres \
-		-e POSTGRES_PASSWORD=boostedcahtdb \
+		-e POSTGRES_PASSWORD=boostedchatdb \
 		-e POSTGRES_DB=booksyus \
 		-v pgdata:/var/lib/postgresql/bc-booksyus/data \
 		-p 5432:5432 \
