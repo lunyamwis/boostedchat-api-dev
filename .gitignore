@@ -167,5 +167,5 @@ report.html
 boosetedchat
 boostedchatdb
 
-*.json
+session.json
 fixtures.yaml

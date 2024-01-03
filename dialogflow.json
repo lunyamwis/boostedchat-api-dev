@@ -1,0 +1,2 @@
+{"web":{"client_id":"194686946516-75hvlqqevh9b1li19aai8qhn8vt9jmi0.apps.googleusercontent.com","project_id":"boostedchatapi","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_secret":"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","redirect_uris":["https://www.getpostman.com/oauth2/callback","https://oauth.pstmn.io/v1/callback","http://localhost/","https://oauth.pstmn.io/v1/browser-callback","https://api.boostedchat.com/"]}}
+
