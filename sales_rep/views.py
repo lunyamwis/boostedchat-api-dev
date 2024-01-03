@@ -38,7 +38,7 @@ class SalesRepManager(viewsets.ModelViewSet):
 
     def list(self, request):
 
-        reps = SalesRep.objects.all()
+        reps = SalesRep.objects.filter(available=True)
         user_info = []
         for rep in reps:
             if User.objects.filter(id=rep.user.id).exists():
