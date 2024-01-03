@@ -40,7 +40,7 @@ class Account(BaseModel):
     history = AuditlogHistoryField(pk_indexable=False)
     dormant_profile_created = models.BooleanField(default=True, null=True, blank=True)
     qualified = models.BooleanField(default=False)
-    index = models.IntegerField(default=0)
+    index = models.IntegerField(default=1)
 
     def __str__(self) -> str:
         return self.igname

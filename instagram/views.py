@@ -33,6 +33,7 @@ from .serializers import (
     HashTagSerializer,
     PhotoSerializer,
     ReelSerializer,
+    SingleThreadSerializer,
     StorySerializer,
     ThreadSerializer,
     UploadSerializer,
@@ -201,6 +202,13 @@ class AccountViewSet(viewsets.ModelViewSet):
         for salesRep in salesReps:
             salesRep.instagram.remove(account)
         return Response({"message": "Account reset successfully"})
+
+
+    def account_by_ig_thread_id(self,request, *args, **kwargs):
+        thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
+        account =  Account.objects.get(pk=thread.account.id)
+        serializer = GetAccountSerializer(account)
+        return Response(serializer.data)
 
 
 class HashTagViewSet(viewsets.ModelViewSet):
@@ -872,12 +880,27 @@ class DMViewset(viewsets.ModelViewSet):
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 
+
     @action(detail=True, methods=["post"], url_path="delete-all-thread-messages")
     def delete_thread_messages(self, request, pk=None):
 
         thread = self.get_object()
         Message.objects.filter(thread=thread).delete()
         return Response({"message": "Messages deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+
+
+    def messages_by_ig_thread_id(self,request, *args, **kwargs):
+        thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
+        messages = Message.objects.filter(thread=thread).order_by('sent_on')
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
+
+
+    def thread_by_ig_thread_id(self,request, *args, **kwargs):
+        thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
+        serializer = SingleThreadSerializer(thread)
+        
+        return Response(serializer.data)
 
     @action(detail=True, methods=["post"], url_path="reset-thread-count")
     def reset_thread_count(self, request, pk=None):

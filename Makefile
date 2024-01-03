@@ -43,9 +43,9 @@ run_celery:
 docker.postgres:
 	docker run -d \
 		--name boostedchat-db-booksy-us \
-		-e POSTGRES_USER=postgres \
-		-e POSTGRES_PASSWORD=boostedcahtdb \
-		-e POSTGRES_DB=booksyus \
+		-e POSTGRES_USER=test \
+		-e POSTGRES_PASSWORD=test \
+		-e POSTGRES_DB=test \
 		-v pgdata:/var/lib/postgresql/bc-booksyus/data \
 		-p 5432:5432 \
 		postgres

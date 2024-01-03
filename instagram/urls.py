@@ -39,6 +39,21 @@ urlpatterns = [
         name='assign_operator',
     ),
     path(
+        'dm/messages-by-ig-thread/<str:ig_thread_id>/',
+        DMViewset.as_view({'get': 'messages_by_ig_thread_id'}),
+        name='messages_by_ig_thread_id',
+    ),
+    path(
+        'dm/thread-by-ig-thread/<str:ig_thread_id>/',
+        DMViewset.as_view({'get': 'thread_by_ig_thread_id'}),
+        name='thread_by_ig_thread_id',
+    ),
+    path(
+        'account/account-by-ig-thread/<str:ig_thread_id>/',
+        AccountViewSet.as_view({'get': 'account_by_ig_thread_id'}),
+        name='account_by_ig_thread_id',
+    ),
+    path(
         'update-thread-details/',
         update_thread_details
     )
