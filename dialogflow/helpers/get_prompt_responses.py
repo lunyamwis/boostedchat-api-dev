@@ -36,7 +36,7 @@ def save_gpt_response(result,payload):
         })
     url = os.getenv("SCRIPTING_URL") + '/save-response/'
     headers = {'Content-Type': 'application/json'}  # Adjust based on your payload type
-
+    
     response = requests.post(url, json=payload, headers=headers)
 
     
@@ -97,6 +97,7 @@ def get_gpt_response(account, thread_id=None):
             print(result.get("confirmed_problems"))
             
             account.index = account.index + 1
+            account.confirmed_problems = result.get("confirmed_problems")
             account.save()
             save_gpt_response(result, payload)
 
