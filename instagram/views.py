@@ -6,7 +6,7 @@ import uuid
 import json
 import requests
 from urllib.parse import urlparse
-
+from datetime import datetime
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -705,6 +705,15 @@ class DMViewset(viewsets.ModelViewSet):
         serializer = ThreadSerializer(queryset, many=True)
         
         return Response(serializer.data)
+
+    @action(detail=False, methods=["post"], url_path="response-rate")
+    def download_csv(self, request):
+        date_format = "%Y-%m-%d %H:%M:%S"
+        date_string = request.data.get('date')
+        datetime_object = datetime.strptime(date_string, date_format)
+        datetime_object_utc = datetime_object.replace(tzinfo=timezone.utc)
+        queryset = self.queryset.filter(created_at__gte=datetime_object_utc)
+        return Response(queryset.values(),status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="response-rate")
     def response_rate(self, request):
