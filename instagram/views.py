@@ -701,7 +701,7 @@ class DMViewset(viewsets.ModelViewSet):
         return self.serializer_class
 
     def list(self, request, pk=None):
-        queryset = Thread.objects.all().order_by("-last_message_at")
+        queryset = Thread.objects.select_related('account').order_by("-last_message_at")
         serializer = ThreadSerializer(queryset, many=True)
         
         return Response(serializer.data)
