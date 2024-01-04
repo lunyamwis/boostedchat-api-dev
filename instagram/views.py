@@ -713,7 +713,15 @@ class DMViewset(viewsets.ModelViewSet):
         datetime_object = datetime.strptime(date_string, date_format)
         datetime_object_utc = datetime_object.replace(tzinfo=timezone.utc)
         queryset = self.queryset.filter(created_at__gte=datetime_object_utc)
-        return Response(queryset.values(),status=status.HTTP_200_OK)
+        accounts = []
+        for thread in queryset:
+            accounts.append({
+                "username":thread.account.igname,
+                "stage":thread.account.index,
+                "assigned_to": thread.account.assigned_to,
+                "date_outreach_began": thread.created_at
+            })
+        return Response(accounts,status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="response-rate")
     def response_rate(self, request):
