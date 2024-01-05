@@ -822,15 +822,27 @@ class DMViewset(viewsets.ModelViewSet):
                 language_code="en",
                 account_id=thread.account.id,
             )
-        return Response(
-            {
-                "status": status.HTTP_200_OK,
-                "generated_comment": " ".join(map(str, generated_response)),
-                "text": request.data.get("message"),
-                "success": True,
-                "username": thread.account.igname
-            }
-        )
+            return Response(
+                {
+                    "status": status.HTTP_200_OK,
+                    "generated_comment": " ".join(map(str, generated_response)),
+                    "text": request.data.get("message"),
+                    "success": True,
+                    "username": thread.account.igname,
+                    "assigned_to": "Robot"
+                }
+            )
+        elif thread.account.assigned_to == 'Human':
+            return Response(
+                {
+                    "status": status.HTTP_200_OK,
+                    "text": request.data.get("message"),
+                    "success": True,
+                    "username": thread.account.igname,
+                    "assigned_to": "Human"
+
+                }
+            )
 
 
     def assign_operator(self,request, *args, **kwargs):
