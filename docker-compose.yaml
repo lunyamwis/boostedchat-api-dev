@@ -15,6 +15,18 @@ services:
     environment:
       DEBUG: "true"
     entrypoint: ["/bin/bash", "+x", "/entrypoint.sh"]
+  
+  postgres:
+    image: postgres:latest
+    container_name: postgres-container
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: boostedchat
+      POSTGRES_DB: booksyus
+    volumes:
+      - /opt/postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   nginx:
     restart: always

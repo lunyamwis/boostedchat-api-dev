@@ -136,7 +136,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     def batch_uploads(self, request):
         serializer = UploadSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
-
+        
         if valid:
             paramFile = io.TextIOWrapper(request.FILES["file_uploaded"].file)
             portfolio1 = csv.DictReader(paramFile)
