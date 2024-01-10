@@ -20,6 +20,7 @@ from django.conf import settings
 
 
 from base.helpers.push_id import PushID
+from dialogflow.helpers.get_prompt_responses import get_gpt_response
 from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
 from sales_rep.models import SalesRep
@@ -815,23 +816,71 @@ class DMViewset(viewsets.ModelViewSet):
     def generate_response(self, request, *args, **kwargs):
         thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
         if thread.account.assigned_to == "Robot":
-            generated_response = detect_intent(
-                project_id="boostedchatapi",
-                session_id=str(uuid.uuid4()),
-                message=request.data.get('message'),
-                language_code="en",
-                account_id=thread.account.id,
-            )
-            return Response(
-                {
-                    "status": status.HTTP_200_OK,
-                    "generated_comment": " ".join(map(str, generated_response)),
-                    "text": request.data.get("message"),
-                    "success": True,
-                    "username": thread.account.igname,
-                    "assigned_to": "Robot"
-                }
-            )
+            try:
+                req = request.data
+                
+                query = req.get("message")
+
+                
+                account = Account.objects.get(id=thread.account.id)
+                thread = Thread.objects.filter(account=account).last()
+                
+                client_messages = query.split("#*eb4*#")
+                for client_message in client_messages:
+                    Message.objects.create(
+                        content = client_message,
+                        sent_by = "Client",
+                        sent_on = timezone.now(),
+                        thread = thread
+                    )
+                thread.last_message_content = client_messages[len(client_messages)-1]
+                thread.unread_message_count = len(client_messages)
+                thread.last_message_at = timezone.now()
+                thread.save()
+                
+                gpt_resp = get_gpt_response(account, thread.thread_id)
+
+                thread.last_message_content = gpt_resp.get('text')
+                thread.last_message_at = timezone.now()
+                thread.save()
+
+                result = gpt_resp.get('text')
+                Message.objects.create(
+                    content = result,
+                    sent_by = "Robot",
+                    sent_on = timezone.now(),
+                    thread = thread
+                )
+                
+                return Response(
+                    {
+                        "status": status.HTTP_200_OK,
+                        "generated_comment": " ".join(map(str, result)),
+                        "text": request.data.get("message"),
+                        "success": True,
+                        "username": thread.account.igname,
+                        "assigned_to": "Robot"
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+            except Exception as error:
+                return Response(
+                    {
+                        "fulfillment_response": {
+                            "messages": [
+                                {
+                                    "text": {
+                                        "error": str(error),
+                                    },
+                                },
+                            ]
+                        }
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+       
         elif thread.account.assigned_to == 'Human':
             return Response(
                 {
