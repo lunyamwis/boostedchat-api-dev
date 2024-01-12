@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message,StatusCheck, OutSourced
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, StatusCheck, OutSourced
+
 
 class AccountSerializer(serializers.ModelSerializer):
     # account_history = serializers.CharField(source="history.latest",read_only=True)
@@ -14,6 +15,7 @@ class AccountSerializer(serializers.ModelSerializer):
         ]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
+
 class GetAccountSerializer(serializers.ModelSerializer):
     # status = serializers.CharField(source="account.status.name", read_only=True)
     class Meta:
@@ -22,6 +24,7 @@ class GetAccountSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "id": {"required": False, "allow_null": True},
         }
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         try:
@@ -104,14 +107,17 @@ class GenerateMessageInputSerializer(serializers.Serializer):
     thread_id = serializers.CharField(required=True)
     message = serializers.CharField(required=True)
 
+
 class ThreadSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="account.igname", read_only=True)
     assigned_to = serializers.CharField(source="account.assigned_to", read_only=True)
     account_id = serializers.CharField(source="account.id", read_only=True)
+    stage = serializers.CharField(source="account.index", read_only=True)
 
     class Meta:
         model = Thread
-        fields = ["id", "username", "thread_id", "assigned_to", "account_id", "unread_message_count", "last_message_content", "last_message_at"]
+        fields = ["id", "username", "thread_id", "assigned_to", "account_id",
+                  "unread_message_count", "last_message_content", "last_message_at"]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 

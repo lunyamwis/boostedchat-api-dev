@@ -56,23 +56,23 @@ class AccountViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "batch_uploads":
             return UploadSerializer
-        elif self.action == "update": # override update serializer
+        elif self.action == "update":  # override update serializer
             return GetAccountSerializer
         return self.serializer_class
 
     def list(self, request, *args, **kwargs):
 
         accounts = []
-        
+
         for account in self.queryset:
             account_ = {
-                "id":account.id,
-                "assigned_to":account.assigned_to,
-                "confirmed_problems":account.confirmed_problems,
-                "full_name":account.full_name or None,
-                "igname":account.igname,
-                "status":account.status.name if account.status else None,
-                "outsourced_data":account.outsourced_set.values()
+                "id": account.id,
+                "assigned_to": account.assigned_to,
+                "confirmed_problems": account.confirmed_problems,
+                "full_name": account.full_name or None,
+                "igname": account.igname,
+                "status": account.status.name if account.status else None,
+                "outsourced_data": account.outsourced_set.values()
 
             }
             accounts.append(account_)
@@ -137,7 +137,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     def batch_uploads(self, request):
         serializer = UploadSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
-        
+
         if valid:
             paramFile = io.TextIOWrapper(request.FILES["file_uploaded"].file)
             portfolio1 = csv.DictReader(paramFile)
@@ -204,10 +204,9 @@ class AccountViewSet(viewsets.ModelViewSet):
             salesRep.instagram.remove(account)
         return Response({"message": "Account reset successfully"})
 
-
-    def account_by_ig_thread_id(self,request, *args, **kwargs):
+    def account_by_ig_thread_id(self, request, *args, **kwargs):
         thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
-        account =  Account.objects.get(pk=thread.account.id)
+        account = Account.objects.get(pk=thread.account.id)
         serializer = GetAccountSerializer(account)
         return Response(serializer.data)
 
@@ -402,7 +401,6 @@ class VideoViewSet(viewsets.ModelViewSet):
                 "success": True,
             }
         )
-
 
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
@@ -703,8 +701,8 @@ class DMViewset(viewsets.ModelViewSet):
 
     def list(self, request, pk=None):
         queryset = Thread.objects.select_related('account').order_by("-last_message_at")
+
         serializer = ThreadSerializer(queryset, many=True)
-        
         return Response(serializer.data)
 
     @action(detail=False, methods=["post"], url_path="response-rate")
@@ -717,44 +715,44 @@ class DMViewset(viewsets.ModelViewSet):
         accounts = []
         for thread in queryset:
             accounts.append({
-                "username":thread.account.igname,
-                "stage":thread.account.index,
+                "username": thread.account.igname,
+                "stage": thread.account.index,
                 "assigned_to": thread.account.assigned_to,
                 "date_outreach_began": thread.created_at
             })
-        return Response(accounts,status=status.HTTP_200_OK)
+        return Response(accounts, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["get"], url_path="response-rate")
     def response_rate(self, request):
         response_rate_object = []
-        count = 0 
+        count = 0
         for thread in self.queryset:
-            client_response = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by='Client')).order_by('-sent_on')
+            client_response = Message.objects.filter(
+                Q(thread__thread_id=thread.thread_id) & Q(sent_by='Client')).order_by('-sent_on')
             if client_response.exists():
                 count += 1
                 response_rate_object.append(
                     {
                         "index": count,
                         "account": thread.account.igname,
-                        "stage": thread.account.index 
+                        "stage": thread.account.index
                     })
         return Response(data=response_rate_object, status=status.HTTP_200_OK)
-
 
     @action(detail=True, methods=["post"], url_path="save-salesrep-message")
     def save_salesrep_message(self, request, pk=None):
         thread = self.get_object()
-        
-        last_message = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by='Robot')).order_by('-sent_on').first()
+
+        last_message = Message.objects.filter(Q(thread__thread_id=thread.thread_id)
+                                              & Q(sent_by='Robot')).order_by('-sent_on').first()
         if request.data.get("text") != last_message.content:
             Message.objects.create(
-                    content = request.data.get("text"),
-                    sent_by = "Robot",
-                    sent_on = timezone.now(),
-                    thread = thread
-                )
-        return Response({"success":True}, status=status.HTTP_201_CREATED)
-
+                content=request.data.get("text"),
+                sent_by="Robot",
+                sent_on=timezone.now(),
+                thread=thread
+            )
+        return Response({"success": True}, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="send-message-manually")
     def send_message_manually(self, request, pk=None):
@@ -766,8 +764,8 @@ class DMViewset(viewsets.ModelViewSet):
 
             account = thread.account
             salesrep = account.salesrep_set.last().ig_username
-            data={"message":serializer.data.get("message"),"username_to":account.igname,"username_from":salesrep}
-            response = requests.post(settings.MQTT_BASE_URL+"/send-message",data=json.dumps(data))
+            data = {"message": serializer.data.get("message"), "username_to": account.igname, "username_from": salesrep}
+            response = requests.post(settings.MQTT_BASE_URL+"/send-message", data=json.dumps(data))
 
             if response.status_code == 200:
 
@@ -812,32 +810,30 @@ class DMViewset(viewsets.ModelViewSet):
                 }
             )
 
-    
     def generate_response(self, request, *args, **kwargs):
         thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
         if thread.account.assigned_to == "Robot":
             try:
                 req = request.data
-                
+
                 query = req.get("message")
 
-                
                 account = Account.objects.get(id=thread.account.id)
                 thread = Thread.objects.filter(account=account).last()
-                
+
                 client_messages = query.split("#*eb4*#")
                 for client_message in client_messages:
                     Message.objects.create(
-                        content = client_message,
-                        sent_by = "Client",
-                        sent_on = timezone.now(),
-                        thread = thread
+                        content=client_message,
+                        sent_by="Client",
+                        sent_on=timezone.now(),
+                        thread=thread
                     )
                 thread.last_message_content = client_messages[len(client_messages)-1]
                 thread.unread_message_count = len(client_messages)
                 thread.last_message_at = timezone.now()
                 thread.save()
-                
+
                 gpt_resp = get_gpt_response(account, thread.thread_id)
 
                 thread.last_message_content = gpt_resp.get('text')
@@ -846,12 +842,12 @@ class DMViewset(viewsets.ModelViewSet):
 
                 result = gpt_resp.get('text')
                 Message.objects.create(
-                    content = result,
-                    sent_by = "Robot",
-                    sent_on = timezone.now(),
-                    thread = thread
+                    content=result,
+                    sent_by="Robot",
+                    sent_on=timezone.now(),
+                    thread=thread
                 )
-                
+
                 return Response(
                     {
                         "status": status.HTTP_200_OK,
@@ -880,7 +876,6 @@ class DMViewset(viewsets.ModelViewSet):
                     status=status.HTTP_200_OK,
                 )
 
-       
         elif thread.account.assigned_to == 'Human':
             return Response(
                 {
@@ -893,11 +888,10 @@ class DMViewset(viewsets.ModelViewSet):
                 }
             )
 
-
-    def assign_operator(self,request, *args, **kwargs):
+    def assign_operator(self, request, *args, **kwargs):
         try:
             thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
-            account = get_object_or_404(Account,id=thread.account.id)
+            account = get_object_or_404(Account, id=thread.account.id)
             account.assigned_to = request.data.get("assigned_to") if request.data.get('assigned_to') else 'Human'
             account.save()
         except Exception as error:
@@ -906,8 +900,9 @@ class DMViewset(viewsets.ModelViewSet):
         try:
             subject = 'Hello Team'
             message = f'Please login to the system @https://booksy.us.boostedchat.com/ and respond to the following thread {account.igname}'
-            from_email = 'lutherlunyamwi@gmail.com' 
-            recipient_list = ['darwinokuku@gmail.com', 'lutherlunyamwi@gmail.com','tomek@boostedchat.com','tuckertaylor@gmail.com'] 
+            from_email = 'lutherlunyamwi@gmail.com'
+            recipient_list = ['darwinokuku@gmail.com', 'lutherlunyamwi@gmail.com',
+                              'tomek@boostedchat.com', 'tuckertaylor@gmail.com']
             send_mail(subject, message, from_email, recipient_list)
         except Exception as error:
             print(error)
@@ -915,26 +910,25 @@ class DMViewset(viewsets.ModelViewSet):
         return Response(
             {
                 "status": status.HTTP_200_OK,
-                "assign_operator":True
+                "assign_operator": True
             }
 
         )
 
-    
     @action(detail=True, methods=["post"], url_path="save-failed-messages")
     def save_failed_messages(self, request, pk=None):
         try:
             thread = Thread.objects.get(thread_id=pk)
             Message.objects.update_or_create(
                 thread=thread,
-                content = request.data.get("message"),
-                sent_by = request.data.get("sent_by"),
-                sent_on = timezone.now()
+                content=request.data.get("message"),
+                sent_by=request.data.get("sent_by"),
+                sent_on=timezone.now()
             )
             return Response(
                 {
                     "status": status.HTTP_200_OK,
-                    "save":True
+                    "save": True
                 }
 
             )
@@ -943,12 +937,10 @@ class DMViewset(viewsets.ModelViewSet):
             return Response(
                 {
                     "status": status.HTTP_200_OK,
-                    "save":False
+                    "save": False
                 }
 
             )
-
-            
 
     @action(detail=True, methods=["get"], url_path="get-thread-messages")
     def get_thread_messages(self, request, pk=None):
@@ -958,7 +950,6 @@ class DMViewset(viewsets.ModelViewSet):
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 
-
     @action(detail=True, methods=["post"], url_path="delete-all-thread-messages")
     def delete_thread_messages(self, request, pk=None):
 
@@ -966,18 +957,16 @@ class DMViewset(viewsets.ModelViewSet):
         Message.objects.filter(thread=thread).delete()
         return Response({"message": "Messages deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
-
-    def messages_by_ig_thread_id(self,request, *args, **kwargs):
+    def messages_by_ig_thread_id(self, request, *args, **kwargs):
         thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
         messages = Message.objects.filter(thread=thread).order_by('sent_on')
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 
-
-    def thread_by_ig_thread_id(self,request, *args, **kwargs):
+    def thread_by_ig_thread_id(self, request, *args, **kwargs):
         thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
         serializer = SingleThreadSerializer(thread)
-        
+
         return Response(serializer.data)
 
     @action(detail=True, methods=["post"], url_path="reset-thread-count")
@@ -987,6 +976,7 @@ class DMViewset(viewsets.ModelViewSet):
         thread.unread_message_count = 0
         thread.save()
         return Response({"message": "OK"}, status=status.HTTP_204_NO_CONTENT)
+
 
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
@@ -1011,14 +1001,14 @@ def initialize_db(request):
 
 @api_view(['POST'])
 def update_thread_details(request):
-   threads = Thread.objects.filter()
-   for thread in threads:
-    messages = Message.objects.filter(thread=thread).order_by("-sent_on")
+    threads = Thread.objects.filter()
+    for thread in threads:
+        messages = Message.objects.filter(thread=thread).order_by("-sent_on")
 
-    if len(messages) > 0 :
-        thread.unread_message_count = len(messages)
-        thread.last_message_content = messages[0].content
-        thread.last_message_at = messages[0].sent_on
-        thread.save()
-    
-   return Response({"message": "Db initialized successfully"})
+        if len(messages) > 0:
+            thread.unread_message_count = len(messages)
+            thread.last_message_content = messages[0].content
+            thread.last_message_at = messages[0].sent_on
+            thread.save()
+
+    return Response({"message": "Db initialized successfully"})

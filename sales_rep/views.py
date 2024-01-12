@@ -46,6 +46,12 @@ class SalesRepManager(viewsets.ModelViewSet):
         response = {"status_code": status.HTTP_200_OK, "info": user_info}
         return Response(response, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=["get"], url_path="all")
+    def get_all_flattened(self, request, pk=None):
+        sales_reps = SalesRep.objects.all()
+        serializer = SalesRepSerializer(sales_reps, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=["post"], url_path="assign-accounts")
     def assign_accounts(self, request, pk=None):
         serializer = AccountAssignmentSerializer(data=request.data)
