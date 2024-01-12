@@ -22,7 +22,7 @@ def send_first_compliment(username):
 
     account = None
     try:
-        account = Account.objects.filter(igname="".join(username)).last()
+        account = Account.objects.filter(igname="".join(username)).first()
     except Exception as error:
         print(error)
 
