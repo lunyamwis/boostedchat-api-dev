@@ -1,7 +1,4 @@
-import math
 import json
-import random
-import datetime
 import logging
 
 from django.db.models import Q
@@ -43,7 +40,7 @@ class SalesRepManager(viewsets.ModelViewSet):
         for rep in reps:
             if User.objects.filter(id=rep.user.id).exists():
                 info = {"user": User.objects.filter(id=rep.user.id).values(), "instagram": rep.instagram.values(),
-                        "ig_username":rep.ig_username, "ig_password":rep.ig_password, "country": rep.country, "city": rep.city}
+                        "ig_username": rep.ig_username, "ig_password": rep.ig_password, "country": rep.country, "city": rep.city}
                 user_info.append(info)
 
         response = {"status_code": status.HTTP_200_OK, "info": user_info}
@@ -56,18 +53,18 @@ class SalesRepManager(viewsets.ModelViewSet):
         try:
             account = Account.objects.get(igname="psychologistswithoutborders")
         except:
-            return Response({"message": "Account does not exist"}, status= status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Account does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 
         sales_rep = SalesRep.objects.first()
         sales_rep.instagram.add(account)
         try:
             schedule, _ = CrontabSchedule.objects.get_or_create(
-                                        minute="*/3",
-                                        hour="*",
-                                        day_of_week="*",
-                                        day_of_month="*",
-                                        month_of_year="*",
-                                    )
+                minute="*/3",
+                hour="*",
+                day_of_week="*",
+                day_of_month="*",
+                month_of_year="*",
+            )
         except Exception as error:
             logging.warning(str(error))
 
