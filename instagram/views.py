@@ -700,7 +700,21 @@ class DMViewset(viewsets.ModelViewSet):
         return self.serializer_class
 
     def list(self, request, pk=None):
+        assigned_to_filter = request.GET.get("assigned_to")
+        stage_filter = request.GET.get("stage")
+        salesrep_filter = request.GET.get("sales_rep")
+        search_query = request.GET.get("q")
+
         queryset = Thread.objects.select_related('account').order_by("-last_message_at")
+
+        if stage_filter is not None:
+            queryset = queryset.filter(account__index__in=json.loads(stage_filter))
+        if assigned_to_filter is not None:
+            queryset = queryset.filter(account__assigned_to=assigned_to_filter)
+        if salesrep_filter is not None:
+            queryset = queryset.filter(account__salesrep__pk__in=json.loads(salesrep_filter))
+        if search_query is not None:
+            queryset = queryset.filter(account__igname__contains=search_query)
 
         serializer = ThreadSerializer(queryset, many=True)
         return Response(serializer.data)
