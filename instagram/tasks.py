@@ -31,6 +31,10 @@ def send_first_compliment(username):
     except Exception as error:
         print(error)
 
+    if account is None:
+        print("Account does not exist")
+        return
+
     full_name = "there"
     try:
         full_name = format_full_name(account.full_name)
@@ -39,9 +43,8 @@ def send_first_compliment(username):
 
     outsourced_data = OutSourced.objects.filter(account=account)
 
-    
     first_message = get_gpt_response(account)
-    
+
     media_id = outsourced_data.last().results.get("media_id", "")
 
     salesrep = account.salesrep_set.first()
@@ -57,7 +60,7 @@ def send_first_compliment(username):
         account.save()
         print(f"response============{response}")
         try:
-            
+
             print(f"json======================{response.json()}")
             returned_data = response.json()
 
@@ -89,7 +92,6 @@ def send_first_compliment(username):
         except Exception as error:
             print(error)
             print("message not saved")
-
 
     else:
         raise Exception("There is something wrong with mqtt")
