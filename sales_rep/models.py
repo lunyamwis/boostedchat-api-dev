@@ -10,7 +10,7 @@ class SalesRep(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     ig_username = models.CharField(max_length=255, null=True, blank=True)
     ig_password = models.CharField(max_length=255, null=True, blank=True)
-    instagram = models.ManyToManyField(Account, blank=True)
+    instagram = models.ManyToManyField(Account, blank=True, related_name="salesrep")
     available = models.BooleanField(default=True)
     country = models.TextField(default="US")
     city = models.TextField(default="Pasadena")
