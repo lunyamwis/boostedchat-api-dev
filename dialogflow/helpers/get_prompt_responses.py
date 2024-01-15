@@ -53,7 +53,7 @@ def get_gpt_response(account, thread_id=None):
 
     outsourced = None
     try:
-        outsourced_object = OutSourced.objects.get(account__igname = account.igname)
+        outsourced_object = OutSourced.objects.filter(account__igname = account.igname).first()
         outsourced = json.dumps(outsourced_object.results)
     except Exception as error:
         print(error)
