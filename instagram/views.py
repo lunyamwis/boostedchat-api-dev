@@ -865,7 +865,7 @@ class DMViewset(viewsets.ModelViewSet):
                 return Response(
                     {
                         "status": status.HTTP_200_OK,
-                        "generated_comment": " ".join(map(str, result)),
+                        "generated_comment": "".join(map(str, result)),
                         "text": request.data.get("message"),
                         "success": True,
                         "username": thread.account.igname,

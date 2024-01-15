@@ -22,7 +22,12 @@ def send_first_compliment(username):
 
     account = None
     try:
-        account = Account.objects.filter(igname="".join(username)).first()
+        first_account = Account.objects.filter(igname="".join(username)).first()
+        last_account = Account.objects.filter(igname="".join(username)).last()
+        if first_account.salesrep_set.filter().exists():
+            account = first_account
+        elif last_account.salesrep_set.filter().exists():
+            account = last_account
     except Exception as error:
         print(error)
 
@@ -41,9 +46,9 @@ def send_first_compliment(username):
     first_message = get_gpt_response(account)
 
     media_id = outsourced_data.last().results.get("media_id", "")
-    salesrep = account.salesrep_set.last()
-    data = {"username_from": salesrep.ig_username, "message": first_message.get(
-        'text'), "username_to": account.igname, "mediaId": media_id}
+
+    salesrep = account.salesrep_set.first()
+    data = {"username_from":salesrep.ig_username,"message": first_message.get('text'), "username_to": account.igname, "mediaId": media_id}
 
     print(f"data=============={data}")
     print(f"data=============={json.dumps(data)}")
