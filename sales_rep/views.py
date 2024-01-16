@@ -52,6 +52,22 @@ class SalesRepManager(viewsets.ModelViewSet):
         serializer = SalesRepSerializer(sales_reps, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["post"], url_path="reassign")
+    def reassign_salesrep(self, request, pk=None):
+        salesrep = self.get_object()
+        new_salesrep_id = request.data.get('new_salesrep_id')  
+
+        try:
+            new_salesrep = SalesRep.objects.get(id=new_salesrep_id)
+        except SalesRep.DoesNotExist:
+            return Response({"error": "New salesrep not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Reassign the salesrep
+        salesrep.salesrep_field = new_salesrep  # Replace "salesrep_field" with the actual field in your SalesRep model
+        salesrep.save()
+
+        return Response({"success":True}, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=["post"], url_path="assign-accounts")
     def assign_accounts(self, request, pk=None):
         serializer = AccountAssignmentSerializer(data=request.data)

@@ -6,6 +6,7 @@ import uuid
 import json
 import requests
 from urllib.parse import urlparse
+from auditlog.models import LogEntry
 from datetime import datetime
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
@@ -735,6 +736,21 @@ class DMViewset(viewsets.ModelViewSet):
                 "date_outreach_began": thread.created_at
             })
         return Response(accounts, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"], url_path="get-stages")
+    def download_stages_csv(self, request):
+        thread = self.get_object()
+        account_logs = LogEntry.objects.filter(object_pk=thread.account.pk)
+        logs = []
+        for log in account_logs:
+            if "index" in log.changes_dict.keys():
+                logs.append({
+                    "username": thread.account.igname,
+                    "timestamp":log.timestamp,
+                    **log.changes_dict
+                })
+        return Response(logs, status=status.HTTP_200_OK)
+
 
     @action(detail=False, methods=["get"], url_path="response-rate")
     def response_rate(self, request):
