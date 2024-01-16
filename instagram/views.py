@@ -737,18 +737,18 @@ class DMViewset(viewsets.ModelViewSet):
             })
         return Response(accounts, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["post"], url_path="get-stages")
+    @action(detail=False, methods=["get"], url_path="get-stages")
     def download_stages_csv(self, request):
-        thread = self.get_object()
-        account_logs = LogEntry.objects.filter(object_pk=thread.account.pk)
         logs = []
-        for log in account_logs:
-            if "index" in log.changes_dict.keys():
-                logs.append({
-                    "username": thread.account.igname,
-                    "timestamp":log.timestamp,
-                    **log.changes_dict
-                })
+        for thread in self.queryset.all():
+            account_logs = LogEntry.objects.filter(object_pk=thread.account.pk)
+            for log in account_logs:
+                if "index" in log.changes_dict.keys():
+                    logs.append({
+                        "username": thread.account.igname,
+                        "timestamp":log.timestamp,
+                        **log.changes_dict
+                    })
         return Response(logs, status=status.HTTP_200_OK)
 
 
