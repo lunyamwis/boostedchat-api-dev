@@ -113,13 +113,21 @@ class ThreadSerializer(serializers.ModelSerializer):
     assigned_to = serializers.CharField(source="account.assigned_to", read_only=True)
     account_id = serializers.CharField(source="account.id", read_only=True)
     stage = serializers.CharField(source="account.index", read_only=True)
-
+    
     class Meta:
         model = Thread
         fields = ["id", "username", "thread_id", "assigned_to", "account_id",
-                  "unread_message_count", "last_message_content", "stage", "last_message_at"]
+                  "unread_message_count", "last_message_content", "stage", "last_message_at",]
         extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        try:
+            data['salesrep'] = instance.account.salesrep_set.last().ig_username
+        except Exception as error:
+            print(error)
+        return data
 
 class SingleThreadSerializer(serializers.ModelSerializer):
 

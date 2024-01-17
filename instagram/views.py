@@ -13,6 +13,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from rest_framework.pagination import PageNumberPagination
 from django.utils import timezone
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -45,6 +46,11 @@ from .serializers import (
     GetAccountSerializer,
 )
 
+
+class PaginationClass(PageNumberPagination):
+    page_size = 10  # Set the number of items per page
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class AccountViewSet(viewsets.ModelViewSet):
     """
@@ -692,6 +698,7 @@ class StoryViewSet(viewsets.ModelViewSet):
 class DMViewset(viewsets.ModelViewSet):
     queryset = Thread.objects.all()
     serializer_class = ThreadSerializer
+    pagination_class = PaginationClass
 
     def get_serializer_class(self):
         if self.action == "send_message":
@@ -717,7 +724,11 @@ class DMViewset(viewsets.ModelViewSet):
         if search_query is not None:
             queryset = queryset.filter(account__igname__contains=search_query)
 
-        serializer = ThreadSerializer(queryset, many=True)
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(queryset, request)
+        serializer = ThreadSerializer(result_page, many=True)
+
+
         return Response(serializer.data)
 
     @action(detail=False, methods=["post"], url_path="download-csv")
@@ -726,9 +737,9 @@ class DMViewset(viewsets.ModelViewSet):
         date_string = request.data.get('date')
         datetime_object = datetime.strptime(date_string, date_format)
         datetime_object_utc = datetime_object.replace(tzinfo=timezone.utc)
-        queryset = self.queryset.filter(created_at__gte=datetime_object_utc)
+        threads = self.queryset.filter(created_at__gte=datetime_object_utc)
         accounts = []
-        for thread in queryset:
+        for thread in threads:
             account_logs = LogEntry.objects.filter(object_pk=thread.account.pk)
             for log in account_logs:
                 if "index" in log.changes_dict.keys():
