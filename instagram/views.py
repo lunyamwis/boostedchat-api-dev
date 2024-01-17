@@ -762,6 +762,21 @@ class DMViewset(viewsets.ModelViewSet):
                     })
         return Response(data=response_rate_object, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=["post"], url_path="save-client-message")
+    def save_salesrep_message(self, request, pk=None):
+        thread = self.get_object()
+
+        last_message = Message.objects.filter(Q(thread__thread_id=thread.thread_id)
+                                              & Q(sent_by='Client')).order_by('-sent_on').first()
+        if request.data.get("text") != last_message.content:
+            Message.objects.create(
+                content=request.data.get("text"),
+                sent_by="Robot",
+                sent_on=timezone.now(),
+                thread=thread
+            )
+        return Response({"success": True}, status=status.HTTP_201_CREATED)
+
     @action(detail=True, methods=["post"], url_path="save-salesrep-message")
     def save_salesrep_message(self, request, pk=None):
         thread = self.get_object()
