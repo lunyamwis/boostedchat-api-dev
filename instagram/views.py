@@ -48,7 +48,7 @@ from .serializers import (
 
 
 class PaginationClass(PageNumberPagination):
-    page_size = 10  # Set the number of items per page
+    page_size = 20  # Set the number of items per page
     page_size_query_param = 'page_size'
     max_page_size = 100
 
@@ -728,8 +728,16 @@ class DMViewset(viewsets.ModelViewSet):
         result_page = paginator.paginate_queryset(queryset, request)
         serializer = ThreadSerializer(result_page, many=True)
 
+        response_data = {
+            'count': paginator.page.paginator.count,
+            'next': paginator.get_next_link(),
+            'previous': paginator.get_previous_link(),
+            'results': serializer.data
+        }
 
-        return Response(serializer.data)
+
+
+        return Response(response_data)
 
     @action(detail=False, methods=["post"], url_path="download-csv")
     def download_csv(self, request):
