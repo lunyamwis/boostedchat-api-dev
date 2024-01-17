@@ -6,6 +6,7 @@ import uuid
 import json
 import requests
 from urllib.parse import urlparse
+from auditlog.models import LogEntry
 from datetime import datetime
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
@@ -719,7 +720,7 @@ class DMViewset(viewsets.ModelViewSet):
         serializer = ThreadSerializer(queryset, many=True)
         return Response(serializer.data)
 
-    @action(detail=False, methods=["post"], url_path="response-rate")
+    @action(detail=False, methods=["post"], url_path="download-csv")
     def download_csv(self, request):
         date_format = "%Y-%m-%d %H:%M:%S"
         date_string = request.data.get('date')
@@ -728,13 +729,21 @@ class DMViewset(viewsets.ModelViewSet):
         queryset = self.queryset.filter(created_at__gte=datetime_object_utc)
         accounts = []
         for thread in queryset:
-            accounts.append({
-                "username": thread.account.igname,
-                "stage": thread.account.index,
-                "assigned_to": thread.account.assigned_to,
-                "date_outreach_began": thread.created_at
-            })
+            account_logs = LogEntry.objects.filter(object_pk=thread.account.pk)
+            for log in account_logs:
+                if "index" in log.changes_dict.keys():
+                    accounts.append({
+                        "username": thread.account.igname,
+                        "assigned_to": thread.account.assigned_to,
+                        "current_stage": thread.account.index,
+                        "date_outreach_began": thread.created_at,
+                        "timestamp":log.timestamp,
+                        **log.changes_dict
+                        
+                    })
         return Response(accounts, status=status.HTTP_200_OK)
+
+    
 
     @action(detail=False, methods=["get"], url_path="response-rate")
     def response_rate(self, request):
