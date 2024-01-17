@@ -712,8 +712,11 @@ class DMViewset(viewsets.ModelViewSet):
         stage_filter = request.GET.get("stage")
         salesrep_filter = request.GET.get("sales_rep")
         search_query = request.GET.get("q")
+        paginator = self.pagination_class()
 
         queryset = Thread.objects.select_related('account').order_by("-last_message_at")
+        message_data = []
+        messages = None
 
         if stage_filter is not None:
             queryset = queryset.filter(account__index__in=json.loads(stage_filter))
@@ -723,6 +726,17 @@ class DMViewset(viewsets.ModelViewSet):
             queryset = queryset.filter(account__salesrep__pk__in=json.loads(salesrep_filter))
         if search_query is not None:
             query = Q(account__igname__icontains=search_query) | Q(message__content__icontains=search_query)
+            message_query = Q(content__icontains=search_query)
+            messages = Message.objects.filter(message_query)
+            messages_page = paginator.paginate_queryset(messages, request)
+            for message in messages_page:
+                message_data.append(
+                    {
+                        "content":message.content,
+                        "sent_on":message.sent_on,
+                        "username": message.thread.account.igname
+                    }
+                )                
 
             queryset = queryset.annotate(
                 matching_messages_count=Count('message', filter=query)
@@ -730,7 +744,7 @@ class DMViewset(viewsets.ModelViewSet):
             queryset = queryset.filter(matching_messages_count__gt=0).distinct()
 
             
-        paginator = self.pagination_class()
+        
         result_page = paginator.paginate_queryset(queryset, request)
         serializer = ThreadSerializer(result_page, many=True)
 
@@ -738,7 +752,8 @@ class DMViewset(viewsets.ModelViewSet):
             'count': paginator.page.paginator.count,
             'next': paginator.get_next_link(),
             'previous': paginator.get_previous_link(),
-            'results': serializer.data
+            'results': serializer.data,
+            'messages': message_data if messages.exists() else ""
         }
 
 
