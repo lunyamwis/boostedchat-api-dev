@@ -753,7 +753,7 @@ class DMViewset(viewsets.ModelViewSet):
             'next': paginator.get_next_link(),
             'previous': paginator.get_previous_link(),
             'results': serializer.data,
-            'messages': message_data if messages.exists() else ""
+            'messages': message_data if search_query is not None else []
         }
 
 
