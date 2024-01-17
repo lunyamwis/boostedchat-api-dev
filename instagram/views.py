@@ -958,16 +958,17 @@ class DMViewset(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="save-external-messages")
     def save_external_messages(self, request, pk=None):
         
-        # create account object
-        account = Account()
-        account.igname = request.data.get('username')
-        account.qualified = True
-        account.save()
-
+        account = None
         thread = None
         try:
             thread = Thread.objects.get(thread_id = request.data.get('thread_id'))
         except Thread.DoesNotExist:
+            # create account object
+            account = Account()
+            account.igname = request.data.get('username')
+            account.qualified = True
+            account.save()
+
             # create thread object
             thread = Thread()
             thread.thread_id = request.data.get('thread_id')
