@@ -763,7 +763,7 @@ class DMViewset(viewsets.ModelViewSet):
         return Response(data=response_rate_object, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["post"], url_path="save-client-message")
-    def save_salesrep_message(self, request, pk=None):
+    def save_client_message(self, request, pk=None):
         thread = self.get_object()
 
         last_message = Message.objects.filter(Q(thread__thread_id=thread.thread_id)
@@ -771,7 +771,7 @@ class DMViewset(viewsets.ModelViewSet):
         if request.data.get("text") != last_message.content:
             Message.objects.create(
                 content=request.data.get("text"),
-                sent_by="Robot",
+                sent_by="Client",
                 sent_on=timezone.now(),
                 thread=thread
             )
@@ -953,14 +953,26 @@ class DMViewset(viewsets.ModelViewSet):
 
         )
 
-    @action(detail=True, methods=["post"], url_path="save-failed-messages")
-    def save_failed_messages(self, request, pk=None):
+    @action(detail=False, methods=["post"], url_path="save-external-messages")
+    def save_external_messages(self, request, pk=None):
+        # create account object
+        account = Account()
+        account.igname = request.data.get('username')
+        account.qualified = True
+        account.save()
+
+        # create thread object
+        thread = Thread()
+        thread.thread_id = request.data.get('thread_id')
+        thread.account = account
+        thread.save()
+
+        # save message
         try:
-            thread = Thread.objects.get(thread_id=pk)
             Message.objects.update_or_create(
                 thread=thread,
                 content=request.data.get("message"),
-                sent_by=request.data.get("sent_by"),
+                sent_by="Client",
                 sent_on=timezone.now()
             )
             return Response(
