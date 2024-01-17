@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.pagination import PageNumberPagination
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
@@ -722,8 +722,14 @@ class DMViewset(viewsets.ModelViewSet):
         if salesrep_filter is not None:
             queryset = queryset.filter(account__salesrep__pk__in=json.loads(salesrep_filter))
         if search_query is not None:
-            queryset = queryset.filter(account__igname__contains=search_query)
+            query = Q(account__igname__icontains=search_query) | Q(message__content__icontains=search_query)
 
+            queryset = queryset.annotate(
+                matching_messages_count=Count('message', filter=query)
+            )
+            queryset = queryset.filter(matching_messages_count__gt=0).distinct()
+
+            
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(queryset, request)
         serializer = ThreadSerializer(result_page, many=True)
