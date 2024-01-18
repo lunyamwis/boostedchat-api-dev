@@ -32,10 +32,10 @@ class GetAccountSerializer(serializers.ModelSerializer):
             data['status'] = status_.name
         except Exception as error:
             print(error)
-        try:
-            data['outsourced'] = OutSourced.objects.get(account__id=data['id']).results
-        except Exception as error:
-            print(error)
+        # try:
+        #     data['outsourced'] = OutSourced.objects.get(account__id=data['id']).results
+        # except Exception as error:
+        #     print(error)
         return data
 
 
