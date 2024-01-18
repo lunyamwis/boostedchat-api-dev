@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, StatusCheck, OutSourced
-
+from django_celery_beat.models import PeriodicTask
 
 class AccountSerializer(serializers.ModelSerializer):
     # account_history = serializers.CharField(source="history.latest",read_only=True)
@@ -32,10 +32,6 @@ class GetAccountSerializer(serializers.ModelSerializer):
             data['status'] = status_.name
         except Exception as error:
             print(error)
-        # try:
-        #     data['outsourced'] = OutSourced.objects.get(account__id=data['id']).results
-        # except Exception as error:
-        #     print(error)
         return data
 
 
