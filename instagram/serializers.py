@@ -32,6 +32,11 @@ class GetAccountSerializer(serializers.ModelSerializer):
             data['status'] = status_.name
         except Exception as error:
             print(error)
+        try:
+            periodic_task = PeriodicTask.objects.get(name=f"SendFirstCompliment-{instance.igname}")
+            data['outreach'] = periodic_task.crontab.human_readable 
+        except PeriodicTask.DoesNotExist:
+            pass
         return data
 
 

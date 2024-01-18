@@ -80,7 +80,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 periodic_task = PeriodicTask.objects.get(name=f"SendFirstCompliment-{account.igname}")
             except PeriodicTask.DoesNotExist:
                 pass
-            
+
             account_ = {
                 "id": account.id,
                 "assigned_to": account.assigned_to,
@@ -747,6 +747,9 @@ class DMViewset(viewsets.ModelViewSet):
             for message in messages_page:
                 message_data.append(
                     {
+                        "id": message.id,
+                        "thread_pk":message.thread.id,
+                        "thread_id":message.thread.thread_id,
                         "content":message.content,
                         "sent_on":message.sent_on,
                         "username": message.thread.account.igname
