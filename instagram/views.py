@@ -19,6 +19,7 @@ from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
+from django_celery_beat.models import PeriodicTask
 
 
 from base.helpers.push_id import PushID
@@ -59,6 +60,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     queryset = Account.objects.all()
     serializer_class = AccountSerializer
+    pagination_class = PaginationClass
 
     def get_serializer_class(self):
         if self.action == "batch_uploads":
@@ -70,8 +72,15 @@ class AccountViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
 
         accounts = []
+        paginator = self.pagination_class()
+        result_page = paginator.paginate_queryset(self.queryset, request)
+        for account in result_page:
+            periodic_task = None
+            try:
+                periodic_task = PeriodicTask.objects.get(name=f"SendFirstCompliment-{account.igname}")
+            except PeriodicTask.DoesNotExist:
+                pass
 
-        for account in self.queryset:
             account_ = {
                 "id": account.id,
                 "assigned_to": account.assigned_to,
@@ -79,11 +88,17 @@ class AccountViewSet(viewsets.ModelViewSet):
                 "full_name": account.full_name or None,
                 "igname": account.igname,
                 "status": account.status.name if account.status else None,
-                "outsourced_data": account.outsourced_set.values()
+                "outreach": periodic_task.crontab.human_readable if periodic_task else ""
 
             }
             accounts.append(account_)
-        return Response(accounts)
+        response_data = {
+            'count': paginator.page.paginator.count,
+            'next': paginator.get_next_link(),
+            'previous': paginator.get_previous_link(),
+            'results': accounts,
+        }
+        return Response(response_data,status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk=None):
         queryset = Account.objects.all()
@@ -732,6 +747,9 @@ class DMViewset(viewsets.ModelViewSet):
             for message in messages_page:
                 message_data.append(
                     {
+                        "id": message.id,
+                        "thread_pk":message.thread.id,
+                        "thread_id":message.thread.thread_id,
                         "content":message.content,
                         "sent_on":message.sent_on,
                         "username": message.thread.account.igname

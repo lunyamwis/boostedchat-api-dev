@@ -19,7 +19,6 @@ from .helpers.format_username import format_full_name
 def send_first_compliment(username):
     print(username)
     thread_obj = None
-
     account = None
     try:
         first_account = Account.objects.filter(igname="".join(username)).first()
