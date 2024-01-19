@@ -45,6 +45,7 @@ from .serializers import (
     MessageSerializer,
     SendManualMessageSerializer,
     GetAccountSerializer,
+    GetSingleAccountSerializer
 )
 
 
@@ -65,6 +66,8 @@ class AccountViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == "batch_uploads":
             return UploadSerializer
+        elif self.action == "retrieve":
+            return GetSingleAccountSerializer
         elif self.action == "update":  # override update serializer
             return GetAccountSerializer
         return self.serializer_class
@@ -103,7 +106,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, pk=None):
         queryset = Account.objects.all()
         user = get_object_or_404(queryset, pk=pk)
-        serializer = GetAccountSerializer(user)
+        serializer = GetSingleAccountSerializer(user)
         return Response(serializer.data)
 
     @action(detail=True, methods=["get"], url_path="potential-buy")
