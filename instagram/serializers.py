@@ -39,6 +39,35 @@ class GetAccountSerializer(serializers.ModelSerializer):
             pass
         return data
 
+class GetSingleAccountSerializer(serializers.ModelSerializer):
+    # status = serializers.CharField(source="account.status.name", read_only=True)
+    class Meta:
+        model = Account
+        fields = '__all__'
+        extra_kwargs = {
+            "id": {"required": False, "allow_null": True},
+        }
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        try:
+            status_ = StatusCheck.objects.get(id=data['status'])
+            data['status'] = status_.name
+        except Exception as error:
+            print(error)
+
+        try:
+            data['outsourced'] = OutSourced.objects.get(account__id=data['id']).results
+        except Exception as error:
+            print(error)
+        try:
+            periodic_task = PeriodicTask.objects.get(name=f"SendFirstCompliment-{instance.igname}")
+            data['outreach'] = periodic_task.crontab.human_readable 
+        except PeriodicTask.DoesNotExist:
+            pass
+
+        return data
+
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
