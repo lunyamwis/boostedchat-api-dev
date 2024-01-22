@@ -145,15 +145,6 @@ class AccountViewSet(viewsets.ModelViewSet):
 
         return Response({"status_code": status_code, "potential_promote": potential_promote})
     
-    @action(detail=True, methods=["get"], url_path="qualification-checkers")
-    def qualification_checkers(self, request, pk=None):
-        account = self.get_object()
-        results = get_object_or_404(OutSourced,account=account).results
-        return Response({
-            "qualified_keywords":results.get("qualified_keywords"),
-            "linked_to":account.linked_to
-        }, status = status.HTTP_200_OK)
-
 
     @action(detail=True, methods=["get"], url_path="extract-followers")
     def extract_followers(self, request, pk=None):
