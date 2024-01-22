@@ -29,7 +29,7 @@ from instagram.helpers.login import login_user
 from sales_rep.models import SalesRep
 
 from .helpers.init_db import init_db
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced
 from .serializers import (
     AccountSerializer,
     AddContentSerializer,
@@ -148,8 +148,9 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="qualification-checkers")
     def qualification_checkers(self, request, pk=None):
         account = self.get_object()
+        results = get_object_or_404(OutSourced,account=account).results
         return Response({
-            "qualified_keywords":account.qualified_keywords,
+            "qualified_keywords":results.get("qualified_keywords"),
             "linked_to":account.linked_to
         }, status = status.HTTP_200_OK)
 

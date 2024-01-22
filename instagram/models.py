@@ -36,7 +36,6 @@ class Account(BaseModel):
     profile_url = models.URLField(null=True, blank=True)
     status = models.ForeignKey(StatusCheck, on_delete=models.CASCADE, null=True, blank=True)
     confirmed_problems = models.TextField(null=True, blank=True, default="test")
-    qualified_keywords = models.TextField(null=True, blank=True, default="test")
     rejected_problems = models.TextField(null=True, blank=True, default="test")
     linked_to = models.CharField(max_length=255, null=True, blank=True, default="no_one")
     history = AuditlogHistoryField(pk_indexable=False)
