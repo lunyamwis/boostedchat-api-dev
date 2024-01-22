@@ -43,21 +43,21 @@ ALLOWED_HOSTS = [
     "api",
 ]
 CSRF_TRUSTED_ORIGINS = ["https://api.boostedchat.com",
-"https://api.booksy.us.boostedchat.com",
-"https://a69c-105-60-202-188.ngrok-free.app",
-"https://3e6a-62-8-92-218.ngrok-free.app",
-"https://3e6a-62-8-92-218.ngrok-fr",
-"https://ce2d-105-161-11-162.ngrok-free.app",
-"https://ed48-196-105-37-1.ngrok-free.app"
+                        "https://api.booksy.us.boostedchat.com",
+                        "https://a69c-105-60-202-188.ngrok-free.app",
+                        "https://3e6a-62-8-92-218.ngrok-free.app",
+                        "https://3e6a-62-8-92-218.ngrok-fr",
+                        "https://ce2d-105-161-11-162.ngrok-free.app",
+                        "https://ed48-196-105-37-1.ngrok-free.app"
 
-]
+                        ]
 DIALOGFLOW_BASE_URL = (
     "https://us-central1-dialogflow.googleapis.com/v3beta1/projects/boostedchatapi/locations/us-central1/"
 )
 OPENAI_BASE_URL = "https://api.openai.com/v1"
 # Application definition
 
-MQTT_BASE_URL = "http://mqtt:3000"
+MQTT_BASE_URL = "http://localhost:3000"
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

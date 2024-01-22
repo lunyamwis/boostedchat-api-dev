@@ -232,7 +232,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     def account_by_ig_thread_id(self, request, *args, **kwargs):
         thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
         account = Account.objects.get(pk=thread.account.id)
-        serializer = GetAccountSerializer(account)
+        serializer = GetSingleAccountSerializer(account)
         return Response(serializer.data)
 
 
@@ -911,28 +911,27 @@ class DMViewset(viewsets.ModelViewSet):
 
     def generate_response(self, request, *args, **kwargs):
         thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
+        req = request.data
+        query = req.get("message")
+
+        account = Account.objects.get(id=thread.account.id)
+        thread = Thread.objects.filter(account=account).last()
+
+        client_messages = query.split("#*eb4*#")
+        for client_message in client_messages:
+            Message.objects.create(
+                content=client_message,
+                sent_by="Client",
+                sent_on=timezone.now(),
+                thread=thread
+            )
+        thread.last_message_content = client_messages[len(client_messages)-1]
+        thread.unread_message_count = len(client_messages)
+        thread.last_message_at = timezone.now()
+        thread.save()
+
         if thread.account.assigned_to == "Robot":
             try:
-                req = request.data
-
-                query = req.get("message")
-
-                account = Account.objects.get(id=thread.account.id)
-                thread = Thread.objects.filter(account=account).last()
-
-                client_messages = query.split("#*eb4*#")
-                for client_message in client_messages:
-                    Message.objects.create(
-                        content=client_message,
-                        sent_by="Client",
-                        sent_on=timezone.now(),
-                        thread=thread
-                    )
-                thread.last_message_content = client_messages[len(client_messages)-1]
-                thread.unread_message_count = len(client_messages)
-                thread.last_message_at = timezone.now()
-                thread.save()
-
                 gpt_resp = get_gpt_response(account, thread.thread_id)
 
                 thread.last_message_content = gpt_resp.get('text')
