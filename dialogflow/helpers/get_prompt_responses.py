@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 from dialogflow.helpers.conversations import get_conversation_so_far
 from instagram.models import OutSourced
 
+
 def get_status_number(val, pattern=r"\d+"):
     list_of_values = re.findall(pattern=pattern, string=val)
     return int(list_of_values[0])
@@ -22,11 +23,11 @@ def get_if_asked_first_question(val, pattern=r"`([^`]+)`"):
     return str(list_of_values[0])
 
 
-def save_gpt_response(result,payload):
+def save_gpt_response(result, payload):
     print("===========now============")
     print(result.get("confirmed_problems"))
     print(payload.get("prompt_index"))
-    if isinstance(result.get("confirmed_problems"),list):
+    if isinstance(result.get("confirmed_problems"), list):
         payload.update({
             "confirmed_problems": result.get("confirmed_problems")
         })
@@ -36,13 +37,11 @@ def save_gpt_response(result,payload):
         })
     url = os.getenv("SCRIPTING_URL") + '/save-response/'
     headers = {'Content-Type': 'application/json'}  # Adjust based on your payload type
-    
+
     response = requests.post(url, json=payload, headers=headers)
 
-    
     print(response.request.body)
     return response.status_code
-
 
 
 def get_gpt_response(account, thread_id=None):
@@ -53,7 +52,7 @@ def get_gpt_response(account, thread_id=None):
 
     outsourced = None
     try:
-        outsourced_object = OutSourced.objects.filter(account__igname = account.igname).first()
+        outsourced_object = OutSourced.objects.filter(account__igname=account.igname).first()
         outsourced = json.dumps(outsourced_object.results)
     except Exception as error:
         print(error)
@@ -64,7 +63,7 @@ def get_gpt_response(account, thread_id=None):
         "product_name": subdomains[2],
         "conversations": get_conversation_so_far(thread_id=thread_id),
         "outsourced": outsourced,
-        "checklist": ["book_button","is_popular","external_url"],
+        "checklist": ["book_button", "is_popular", "external_url"],
         "salesrep": account.salesrep_set.last().ig_username
     }
     url = os.getenv("SCRIPTING_URL") + '/get-prompt/'
@@ -88,14 +87,13 @@ def get_gpt_response(account, thread_id=None):
         elif account.index < steps:
             account.index = account.index + 1
             account.save()
-    
 
     if "confirmed_problems" in result:
-        print("these are the confirmed problems in number: ",len(result.get("confirmed_problems")))
+        print("these are the confirmed problems in number: ", len(result.get("confirmed_problems")))
         if len(result.get("confirmed_problems")) >= 2:
             print("=========================STET===================")
             print(result.get("confirmed_problems"))
-            
+
             account.index = account.index + 1
             account.confirmed_problems = result.get("confirmed_problems")
             account.save()
