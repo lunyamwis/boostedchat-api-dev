@@ -29,7 +29,7 @@ from instagram.helpers.login import login_user
 from sales_rep.models import SalesRep
 
 from .helpers.init_db import init_db
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced
 from .serializers import (
     AccountSerializer,
     AddContentSerializer,
@@ -144,6 +144,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             status_code = 200
 
         return Response({"status_code": status_code, "potential_promote": potential_promote})
+    
 
     @action(detail=True, methods=["get"], url_path="extract-followers")
     def extract_followers(self, request, pk=None):
@@ -780,6 +781,31 @@ class DMViewset(viewsets.ModelViewSet):
 
 
         return Response(response_data)
+
+    @action(detail=False, methods=["get"], url_path="handle-duplicates")
+    def find_handle_duplicates(self, request):
+        duplicate_igname_list = (
+            Account.objects.values('igname')
+            .annotate(igname_count=Count('igname'))
+            .filter(igname_count__gt=1)
+            .values_list('igname', flat=True)
+        )
+        print(f"How many duplicates? {len(duplicate_igname_list)}")
+        if len(duplicate_igname_list) > 0:
+            for igname in duplicate_igname_list:
+                accounts = Account.objects.filter(igname=igname)
+                indexes = []
+                for account in accounts:
+                    indexes.append(account.index)
+                minimum_index = min(indexes)
+                print(f"account to delete --------> {accounts.filter(index=minimum_index).last().igname}")
+                accounts.filter(index=minimum_index).last().delete()
+        else:
+            print("No duplicates have been found in the system.")
+        return Response({
+            "handled":True
+        }, status = status.HTTP_202_ACCEPTED)
+
 
     @action(detail=False, methods=["post"], url_path="download-csv")
     def download_csv(self, request):
