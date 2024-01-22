@@ -144,6 +144,15 @@ class AccountViewSet(viewsets.ModelViewSet):
             status_code = 200
 
         return Response({"status_code": status_code, "potential_promote": potential_promote})
+    
+    @action(detail=True, methods=["get"], url_path="qualification-checkers")
+    def qualification_checkers(self, request, pk=None):
+        account = self.get_object()
+        return Response({
+            "qualified_keywords":account.qualified_keywords,
+            "linked_to":account.linked_to
+        }, status = status.HTTP_200_OK)
+
 
     @action(detail=True, methods=["get"], url_path="extract-followers")
     def extract_followers(self, request, pk=None):
@@ -780,6 +789,31 @@ class DMViewset(viewsets.ModelViewSet):
 
 
         return Response(response_data)
+
+    @action(detail=False, methods=["get"], url_path="handle-duplicates")
+    def find_handle_duplicates(self, request):
+        duplicate_igname_list = (
+            Account.objects.values('igname')
+            .annotate(igname_count=Count('igname'))
+            .filter(igname_count__gt=1)
+            .values_list('igname', flat=True)
+        )
+        print(f"How many duplicates? {len(duplicate_igname_list)}")
+        if len(duplicate_igname_list) > 0:
+            for igname in duplicate_igname_list:
+                accounts = Account.objects.filter(igname=igname)
+                indexes = []
+                for account in accounts:
+                    indexes.append(account.index)
+                minimum_index = min(indexes)
+                print(f"account to delete --------> {accounts.filter(index=minimum_index).last().igname}")
+                accounts.filter(index=minimum_index).last().delete()
+        else:
+            print("No duplicates have been found in the system.")
+        return Response({
+            "handled":True
+        }, status = status.HTTP_202_ACCEPTED)
+
 
     @action(detail=False, methods=["post"], url_path="download-csv")
     def download_csv(self, request):
