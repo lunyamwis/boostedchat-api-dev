@@ -899,7 +899,7 @@ class DMViewset(viewsets.ModelViewSet):
 
                 message = Message()
                 message.content = serializer.data.get("message")
-                message.sent_by = "Robot"
+                message.sent_by = "Human"
                 message.sent_on = timezone.now()
                 message.thread = thread
                 message.save()
