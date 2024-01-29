@@ -856,12 +856,15 @@ class DMViewset(viewsets.ModelViewSet):
         last_message = Message.objects.filter(Q(thread__thread_id=thread.thread_id)
                                               & Q(sent_by='Client')).order_by('-sent_on').first()
         if request.data.get("text") != last_message.content:
-            Message.objects.create(
-                content=request.data.get("text"),
-                sent_by="Client",
-                sent_on=timezone.now(),
-                thread=thread
-            )
+            try:
+                Message.objects.update_or_create(
+                    content=request.data.get("text"),
+                    sent_by="Client",
+                    sent_on=timezone.now(),
+                    thread=thread
+                )
+            except Exception as error:
+                print(error)
         return Response({"success": True}, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="save-salesrep-message")
@@ -871,12 +874,15 @@ class DMViewset(viewsets.ModelViewSet):
         last_message = Message.objects.filter(Q(thread__thread_id=thread.thread_id)
                                               & Q(sent_by='Robot')).order_by('-sent_on').first()
         if request.data.get("text") != last_message.content:
-            Message.objects.create(
-                content=request.data.get("text"),
-                sent_by="Robot",
-                sent_on=timezone.now(),
-                thread=thread
-            )
+            try:
+                Message.objects.update_or_create(
+                    content=request.data.get("text"),
+                    sent_by="Robot",
+                    sent_on=timezone.now(),
+                    thread=thread
+                )
+            except Exception as error:
+                print(error)
         return Response({"success": True}, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"], url_path="send-message-manually")
