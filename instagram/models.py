@@ -30,11 +30,13 @@ class StatusCheck(BaseModel):
 class Account(BaseModel):
     igname = models.CharField(max_length=255, null=True, unique=False, blank=True)
     assigned_to = models.TextField(default="Robot")
+    referral = models.TextField(default="",null=True,blank=True)
     full_name = models.CharField(max_length=1024, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     phone_number = models.CharField(max_length=255, null=True, blank=True)
     profile_url = models.URLField(null=True, blank=True)
     status = models.ForeignKey(StatusCheck, on_delete=models.CASCADE, null=True, blank=True)
+    status_param = models.CharField(max_length=255, null=True, unique=False, blank=True)
     confirmed_problems = models.TextField(null=True, blank=True, default="test")
     rejected_problems = models.TextField(null=True, blank=True, default="test")
     linked_to = models.CharField(max_length=255, null=True, blank=True, default="no_one")

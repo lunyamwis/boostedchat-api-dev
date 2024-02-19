@@ -88,6 +88,21 @@ def get_gpt_response(account, thread_id=None):
             account.index = account.index + 1
             account.save()
 
+    if "status" in result:
+        account.status_param = result.get('status','')
+        account.save()
+    
+    if "human_takeover" in result:
+        if result.get('human_takeover'):
+            account.assigned_to = result.get('human_takeover','')
+            account.save()
+
+    if "referral" in result:
+        if result.get("referral"):
+            account.referral = result.get("referral",'')
+            account.save()
+
+
     if "confirmed_problems" in result:
         print("these are the confirmed problems in number: ", len(result.get("confirmed_problems")))
         if len(result.get("confirmed_problems")) >= 2:

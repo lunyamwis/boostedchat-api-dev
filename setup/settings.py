@@ -28,6 +28,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     # "*",
+    "0.0.0.0",
     "api.boostedchat.com",
     "127.0.0.1",
     "34.74.147.25",
