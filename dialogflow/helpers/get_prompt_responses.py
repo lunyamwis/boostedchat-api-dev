@@ -93,8 +93,8 @@ def get_gpt_response(account, thread_id=None):
         account.save()
     
     if "human_takeover" in result:
-        if result.get('human_takeover'):
-            account.assigned_to = result.get('human_takeover','')
+        if result.get('human_takeover') == 1:
+            account.assigned_to = 'Human'
             account.save()
 
     if "referral" in result:
