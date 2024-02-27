@@ -32,6 +32,7 @@ class ThreadAdmin(admin.ModelAdmin):
         return form
 
 
+
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
