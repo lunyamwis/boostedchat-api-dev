@@ -252,7 +252,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             random_salesrep_index = random.randint(0,len(available_sales_reps)-1)
             available_sales_reps[random_salesrep_index].instagram.add(account)
 
-            schedule = CrontabSchedule.objects.get_or_create(
+            schedule = CrontabSchedule.objects.create(
                 minute=serializer.data.get('minute'),
                 hour=serializer.data.get('hour'),
                 day_of_week="*",
@@ -260,7 +260,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 month_of_year=serializer.data.get('month_of_year'),
             )
             try:
-                PeriodicTask.objects.get_or_create(
+                PeriodicTask.objects.update_or_create(
                     name=f"SendFirstCompliment-{account.igname}",
                     crontab=schedule,
                     task="instagram.tasks.send_first_compliment",
