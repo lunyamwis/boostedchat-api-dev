@@ -5,6 +5,7 @@ import logging
 import uuid
 import json
 import requests
+import random
 from urllib.parse import urlparse
 from auditlog.models import LogEntry
 from datetime import datetime
@@ -24,6 +25,8 @@ from django_celery_beat.models import PeriodicTask
 
 from base.helpers.push_id import PushID
 from dialogflow.helpers.get_prompt_responses import get_gpt_response
+
+from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
 from sales_rep.models import SalesRep
@@ -235,6 +238,35 @@ class AccountViewSet(viewsets.ModelViewSet):
         account = Account.objects.get(pk=thread.account.id)
         serializer = GetSingleAccountSerializer(account)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path="schedule-outreach")
+    def schedule_outreach(self, request, pk=None):
+        account = self.get_object()
+        available_sales_reps = SalesRep.objects.filter(available=True)
+        random_salesrep_index = random.randint(1,len(available_sales_reps))
+        available_sales_reps[random_salesrep_index].instagram.add(account)
+
+        schedule = CrontabSchedule.objects.get_or_create(
+            minute=request.data.get('minute'),
+            hour=request.data.get('hour'),
+            day_of_week="*",
+            day_of_month=request.data.get('day_of_month'),
+            month_of_year=request.data.get('month_of_year'),
+        )
+        try:
+            PeriodicTask.objects.get_or_create(
+                name=f"SendFirstCompliment-{account.igname}",
+                crontab=schedule,
+                task="instagram.tasks.send_first_compliment",
+                args=json.dumps([[account.igname]])
+            )
+            
+        except Exception as error:
+            logging.warning(error)
+
+        return Response({"success":True},status=status.HTTP_200_OK)
+        
+
 
 
 class HashTagViewSet(viewsets.ModelViewSet):

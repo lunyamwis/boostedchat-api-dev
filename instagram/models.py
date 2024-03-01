@@ -36,6 +36,8 @@ class Account(BaseModel):
     phone_number = models.CharField(max_length=255, null=True, blank=True)
     profile_url = models.URLField(null=True, blank=True)
     status = models.ForeignKey(StatusCheck, on_delete=models.CASCADE, null=True, blank=True)
+    script_score = models.IntegerField(null=True, blank=True)
+    script_version = models.CharField(max_length=255,null=True,blank=True)
     status_param = models.CharField(max_length=255, null=True, unique=False, blank=True)
     confirmed_problems = models.TextField(null=True, blank=True, default="test")
     rejected_problems = models.TextField(null=True, blank=True, default="test")

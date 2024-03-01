@@ -102,6 +102,15 @@ def get_gpt_response(account, thread_id=None):
             account.referral = result.get("referral",'')
             account.save()
 
+    if "script_score" in result:
+        if result.get("script_score"):
+            account.script_score = int(result.get("script_score",1))
+            account.save()
+        
+    if "script_version" in result:
+        if result.get("script_version"):
+            account.script_version = result.get("script_version",'')
+            account.save()
 
     if "confirmed_problems" in result:
         print("these are the confirmed problems in number: ", len(result.get("confirmed_problems")))
