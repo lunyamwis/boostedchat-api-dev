@@ -243,7 +243,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     def schedule_outreach(self, request, pk=None):
         account = self.get_object()
         available_sales_reps = SalesRep.objects.filter(available=True)
-        random_salesrep_index = random.randint(1,len(available_sales_reps))
+        random_salesrep_index = random.randint(0,len(available_sales_reps)-1)
         available_sales_reps[random_salesrep_index].instagram.add(account)
 
         schedule = CrontabSchedule.objects.get_or_create(
