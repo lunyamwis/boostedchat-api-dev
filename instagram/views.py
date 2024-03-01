@@ -244,7 +244,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path="schedule-outreach")
     def schedule_outreach(self, request, pk=None):
-        serializer = UploadSerializer(data=request.data)
+        serializer = ScheduleOutreachSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         account = self.get_object()
         if valid:
