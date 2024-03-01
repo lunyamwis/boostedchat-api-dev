@@ -48,7 +48,8 @@ from .serializers import (
     MessageSerializer,
     SendManualMessageSerializer,
     GetAccountSerializer,
-    GetSingleAccountSerializer
+    GetSingleAccountSerializer,
+    ScheduleOutreachSerializer
 )
 
 
@@ -73,6 +74,8 @@ class AccountViewSet(viewsets.ModelViewSet):
             return GetSingleAccountSerializer
         elif self.action == "update":  # override update serializer
             return GetAccountSerializer
+        elif self.action == "schedule-outreach":
+            return ScheduleOutreachSerializer
         return self.serializer_class
 
     def list(self, request, *args, **kwargs):
@@ -241,31 +244,35 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path="schedule-outreach")
     def schedule_outreach(self, request, pk=None):
+        serializer = UploadSerializer(data=request.data)
+        valid = serializer.is_valid(raise_exception=True)
         account = self.get_object()
-        available_sales_reps = SalesRep.objects.filter(available=True)
-        random_salesrep_index = random.randint(0,len(available_sales_reps)-1)
-        available_sales_reps[random_salesrep_index].instagram.add(account)
+        if valid:
+            available_sales_reps = SalesRep.objects.filter(available=True)
+            random_salesrep_index = random.randint(0,len(available_sales_reps)-1)
+            available_sales_reps[random_salesrep_index].instagram.add(account)
 
-        schedule = CrontabSchedule.objects.get_or_create(
-            minute=request.data.get('minute'),
-            hour=request.data.get('hour'),
-            day_of_week="*",
-            day_of_month=request.data.get('day_of_month'),
-            month_of_year=request.data.get('month_of_year'),
-        )
-        try:
-            PeriodicTask.objects.get_or_create(
-                name=f"SendFirstCompliment-{account.igname}",
-                crontab=schedule,
-                task="instagram.tasks.send_first_compliment",
-                args=json.dumps([[account.igname]])
+            schedule = CrontabSchedule.objects.get_or_create(
+                minute=serializer.data.get('minute'),
+                hour=serializer.data.get('hour'),
+                day_of_week="*",
+                day_of_month=serializer.data.get('day_of_month'),
+                month_of_year=serializer.data.get('month_of_year'),
             )
-            
-        except Exception as error:
-            logging.warning(error)
+            try:
+                PeriodicTask.objects.get_or_create(
+                    name=f"SendFirstCompliment-{account.igname}",
+                    crontab=schedule,
+                    task="instagram.tasks.send_first_compliment",
+                    args=json.dumps([[account.igname]])
+                )
+                
+            except Exception as error:
+                logging.warning(error)
 
-        return Response({"success":True},status=status.HTTP_200_OK)
-        
+            return Response(serializer.data,status=status.HTTP_200_OK)
+        else:
+            return Response({"error": True})
 
 
 

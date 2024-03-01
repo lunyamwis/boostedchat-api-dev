@@ -38,6 +38,13 @@ class GetAccountSerializer(serializers.ModelSerializer):
         except PeriodicTask.DoesNotExist:
             pass
         return data
+    
+class ScheduleOutreachSerializer(serializers.Serializer):
+    minute = serializers.CharField()
+    hour = serializers.CharField()
+    day_of_week = serializers.CharField()
+    day_of_month = serializers.CharField()
+    month_of_year = serializers.CharField()
 
 class GetSingleAccountSerializer(serializers.ModelSerializer):
     # status = serializers.CharField(source="account.status.name", read_only=True)
