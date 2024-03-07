@@ -229,7 +229,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://app.boostedchat.com",
     "http://booksy.us.boostedchat.com",
     "https://booksy.us.boostedchat.com",
-    "https://jamel.boostedchat.com"
+    "https://jamel.boostedchat.com",
     f"https://{os.environ.get('DOMAIN1', '')}.boostedchat.com",
     f"https://{os.environ.get('DOMAIN2', '')}.boostedchat.com",
 ]
