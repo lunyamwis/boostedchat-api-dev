@@ -35,12 +35,20 @@ def send_first_compliment(username):
         return
 
     full_name = "there"
+    print(f'Account: {account}')
     try:
         full_name = format_full_name(account.full_name)
     except Exception as error:
         print(error)
 
     outsourced_data = OutSourced.objects.filter(account=account)
+    print("===================")
+    print("===================")
+    print("===================")
+    print("===================")
+    print("===================")
+    print(OutSourced.objects)
+    print(outsourced_data)
 
     first_message = get_gpt_response(account)
 

@@ -1,0 +1,28 @@
+<!-- templates/reschedule.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reschedule Tasks</title>
+</head>
+<body>
+    <h1>Reschedule Tasks</h1>
+    <button id="rescheduleButton">Reschedule Tasks</button>
+
+    <script>
+        document.getElementById('rescheduleButton').addEventListener('click', function() {
+            // Send a GET request to the reschedule URL
+            fetch('v1/outreaches/reschedule/')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data); // Log the response data (you can update this as needed)
+                    alert('Tasks rescheduled successfully!'); // Show a success message
+                })
+                .catch(error => {
+                    console.error('Error:', error); // Log any errors
+                    alert('An error occurred while rescheduling tasks.'); // Show an error message
+                });
+        });
+    </script>
+</body>
+</html>
