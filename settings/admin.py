@@ -6,6 +6,7 @@ from .models import AutomationSheet, Industry
 @admin.register(Industry)
 class IndustryAdmin(admin.ModelAdmin):
     list_display = ("name",)
+    search_fields = ("name",) 
 
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
@@ -16,6 +17,7 @@ class IndustryAdmin(admin.ModelAdmin):
 @admin.register(AutomationSheet)
 class AutomationAdmin(admin.ModelAdmin):
     list_display = ("industry", "name", "file")
+    search_fields = ("industry__name", "name")
 
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
