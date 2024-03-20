@@ -45,6 +45,8 @@ class ScheduleOutreachSerializer(serializers.Serializer):
     day_of_week = serializers.CharField()
     day_of_month = serializers.CharField()
     month_of_year = serializers.CharField()
+    class Meta:
+        fields = '__all__'
 
 class GetSingleAccountSerializer(serializers.ModelSerializer):
     # status = serializers.CharField(source="account.status.name", read_only=True)
