@@ -172,3 +172,4 @@ fixtures.yaml
 dialogflow.json
 dialogflow_token.json
 
+tmp/
