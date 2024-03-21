@@ -20,10 +20,10 @@ echo " "
 echo "<<<<<<<<<<<<<<<<<<<< START Celery >>>>>>>>>>>>>>>>>>>>>>>>"
 
 # # start Celery worker
-celery -A setup worker --loglevel=info &
+celery -A setup worker --loglevel=info --broker=$CELERY_BROKER_URL_API --result-backend=$CELERY_RESULT_BACKEND_API &
 
 # # start celery beat
-celery -A setup beat --loglevel=info &
+celery -A setup beat --loglevel=info --broker=$CELERY_BROKER_URL_API --result-backend=$CELERY_RESULT_BACKEND_API &
 
 sleep 5
 echo "<<<<<<<<<<<<<<<<<<<< START API >>>>>>>>>>>>>>>>>>>>>>>>"
