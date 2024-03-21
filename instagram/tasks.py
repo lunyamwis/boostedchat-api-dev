@@ -1,6 +1,8 @@
 import datetime
 import json
 import logging
+import time
+import random
 
 import requests
 from celery import shared_task
@@ -16,7 +18,7 @@ from .helpers.format_username import format_full_name
 
 
 @shared_task()
-def send_first_compliment(username):
+def send_first_compliment(username, repeat=True):
     print(username)
     thread_obj = None
     account = None
@@ -54,7 +56,73 @@ def send_first_compliment(username):
 
     media_id = outsourced_data.last().results.get("media_id", "")
 
+    # check if salesrep.ig_username is logged in  
+    # throw error if not
     salesrep = account.salesrep_set.first()
+    ig_username = salesrep.ig_username
+    response = requests.get(settings.MQTT_BASE_URL + "/accounts")
+    if response.status_code == 200:
+        account_list = response.json()
+
+        # Check if ig_username is in the response JSON
+        if ig_username in account_list:
+            # Process the response data further if needed
+            pass
+        else:
+            if repeat:
+                task_sent = False
+                queryset = PeriodicTask.objects.filter(task="instagram.tasks.send_first_compliment")
+                
+                for task in queryset:
+                    args_json = task.args
+
+                    # Parse the args JSON to retrieve the username value
+                    args_list = json.loads(args_json)
+                    if args_list and len(args_list) > 0:
+                        usernameInner = args_list[0][0]  # Assuming the username is the first item in the args array
+
+                        try:
+                            # Find the account based on the extracted username
+                            first_account = Account.objects.filter(igname="".join(usernameInner)).first()
+                            last_account = Account.objects.filter(igname="".join(usernameInner)).last()
+                            if first_account.salesrep_set.filter().exists():
+                                accountInner = first_account
+                            elif last_account.salesrep_set.filter().exists():
+                                accountInner = last_account
+                            
+                        except Exception as error:
+                            continue 
+                        if accountInner is None:
+                            print("Account does not exist")
+                            continue
+
+                        salesrepInner = accountInner.salesrep_set.first()
+                        ig_usernameInner = salesrepInner.ig_username
+
+                        if not ig_usernameInner in account_list:
+                            continue
+                        # check if ig_name is correcnt
+                        # Send task here
+                        try:
+                            send_first_compliment(ig_usernameInner, False)
+                            break
+                        except Exception as error:
+                            sleep_duration = random.uniform(3 * 60, 5 * 60)  # Convert minutes to seconds
+                            time.sleep(sleep_duration)
+                            continue
+                       
+                    else:
+                        print("No args or invalid args format found for the task.")
+            # else:
+            #     return # failing but repeat = False
+
+
+            raise Exception(f"The Instagram username '{ig_username}' is not logged in in mqtt.") # this particular task has failed
+    
+    else: 
+        raise Exception(f"There is something wrong with mqtt: {response}")
+
+    # salesrep = account.salesrep_set.first()
     data = {"username_from":salesrep.ig_username,"message": first_message.get('text'), "username_to": account.igname, "mediaId": media_id}
 
     print(f"data=============={data}")
@@ -101,4 +169,7 @@ def send_first_compliment(username):
             print("message not saved")
 
     else:
+        # get last account in queue
+        # delay 2 minutes
+        # send  
         raise Exception("There is something wrong with mqtt")
