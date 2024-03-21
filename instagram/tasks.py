@@ -80,7 +80,7 @@ def send_first_compliment(username, repeat=True):
                     args_list = json.loads(args_json)
                     if args_list and len(args_list) > 0:
                         usernameInner = args_list[0][0]  # Assuming the username is the first item in the args array
-
+                        accountInner = None
                         try:
                             # Find the account based on the extracted username
                             first_account = Account.objects.filter(igname="".join(usernameInner)).first()
