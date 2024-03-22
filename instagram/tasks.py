@@ -52,9 +52,7 @@ def send_first_compliment(username, repeat=True):
     print(OutSourced.objects)
     print(outsourced_data)
 
-    first_message = get_gpt_response(account)
-
-    media_id = outsourced_data.last().results.get("media_id", "")
+    
 
     # check if salesrep.ig_username is logged in  
     # throw error if not
@@ -111,7 +109,7 @@ def send_first_compliment(username, repeat=True):
                         # check if ig_name is correcnt
                         # Send task here
                         try:
-                            send_first_compliment(ig_usernameInner, False)
+                            send_first_compliment(usernameInner, False)
                             break
                         except Exception as error:
                             sleep_duration = random.uniform(3 * 60, 5 * 60)  # Convert minutes to seconds
@@ -130,6 +128,9 @@ def send_first_compliment(username, repeat=True):
         raise Exception(f"There is something wrong with mqtt: {response}")
 
     # salesrep = account.salesrep_set.first()
+    first_message = get_gpt_response(account)
+
+    media_id = outsourced_data.last().results.get("media_id", "")
     data = {"username_from":salesrep.ig_username,"message": first_message.get('text'), "username_to": account.igname, "mediaId": media_id}
 
     print(f"data=============={data}")
