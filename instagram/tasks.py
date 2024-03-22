@@ -113,6 +113,7 @@ def send_first_compliment(username, repeat=True):
                             break
                         except Exception as error:
                             sleep_duration = random.uniform(3 * 60, 5 * 60)  # Convert minutes to seconds
+                            print(f"Sleeping for: {sleep_duration}")
                             time.sleep(sleep_duration)
                             continue
                        
