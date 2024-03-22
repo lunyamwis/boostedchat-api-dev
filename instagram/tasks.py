@@ -78,10 +78,9 @@ def send_first_compliment(username, repeat=True):
                     args_list = json.loads(args_json)
                     print(args_list)
                     if args_list and len(args_list) > 0:
-                        print(args_list[0])
-                        usernameInner = args_list[0][0]  # Assuming the username is the first item in the args array
-
-                        
+                        usernameInner = args_list[0]
+                        if isinstance(usernameInner, list):
+                            usernameInner = usernameInner[0]
                         print(usernameInner)
                         accountInner = None
                         try:
