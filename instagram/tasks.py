@@ -52,9 +52,7 @@ def send_first_compliment(username, repeat=True):
     print(OutSourced.objects)
     print(outsourced_data)
 
-    first_message = get_gpt_response(account)
-
-    media_id = outsourced_data.last().results.get("media_id", "")
+    
 
     # check if salesrep.ig_username is logged in  
     # throw error if not
@@ -78,13 +76,20 @@ def send_first_compliment(username, repeat=True):
 
                     # Parse the args JSON to retrieve the username value
                     args_list = json.loads(args_json)
+                    print(args_list)
                     if args_list and len(args_list) > 0:
+                        print(args_list[0])
                         usernameInner = args_list[0][0]  # Assuming the username is the first item in the args array
+
+                        
+                        print(usernameInner)
                         accountInner = None
                         try:
                             # Find the account based on the extracted username
                             first_account = Account.objects.filter(igname="".join(usernameInner)).first()
                             last_account = Account.objects.filter(igname="".join(usernameInner)).last()
+                            print(f"first_account: {first_account}")
+                            print(f"last_account: {last_account}")
                             if first_account.salesrep_set.filter().exists():
                                 accountInner = first_account
                             elif last_account.salesrep_set.filter().exists():
@@ -104,10 +109,11 @@ def send_first_compliment(username, repeat=True):
                         # check if ig_name is correcnt
                         # Send task here
                         try:
-                            send_first_compliment(ig_usernameInner, False)
+                            send_first_compliment(usernameInner, False)
                             break
                         except Exception as error:
                             sleep_duration = random.uniform(3 * 60, 5 * 60)  # Convert minutes to seconds
+                            print(f"Sleeping for: {sleep_duration}")
                             time.sleep(sleep_duration)
                             continue
                        
@@ -123,6 +129,9 @@ def send_first_compliment(username, repeat=True):
         raise Exception(f"There is something wrong with mqtt: {response}")
 
     # salesrep = account.salesrep_set.first()
+    first_message = get_gpt_response(account)
+
+    media_id = outsourced_data.last().results.get("media_id", "")
     data = {"username_from":salesrep.ig_username,"message": first_message.get('text'), "username_to": account.igname, "mediaId": media_id}
 
     print(f"data=============={data}")
