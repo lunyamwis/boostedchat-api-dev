@@ -56,7 +56,7 @@ def sales_rep_is_logged_in(account, repeat = True):
 def reschedule_last_enabled():
     task = PeriodicTask.objects.filter(task="instagram.tasks.send_first_compliment", enabled=True).order_by('start_time').last()
     if task:
-        current_time = datetime.now()
+        current_time = datetime.datetime.now()
         task_time = current_time + timedelta(minutes=1)  # Add 1 minute to the current time
         start_hour = task_time.hour
         start_minute = task_time.minute
