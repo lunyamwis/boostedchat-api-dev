@@ -60,7 +60,7 @@ def reschedule_last_enabled():
         task_time = current_time + datetime.timedelta(minutes=1)  # Add 1 minute to the current time
         start_hour = task_time.hour
         start_minute = task_time.minute
-        process_reschedule_single_task("instagram.tasks.send_first_compliment", task.name, start_hour, start_minute, 1)
+        process_reschedule_single_task("instagram.tasks.send_first_compliment", task.name, start_hour, start_minute, 48*3)
     else:
         print ('No more enabled tasks found')
     
