@@ -66,7 +66,8 @@ DIALOGFLOW_BASE_URL = (
 OPENAI_BASE_URL = "https://api.openai.com/v1"
 # Application definition
 
-MQTT_BASE_URL = "http://mqtt:3000"
+MQTT_BASE_URL = os.environ.get('MQTT_URL', "http://mqtt:3000")
+print(MQTT_BASE_URL)
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
