@@ -88,7 +88,7 @@ def send_first_compliment(username, repeat=True):
 
     outsourced_data = OutSourced.objects.filter(account=account)
 
-    # salesrep = account.salesrep_set.first()
+    salesrep = account.salesrep_set.first()
     first_message = get_gpt_response(account)
 
     media_id = outsourced_data.last().results.get("media_id", "")
