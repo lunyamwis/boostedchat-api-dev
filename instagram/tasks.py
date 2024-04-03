@@ -57,10 +57,10 @@ def reschedule_last_enabled():
     task = PeriodicTask.objects.filter(task="instagram.tasks.send_first_compliment", enabled=True).order_by('start_time').last()
     if task:
         current_time = datetime.datetime.now()
-        task_time = current_time + timedelta(minutes=1)  # Add 1 minute to the current time
+        task_time = current_time + datetime.timedelta(minutes=1)  # Add 1 minute to the current time
         start_hour = task_time.hour
         start_minute = task_time.minute
-        process_reschedule_single_task(instagram.tasks.send_first_compliment, task.name, start_hour, start_minute, 1)
+        process_reschedule_single_task("instagram.tasks.send_first_compliment", task.name, start_hour, start_minute, 1)
     else:
         print ('No more enabled tasks found')
     
