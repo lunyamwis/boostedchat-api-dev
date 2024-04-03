@@ -15,12 +15,9 @@ from sales_rep.models import SalesRep
 from dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from .helpers.format_username import format_full_name
+from outreaches.views import process_reschedule_single_task
 
-
-@shared_task()
-def send_first_compliment(username, repeat=True):
-    print(username)
-    thread_obj = None
+def get_account(username):
     account = None
     try:
         first_account = Account.objects.filter(igname="".join(username)).first()
@@ -31,31 +28,9 @@ def send_first_compliment(username, repeat=True):
             account = last_account
     except Exception as error:
         print(error)
+    return account
 
-    if account is None:
-        print("Account does not exist")
-        return
-
-    full_name = "there"
-    print(f'Account: {account}')
-    try:
-        full_name = format_full_name(account.full_name)
-    except Exception as error:
-        print(error)
-
-    outsourced_data = OutSourced.objects.filter(account=account)
-    print("===================")
-    print("===================")
-    print("===================")
-    print("===================")
-    print("===================")
-    print(OutSourced.objects)
-    print(outsourced_data)
-
-    
-
-    # check if salesrep.ig_username is logged in  
-    # throw error if not
+def sales_rep_is_logged_in(account, repeat = True):
     salesrep = account.salesrep_set.first()
     ig_username = salesrep.ig_username
     response = requests.get(settings.MQTT_BASE_URL + "/accounts")
@@ -68,56 +43,7 @@ def send_first_compliment(username, repeat=True):
             pass
         else:
             if repeat:
-                task_sent = False
-                queryset = PeriodicTask.objects.filter(task="instagram.tasks.send_first_compliment")
-                
-                for task in queryset:
-                    args_json = task.args
-
-                    # Parse the args JSON to retrieve the username value
-                    args_list = json.loads(args_json)
-                    print(args_list)
-                    if args_list and len(args_list) > 0:
-                        usernameInner = args_list[0]
-                        if isinstance(usernameInner, list):
-                            usernameInner = usernameInner[0]
-                        print(usernameInner)
-                        accountInner = None
-                        try:
-                            # Find the account based on the extracted username
-                            first_account = Account.objects.filter(igname="".join(usernameInner)).first()
-                            last_account = Account.objects.filter(igname="".join(usernameInner)).last()
-                            print(f"first_account: {first_account}")
-                            print(f"last_account: {last_account}")
-                            if first_account.salesrep_set.filter().exists():
-                                accountInner = first_account
-                            elif last_account.salesrep_set.filter().exists():
-                                accountInner = last_account
-                            
-                        except Exception as error:
-                            continue 
-                        if accountInner is None:
-                            print("Account does not exist")
-                            continue
-
-                        salesrepInner = accountInner.salesrep_set.first()
-                        ig_usernameInner = salesrepInner.ig_username
-
-                        if not ig_usernameInner in account_list:
-                            continue
-                        # check if ig_name is correcnt
-                        # Send task here
-                        try:
-                            send_first_compliment(usernameInner, False)
-                            break
-                        except Exception as error:
-                            sleep_duration = random.uniform(3 * 60, 5 * 60)  # Convert minutes to seconds
-                            print(f"Sleeping for: {sleep_duration}")
-                            time.sleep(sleep_duration)
-                            continue
-                       
-                    else:
-                        print("No args or invalid args format found for the task.")
+                reschedule_last_enabled()
             # else:
             #     return # failing but repeat = False
 
@@ -126,6 +52,41 @@ def send_first_compliment(username, repeat=True):
     
     else: 
         raise Exception(f"There is something wrong with mqtt: {response}")
+
+def reschedule_last_enabled():
+    task = PeriodicTask.objects.filter(task="instagram.tasks.send_first_compliment", enabled=True).order_by('start_time').last()
+    if task:
+        current_time = datetime.now()
+        task_time = current_time + timedelta(minutes=1)  # Add 1 minute to the current time
+        start_hour = task_time.hour
+        start_minute = task_time.minute
+        process_reschedule_single_task(instagram.tasks.send_first_compliment, task.name, start_hour, start_minute, 1)
+    else:
+        print ('No more enabled tasks found')
+    
+
+@shared_task()
+def send_first_compliment(username, repeat=True):
+    print(username)
+    thread_obj = None
+    account = get_account(username)
+
+    if account is None:
+        print("Account does not exist")
+        return
+
+    # check if sales_rep is logged_in
+    sales_rep_is_logged_in(account)
+
+    # full_name = "there"
+    # print(f'Account: {account}')
+    # try:
+    #     full_name = format_full_name(account.full_name)
+    # except Exception as error:
+    #     print(error)
+    
+
+    outsourced_data = OutSourced.objects.filter(account=account)
 
     # salesrep = account.salesrep_set.first()
     first_message = get_gpt_response(account)
@@ -180,4 +141,6 @@ def send_first_compliment(username, repeat=True):
         # get last account in queue
         # delay 2 minutes
         # send  
+        reschedule_last_enabled()
+
         raise Exception("There is something wrong with mqtt")
