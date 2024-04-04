@@ -6,7 +6,7 @@ import json
 from django.shortcuts import render
 from rest_framework import viewsets
 from .serializers import PeriodicTaskGetSerializer
-from .serializers import PeriodicTaskPostSerializer, TaskBySalesRepSerializer, FirstComplimentViewSet
+from .serializers import PeriodicTaskPostSerializer, TaskBySalesRepSerializer, FirstComplimentSerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
@@ -36,11 +36,11 @@ from .utils import *
 class FirstComplimentViewSet(viewsets.ModelViewSet):
     queryset = PeriodicTask.objects.all()
     def get_serializer_class(self):
-        return FirstComplimentViewSet
+        return FirstComplimentSerializer
     
     @action(detail=False, methods=['post'])
     def send_first_compliment(self, request):
-        serializer = TaskBySalesRepSerializer(data=request.data)
+        serializer = FirstComplimentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
 

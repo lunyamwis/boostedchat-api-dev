@@ -7,7 +7,7 @@ from rest_framework.response import Response
 import logging
 from datetime import time
 import time as timer
-from .serializers import PeriodicTaskPostSerializer, TaskBySalesRepSerializer, FirstComplimentViewSet, PeriodicTaskGetSerializer
+from .serializers import PeriodicTaskPostSerializer, TaskBySalesRepSerializer, FirstComplimentSerializer, PeriodicTaskGetSerializer
 from rest_framework import status
 import json
 

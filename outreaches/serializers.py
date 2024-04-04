@@ -31,7 +31,7 @@ class TaskBySalesRepSerializer(serializers.Serializer):
     order = serializers.ChoiceField(choices=[1,-1])
     number = serializers.IntegerField(default=-1)
     
-class FirstComplimentViewSet(serializers.Serializer):
+class FirstComplimentSerializer(serializers.Serializer):
     task = serializers.ChoiceField(choices=["instagram.tasks.send_first_compliment"])
     user = serializers.CharField(required=True)
     # we will need to modify later to choose the sales_rep as well
