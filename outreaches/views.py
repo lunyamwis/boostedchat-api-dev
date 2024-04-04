@@ -21,7 +21,7 @@ from datetime import time
 import time as timer
 
 from instagram.utils import lead_is_for_salesrep, tasks_by_sales_rep
-# from instagram.tasks import send_first_compliment
+from instagram.tasks import send_first_compliment
 from .utils import *
 
 # # class PeriodicTaskViewSet(viewsets.ModelViewSet):
@@ -46,7 +46,7 @@ class FirstComplimentViewSet(viewsets.ModelViewSet):
 
         task_name = validated_data.get('task', None)
         user = validated_data.get('user', None)
-        # send_first_compliment(user)
+        send_first_compliment(user)
 
         return Response({'message': f'Sent first compliment for: {user}'})
     
