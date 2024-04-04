@@ -16,7 +16,7 @@ from dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from .helpers.format_username import format_full_name
 from outreaches.utils import process_reschedule_single_task ## move
-from .utils import get_account
+from .utils import get_account, tasks_by_sales_rep
 
 
 def sales_rep_is_logged_in(account, repeat = True):
@@ -32,7 +32,8 @@ def sales_rep_is_logged_in(account, repeat = True):
             pass
         else:
             if repeat:
-                reschedule_last_enabled()
+                pass
+                # reschedule_last_enabled() no need. we will not be using the other account
             # else:
             #     return # failing but repeat = False
 
@@ -42,8 +43,10 @@ def sales_rep_is_logged_in(account, repeat = True):
     else: 
         raise Exception(f"There is something wrong with mqtt: {response}")
 
-def reschedule_last_enabled():
-    task = PeriodicTask.objects.filter(task="instagram.tasks.send_first_compliment", enabled=True).order_by('start_time').last()
+def reschedule_last_enabled(salesrep):
+    tasks = tasks_by_sales_rep("instagram.tasks.send_first_compliment", salesrep, "disabled", -1, 1, True)
+    # task = PeriodicTask.objects.filter(task="instagram.tasks.send_first_compliment", enabled=True).order_by('start_time').last()
+    task = tasks[0]
     if task:
         current_time = datetime.datetime.now()
         task_time = current_time + datetime.timedelta(minutes=1)  # Add 1 minute to the current time
@@ -130,6 +133,6 @@ def send_first_compliment(username, repeat=True):
         # get last account in queue
         # delay 2 minutes
         # send  
-        reschedule_last_enabled()
+        reschedule_last_enabled(salesrep.ig_username)
 
         raise Exception("There is something wrong with mqtt")

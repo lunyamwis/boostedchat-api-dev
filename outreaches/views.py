@@ -3,6 +3,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_GET
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 import json
+import ast
 from django.shortcuts import render
 from rest_framework import viewsets
 from .serializers import PeriodicTaskGetSerializer
@@ -99,13 +100,44 @@ class PeriodicTaskViewSet(viewsets.ModelViewSet):
  
     def create(self, request, *args, **kwargs):
         task_name = request.data.get('task', None)  # Get the task name from request data
+        sales_rep = request.data.get('salesrep', 'all')
+        sales_rep_names = []
+
+        if sales_rep == "all":
+            sales_rep_list = get_sales_reps()  # Assuming get_sales_reps() is a function that returns a list of dictionaries
+            sales_rep_names = [rep['ig_username'] for rep in sales_rep_list if 'ig_username' in rep]  # Extract usernames from dictionaries
+        else:
+            sales_rep_names.append(sales_rep)  # Add the single sales rep to the list
+
+        start_hour = request.data.get('startTime', '0')  # Get start_hour from request data # supplied time is in UTC
+        start_minute = request.data.get('startMinute', '0')  # Get start_minute from request data
+        start_hour = int(start_hour)  # Convert start_hour to integer if it's not already
+        start_minute = int(start_minute)  # Convert start_minute to integer if it's not already
+
+        # start_time = time(hour=start_hour, minute=start_minute)
+        start_time = datetime.now().replace(hour=start_hour, minute=start_minute, second=0, microsecond=0)
+
+        tasks_per_day = int(request.data.get('numperDay', 24))  # Get tasks_per_day from request data
+
+        # for now we can make do with the hardcoded interval
+        hours_per_day = 12 # int(request.data.get('numperDay', 12))  # Get hours_per_day from request data
+        daily_start_time = 14
+        daily_end_time = daily_start_time + hours_per_day
+        if daily_end_time >=24 :
+            daily_end_time -= 24
+
         if task_name:
-            queryset = PeriodicTask.objects.filter(task=task_name).order_by('-id')
-            filtered_queryset = [] 
-            if queryset.exists():
-                for task in queryset:
-                    args_json = task.args
-                    args_list = json.loads(args_json)
+            for sales_rep_name in sales_rep_names:
+                sales_rep_tasks = tasks_by_sales_rep("instagram.tasks.send_first_compliment", sales_rep_name)
+                # print(sales_rep_tasks)
+                # Process sales_rep_tasks here, e.g., schedule the tasks
+            # queryset = PeriodicTask.objects.filter(task=task_name).order_by('-id')
+                filtered_queryset = [] 
+            # if queryset.exists():
+                # print(sales_rep_tasks.data)
+                for task in sales_rep_tasks.data['tasks']:
+                    args_string = task['task']['args']
+                    args_list = ast.literal_eval(args_string)
                     if args_list and len(args_list) > 0:
                         usernameInner = args_list[0]
                         if isinstance(usernameInner, list):
@@ -115,42 +147,24 @@ class PeriodicTaskViewSet(viewsets.ModelViewSet):
                             filtered_queryset.append(task)
                         else:
                             print(f'Thread exist for {usernameInner}')
-            queryset = filtered_queryset
-            queryset = PeriodicTask.objects.filter(id__in=[task.id for task in filtered_queryset])
+                queryset = filtered_queryset
+                queryset = PeriodicTask.objects.filter(id__in=[task['task']['id'] for task in filtered_queryset])            
 
-            # serializer = self.get_serializer(queryset, many=True)
-            start_hour = request.data.get('startTime', '0')  # Get start_hour from request data # supplied time is in UTC
-            start_minute = request.data.get('startMinute', '0')  # Get start_minute from request data
-            start_hour = int(start_hour)  # Convert start_hour to integer if it's not already
-            start_minute = int(start_minute)  # Convert start_minute to integer if it's not already
-
-            # start_time = time(hour=start_hour, minute=start_minute)
-            start_time = datetime.now().replace(hour=start_hour, minute=start_minute, second=0, microsecond=0)
-
-            tasks_per_day = int(request.data.get('numperDay', 48))  # Get tasks_per_day from request data
-
-            # for now we can make do with the hardcoded interval
-            hours_per_day = 12 # int(request.data.get('numperDay', 12))  # Get hours_per_day from request data
-            daily_start_time = 14
-            daily_end_time = daily_start_time + hours_per_day
-            if daily_end_time >=24 :
-                daily_end_time -= 24
-
-            tasks = scheduler_tasks(queryset, start_time, hours_per_day, tasks_per_day, daily_start_time, daily_end_time)
-            for task in tasks:
-                task.save()  # Save the task object to the database
-                try:
-                    PeriodicTask.objects.update_or_create(
-                    # PeriodicTask.objects.create(
-                        enabled=True,
-                        name=task.name,
-                        crontab=task.crontab,
-                        task=task_name,  # Assuming you have a 'task_name' variable 
-                        args=task.args      # Assuming your task has arguments
-                    )
-                except Exception as error:
-                    logging.warning(error)  # Log any errors that might occur
-            queryset = PeriodicTask.objects.filter(task=task_name).order_by('id')
+                tasks = scheduler_tasks(queryset, start_time, hours_per_day, tasks_per_day, daily_start_time, daily_end_time)
+                for task in tasks:
+                    task.save()  # Save the task object to the database
+                    try:
+                        PeriodicTask.objects.update_or_create(
+                        # PeriodicTask.objects.create(
+                            enabled=True,
+                            name=task.name,
+                            crontab=task.crontab,
+                            task=task_name,  # Assuming you have a 'task_name' variable 
+                            args=task.args      # Assuming your task has arguments
+                        )
+                    except Exception as error:
+                        logging.warning(error)  # Log any errors that might occur
+                queryset = PeriodicTask.objects.filter(task=task_name).order_by('id')
             serializer = PeriodicTaskGetSerializer(queryset, many=True)
             return Response(serializer.data)
             # return Response({'task': 'Task name not provided'})
@@ -287,13 +301,14 @@ class PeriodicTaskViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def reschedule_single_task(self, request):
+        
         task_name = request.data.get('task', None)  # Get the task name from request data
         username = request.data.get('user', None) 
         start_hour = request.data.get('startTime', '0')  # Get start_hour from request data # supplied time is in UTC
         start_minute = request.data.get('startMinute', '0')  # Get start_minute from request data
-        tasks_per_day = int(request.data.get('numperDay', 48))  # Get tasks_per_day from request data
+        tasks_per_day = int(request.data.get('numperDay', 24))  # Get tasks_per_day from request data
         if task_name  and username:
-           return process_reschedule_single_task(task_name, username, start_hour, start_minute, tasks_per_day)
+            return process_reschedule_single_task(task_name, username, start_hour, start_minute, tasks_per_day)
         else:
             return Response({'error': 'Task name and username are required'}, 
                             status=status.HTTP_400_BAD_REQUEST)

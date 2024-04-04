@@ -34,7 +34,7 @@ def lead_is_for_salesrep(username, salesrep_to_check):
     return ret
 
 
-def tasks_by_sales_rep(task_name, sales_rep, task_status="any", order=1, number=-1):
+def tasks_by_sales_rep(task_name, sales_rep, task_status="any", order=1, number=-1, ret_tasks = False):
     tasks = PeriodicTask.objects.filter(task=task_name).order_by('start_time')
 
     if task_status == "enabled":
@@ -48,6 +48,8 @@ def tasks_by_sales_rep(task_name, sales_rep, task_status="any", order=1, number=
     populated_tasks = []
     count = 0
 
+    task_objs = []
+
     for task in tasks:
         lead_user_name = task.name.replace("SendFirstCompliment-", "")
         if lead_is_for_salesrep(lead_user_name, sales_rep):
@@ -60,7 +62,12 @@ def tasks_by_sales_rep(task_name, sales_rep, task_status="any", order=1, number=
                 'sales_rep': sales_rep,
             }
             populated_tasks.append(populated_task)
+            task_objs.append(task)
             count += 1
             if number != -1 and count == number:
                 break
+    if ret_tasks:
+        return task_objs
     return Response({'tasks': populated_tasks}, status=status.HTTP_200_OK)
+
+

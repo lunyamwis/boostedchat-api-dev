@@ -10,6 +10,9 @@ import time as timer
 from .serializers import PeriodicTaskPostSerializer, TaskBySalesRepSerializer, FirstComplimentSerializer, PeriodicTaskGetSerializer
 from rest_framework import status
 import json
+from sales_rep.models import SalesRep
+from authentication.models import User
+
 
 def time_parts(time):
     return time.year, time.month, time.day, time.hour, time.minute
@@ -158,7 +161,7 @@ def process_task(task_name, username, enable=True):
             return Response({'error': f'Task: {task_name} not found for {username}'}, 
                             status=status.HTTP_404_NOT_FOUND)
 
-def process_reschedule_single_task(task_name, username, start_hour, start_minute, tasks_per_day=48):
+def process_reschedule_single_task(task_name, username, start_hour, start_minute, tasks_per_day=24):
     queryset = PeriodicTask.objects.filter(task=task_name, name=username).order_by('-id')
     filtered_queryset = [] 
     if queryset.exists():
@@ -208,6 +211,18 @@ def process_reschedule_single_task(task_name, username, start_hour, start_minute
     queryset = PeriodicTask.objects.filter(task=task_name, name=username).order_by('id')
     serializer = PeriodicTaskGetSerializer(queryset, many=True)
     return Response(serializer.data)
+
+
+def get_sales_reps():
+    reps = SalesRep.objects.filter(available=True)
+    user_info = []
+    for rep in reps:
+        if User.objects.filter(id=rep.user.id).exists():
+            info = {"user": User.objects.filter(id=rep.user.id).values(), "instagram": rep.instagram.values(),
+                    "ig_username": rep.ig_username, "ig_password": rep.ig_password, "country": rep.country, "city": rep.city}
+            user_info.append(info)
+
+    return user_info
 
 def ig_thread_exists(username):
     try:
