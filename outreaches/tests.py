@@ -1,6 +1,6 @@
 from django.test import TestCase
 from datetime import datetime, timedelta
-from .views import time_parts, add_minutes_to_time, get_task_interval_minutes, randomize_interval, get_first_time, get_next_time, not_in_interval, scheduler_tasks, put_within_working_hour, chron_parts
+from .utils import time_parts, add_minutes_to_time, get_task_interval_minutes, randomize_interval, get_first_time, get_next_time, not_in_interval, scheduler_tasks, put_within_working_hour, chron_parts
 from unittest.mock import patch
 import unittest
 
@@ -182,7 +182,7 @@ class TimeFunctionsTestCase(TestCase):
         end_time = 5  # End hour
         self.assertTrue(not_in_interval(current_time, start_time, end_time))
     
-    @patch('outreaches.views.randomize_interval')
+    @patch('outreaches.utils.randomize_interval')
     def test_positive_interval(self, mock_randomize_interval):
         current_time = datetime(2023, 12, 28, 14, 30)
         mock_randomize_interval.return_value = 20  # Control the random output
@@ -192,7 +192,7 @@ class TimeFunctionsTestCase(TestCase):
         expected_result = current_time + timedelta(minutes=20)
         self.assertEqual(result, expected_result)
 
-    @patch('outreaches.views.randomize_interval')
+    @patch('outreaches.utils.randomize_interval')
     def test_interval_boundaries(self, mock_randomize_interval):
         current_time = datetime(2023, 12, 28, 14, 30)
         mock_randomize_interval.return_value = 0  # Minimum random value
