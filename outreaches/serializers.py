@@ -23,3 +23,15 @@ class PeriodicTaskPostSerializer(serializers.Serializer):
 
 class SingleTask(serializers.Serializer):
      task = serializers.CharField(default="instagram.tasks.send_first_compliment")
+
+class TaskBySalesRepSerializer(serializers.Serializer):
+    task = serializers.ChoiceField(choices=["instagram.tasks.send_first_compliment"])
+    sales_rep = serializers.CharField(required=True)
+    status = serializers.ChoiceField(choices=["any", "enabled", "disabled"], default="any")
+    order = serializers.ChoiceField(choices=[1,-1])
+    number = serializers.IntegerField(default=-1)
+    
+class FirstComplimentSerializer(serializers.Serializer):
+    task = serializers.ChoiceField(choices=["instagram.tasks.send_first_compliment"])
+    user = serializers.CharField(required=True)
+    # we will need to modify later to choose the sales_rep as well
