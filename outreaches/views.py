@@ -6,22 +6,23 @@ import json
 from django.shortcuts import render
 from rest_framework import viewsets
 from .serializers import PeriodicTaskGetSerializer
-from .serializers import PeriodicTaskPostSerializer
+from .serializers import PeriodicTaskPostSerializer, TaskBySalesRepSerializer, FirstComplimentViewSet
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework import status
-from django.utils import timezone
+
 from celery import current_app
 import logging
 # from django.db.models import QuerySet
-from instagram.models import Thread, Account
 import random
 from datetime import time
 import time as timer
 
-
+from instagram.utils import lead_is_for_salesrep, tasks_by_sales_rep
+# from instagram.tasks import send_first_compliment
+from .utils import *
 
 # # class PeriodicTaskViewSet(viewsets.ModelViewSet):
 # #     queryset = PeriodicTask.objects.all()
@@ -32,6 +33,42 @@ import time as timer
 #         return None #QuerySet.none(self)  # Ret
 
 
+class FirstComplimentViewSet(viewsets.ModelViewSet):
+    queryset = PeriodicTask.objects.all()
+    def get_serializer_class(self):
+        return FirstComplimentViewSet
+    
+    @action(detail=False, methods=['post'])
+    def send_first_compliment(self, request):
+        serializer = TaskBySalesRepSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        task_name = validated_data.get('task', None)
+        user = validated_data.get('user', None)
+        # send_first_compliment(user)
+
+        return Response({'message': f'Sent first compliment for: {user}'})
+    
+class AbusoViewSet(viewsets.ModelViewSet):
+    queryset = PeriodicTask.objects.all()
+    # serializer_class = PeriodicTaskGetSerializer
+    def get_serializer_class(self):
+        return TaskBySalesRepSerializer
+    
+    @action(detail=False, methods=['post'])
+    def tasks_by_sales_rep(self, request, task_name=None, sales_rep=None):
+        serializer = TaskBySalesRepSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+
+        task_name = validated_data.get('task', None)
+        sales_rep = validated_data.get('sales_rep', None)
+        status = validated_data.get('status', "any")
+        order = validated_data.get('order', 1)
+        number = validated_data.get('number', -1)
+        return tasks_by_sales_rep(task_name, sales_rep, status, order, number)
+    
 class PeriodicTaskViewSet(viewsets.ModelViewSet):
     queryset = PeriodicTask.objects.all()
     # serializer_class = PeriodicTaskGetSerializer
@@ -199,6 +236,23 @@ class PeriodicTaskViewSet(viewsets.ModelViewSet):
         task_name = "instagram.tasks.send_first_compliment"
         self.enableOrDisableAll(task_name, True)
         return Response({'message': 'Disabled all tasks'})
+    
+    
+    # @action(detail=False, methods=['get'], url_path='by-sales-rep/(?P<task_name>[^/.]+)/(?P<sales_rep>[^/.]+)')
+    # def tasks_by_sales_rep(self, request, task_name=None, sales_rep=None):
+        
+    # @action(detail=False, methods=['post'])
+    # def tasks_by_sales_rep(self, request, task_name=None, sales_rep=None):
+    #     serializer = TaskBySalesRepSerializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     validated_data = serializer.validated_data
+
+    #     task_name = validated_data.get('task', None)
+    #     sales_rep = validated_data.get('sales_rep', None)
+    #     status = validated_data.get('status', "any")
+    #     order = validated_data.get('order', 1)
+    #     number = validated_data.get('number', -1)
+    #     return tasks_by_sales_rep(task_name, sales_rep, status, order, number)
 
     @action(detail=False, methods=['post'])
     def reschedule_last_disabled_task(self, request):
@@ -244,223 +298,3 @@ class PeriodicTaskViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Task name and username are required'}, 
                             status=status.HTTP_400_BAD_REQUEST)
     
-from datetime import datetime, timedelta
-
-def time_parts(time):
-    return time.year, time.month, time.day, time.hour, time.minute
-
-def add_minutes_to_time(input_time, minutes): # interval is in minutes
-    if isinstance(input_time, datetime):
-        try:
-            # Create a timedelta object with the specified number of minutes
-            time_delta = timedelta(minutes=minutes)
-            # Add the timedelta to the input time
-            new_time = input_time + time_delta
-            return new_time  # Return the new time as a datetime object
-        except ValueError:
-            print("wrong minutes")
-            return None  # Handle invalid time format
-    else:
-        print("is not date time")
-        return None  # Handle non-datetime input
-
-def get_task_interval_minutes(hours_per_day, tasks_per_day):
-    if tasks_per_day < 0 or hours_per_day < 0:
-        raise ValueError("Hours per day and tasks per day must be non-negative.")
-    if tasks_per_day == 0 or hours_per_day == 0:
-        return 0
-    return (hours_per_day * 60) // tasks_per_day  # use integer division
-
-def randomize_interval(interval_minutes, seed_minutes, direction):
-    if interval_minutes < 0 or seed_minutes < 0:
-        raise ValueError("interval_minutes and seed_minutes must be non-negative")
-    interval_head = int(0.25 * interval_minutes)  # Convert interval_head to an integer
-
-    if direction == 0:
-        # Random integer between -interval_head and +interval_head
-        random_value = random.randint(-interval_head, interval_head)
-    elif direction == -1:
-        # Random integer between -interval_head and 0
-        random_value = random.randint(-interval_head, 0)
-    elif direction == 1:
-        # Random integer between 0 and +interval_head
-        random_value = random.randint(0, interval_head)
-    else:
-        raise ValueError("Invalid direction. Direction should be -1, 0, or 1.")
-
-    return random_value + seed_minutes  # Add the random value to the seed_minutes
-
-def get_first_time(start_time, interval_minutes):
-    interval_minutes = randomize_interval(interval_minutes, 0, 1)
-    print(f'=>{start_time}')
-    print(f'=========>{interval_minutes}')
-    return add_minutes_to_time(start_time, interval_minutes)
-
-def get_next_time(current_time, interval_minutes):
-    interval_minutes = randomize_interval(interval_minutes, interval_minutes, 0)
-    return add_minutes_to_time(current_time, interval_minutes)
-
-def not_in_interval(current_task_time, daily_start_time, daily_end_time):
-    start_hour = daily_start_time
-    stop_hour = daily_end_time
-    current_hour = current_task_time.hour  # Get the hour from current_task_time
-    
-    if stop_hour == start_hour:
-        return False  # always in work interval
-    if stop_hour < start_hour:
-        if current_hour >= start_hour or current_hour < stop_hour:
-            return False  # in work interval
-        return True 
-    if current_hour >= start_hour and current_hour < stop_hour:
-        return False  # in work interval
-    return True
-
-# run = 0
-def put_within_working_hour(current_task_time, start_hour, stop_hour ):
-    # global run 
-    stop_hour_init = stop_hour
-    if not_in_interval(current_task_time, start_hour, stop_hour):
-        working_interval = stop_hour - start_hour
-        if stop_hour < start_hour:
-            working_interval += 24
-        not_working_interval = 24 - working_interval
-        current_task_time = add_minutes_to_time(current_task_time, not_working_interval * 60)
-        if not_in_interval(current_task_time, start_hour, stop_hour):
-            # print(f'300==> {current_task_time}...{start_hour}, {stop_hour}')
-            # run += 1
-            # if run == 10:
-            #     raise Exception(f"func error ")
-            current_task_time = put_within_working_hour(current_task_time, start_hour, stop_hour_init )
-        else:
-            run = 0
-    return current_task_time
-
-def chron_parts(chron):
-    current_year = datetime.now().year
-    return current_year, chron.month_of_year, chron.day_of_month, chron.hour, chron.minute
-    
-def scheduler_tasks(tasks, start_time, hours_per_day, tasks_per_day, daily_start_time, daily_end_time): 
-    interval_minutes = get_task_interval_minutes(hours_per_day, tasks_per_day)
-    print(start_time, interval_minutes)
-    current_task_time = get_first_time(start_time, interval_minutes)
-    print(current_task_time, interval_minutes)
-    current_task_time = put_within_working_hour(current_task_time, daily_start_time, daily_end_time )
-    print(current_task_time)
-
-    for task in tasks:
-        year, month, day, hour, minute = time_parts(current_task_time)
-        scheduler_datetime = timezone.datetime(year=year, month=month, day=day, hour=hour, minute=minute)
-        crontab_schedule = CrontabSchedule.objects.create(
-                    minute=scheduler_datetime.minute,
-                    hour=scheduler_datetime.hour,
-                    day_of_month=scheduler_datetime.day,
-                    month_of_year=scheduler_datetime.month,
-                    timezone='UTC'  # Set the timezone explicitly
-                )
-        task.enabled = True
-        task.start_time = scheduler_datetime  
-        task.crontab = crontab_schedule
-        # task.save()
-        # try:
-        #     PeriodicTask.objects.update_or_create(
-        #         name=task.name,
-        #         crontab=task.crontab,
-        #         task=task_name,
-        #         args=task.args
-        #     )
-        
-        # except Exception as error:
-        #     logging.warning(error)
-
-        current_task_time = get_next_time(current_task_time, interval_minutes)
-        current_task_time = put_within_working_hour(current_task_time, daily_start_time, daily_end_time )
-
-    return tasks # save where this is called from
-
-def process_task(task_name, username, enable=True):
-        queryset = PeriodicTask.objects.filter(task=task_name, name=username)
-
-        if queryset.exists():
-            for task in queryset:
-                if task.enabled == enable:  # Check if already in the desired state
-                    return Response({'error': f'Task is already {"enabled" if enable else "disabled"}'}, 
-                                    status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-
-                task.enabled = enable
-                task.save()
-                return Response({'message': f'Task {"enabled" if enable else "disabled"}'})
-        else:
-            return Response({'error': f'Task: {task_name} not found for {username}'}, 
-                            status=status.HTTP_404_NOT_FOUND)
-
-def process_reschedule_single_task(task_name, username, start_hour, start_minute, tasks_per_day=48):
-    queryset = PeriodicTask.objects.filter(task=task_name, name=username).order_by('-id')
-    filtered_queryset = [] 
-    if queryset.exists():
-        for task in queryset:
-            args_json = task.args
-            args_list = json.loads(args_json)
-            if args_list and len(args_list) > 0:
-                usernameInner = args_list[0]
-                if isinstance(usernameInner, list):
-                    usernameInner = usernameInner[0]
-                thread_exists = ig_thread_exists(usernameInner)
-                if not thread_exists:  # Get salesrep_username from task 
-                    filtered_queryset.append(task)
-                else:
-                    print(f'Thread exist for {usernameInner}')
-    queryset = filtered_queryset
-    queryset = PeriodicTask.objects.filter(id__in=[task.id for task in filtered_queryset])
-
-    # serializer = self.get_serializer(queryset, many=True)
-    start_hour = int(start_hour)  # Convert start_hour to integer if it's not already
-    start_minute = int(start_minute)  # Convert start_minute to integer if it's not already
-
-    # start_time = time(hour=start_hour, minute=start_minute)
-    start_time = datetime.now().replace(hour=start_hour, minute=start_minute, second=0, microsecond=0)
-
-    # for now we can make do with the hardcoded interval
-    hours_per_day = 12 # int(request.data.get('numperDay', 12))  # Get hours_per_day from request data
-    daily_start_time = 14
-    daily_end_time = daily_start_time + hours_per_day
-    if daily_end_time >=24 :
-        daily_end_time -= 24
-
-    tasks = scheduler_tasks(queryset, start_time, hours_per_day, tasks_per_day, daily_start_time, daily_end_time)
-    for task in tasks:
-        task.save()  # Save the task object to the database
-        try:
-            PeriodicTask.objects.update_or_create(
-            # PeriodicTask.objects.create(
-                enabled=True,
-                name=task.name,
-                crontab=task.crontab,
-                task=task_name,  # Assuming you have a 'task_name' variable 
-                args=task.args      # Assuming your task has arguments
-            )
-        except Exception as error:
-            logging.warning(error)  # Log any errors that might occur
-    queryset = PeriodicTask.objects.filter(task=task_name, name=username).order_by('id')
-    serializer = PeriodicTaskGetSerializer(queryset, many=True)
-    return Response(serializer.data)
-
-def ig_thread_exists(username):
-    try:
-        first_account = Account.objects.filter(igname="".join(username)).first()
-        last_account = Account.objects.filter(igname="".join(username)).last()
-        if first_account.salesrep_set.filter().exists():
-            account = first_account
-        elif last_account.salesrep_set.filter().exists():
-            account = last_account
-    except Exception as error:
-        print(error)
-        return True # assume true
-    salesrep = account.salesrep_set.first()
-    ig_username = salesrep.ig_username
-    print(f'Checking....{username}=>{ig_username}')
-    if  Thread.objects.filter(account__igname=username, account__salesrep__ig_username=ig_username): # try this one tomorrow
-    # if  Thread.objects.filter(account__igname=username):
-        print(f"exist for /|\\")
-        return True
-    else:
-        return False

@@ -15,20 +15,9 @@ from sales_rep.models import SalesRep
 from dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from .helpers.format_username import format_full_name
-from outreaches.views import process_reschedule_single_task
+from outreaches.utils import process_reschedule_single_task ## move
+from .utils import get_account
 
-def get_account(username):
-    account = None
-    try:
-        first_account = Account.objects.filter(igname="".join(username)).first()
-        last_account = Account.objects.filter(igname="".join(username)).last()
-        if first_account.salesrep_set.filter().exists():
-            account = first_account
-        elif last_account.salesrep_set.filter().exists():
-            account = last_account
-    except Exception as error:
-        print(error)
-    return account
 
 def sales_rep_is_logged_in(account, repeat = True):
     salesrep = account.salesrep_set.first()
