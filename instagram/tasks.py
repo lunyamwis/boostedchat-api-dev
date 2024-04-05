@@ -44,7 +44,7 @@ def sales_rep_is_logged_in(account, repeat = True):
         raise Exception(f"There is something wrong with mqtt: {response}")
 
 def reschedule_last_enabled(salesrep):
-    tasks = tasks_by_sales_rep("instagram.tasks.send_first_compliment", salesrep, "disabled", -1, 1, True)
+    tasks = tasks_by_sales_rep("instagram.tasks.send_first_compliment", salesrep, "enabled", -1, 1, True)
     # task = PeriodicTask.objects.filter(task="instagram.tasks.send_first_compliment", enabled=True).order_by('start_time').last()
     task = tasks[0]
     if task:
