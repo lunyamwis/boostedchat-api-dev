@@ -45,6 +45,7 @@ class RescheduleBySalesRepSerializer(serializers.Serializer):
     start_hour = serializers.IntegerField(default=0)  # Assuming start_hour is an integer field
     start_minute = serializers.IntegerField(default=0)  # Assuming start_minute is an integer field
     tasks_per_day = serializers.IntegerField(default=24)  # Assuming tasks_per_day is an integer field
+    num_tasks = serializers.IntegerField(default=-1)  # Assuming tasks_per_day is an integer field
 
     def validate(self, data):
         """
@@ -70,6 +71,7 @@ class RescheduleAllSerializer(serializers.Serializer):
     start_hour = serializers.IntegerField(default=0)  # Assuming start_hour is an integer field
     start_minute = serializers.IntegerField(default=0)  # Assuming start_minute is an integer field
     tasks_per_day = serializers.IntegerField(default=24)  # Assuming tasks_per_day is an integer field
+    num_tasks = serializers.IntegerField(default=-1)  # Assuming tasks_per_day is an integer field
 
     def validate(self, data):
         """

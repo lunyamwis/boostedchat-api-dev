@@ -134,6 +134,7 @@ class TasksViewSet(viewsets.ModelViewSet):
             start_hour = validated_data['start_hour']
             start_minute = validated_data['start_minute']
             tasks_per_day = validated_data['tasks_per_day']
+            num_tasks = validated_data['num_tasks']
 
             # sales_rep_names = []
             # sales_rep_names.append(sales_rep)
@@ -143,6 +144,8 @@ class TasksViewSet(viewsets.ModelViewSet):
             start_minute = int(start_minute)  
 
             start_time = datetime.now().replace(hour=start_hour, minute=start_minute, second=0, microsecond=0)
+
+            count = 1
 
             
 
@@ -156,18 +159,22 @@ class TasksViewSet(viewsets.ModelViewSet):
             # for sales_rep_name in sales_rep_names:
             sales_rep_tasks = tasks_by_sales_rep("instagram.tasks.send_first_compliment", sales_rep)
             filtered_queryset = [] 
-            for task in sales_rep_tasks.data['tasks']:
-                args_string = task['task']['args']
-                args_list = ast.literal_eval(args_string)
-                if args_list and len(args_list) > 0:
-                    usernameInner = args_list[0]
-                    if isinstance(usernameInner, list):
-                        usernameInner = usernameInner[0]
-                    thread_exists = ig_thread_exists(usernameInner)
-                    if not thread_exists:  # Get salesrep_username from task 
-                        filtered_queryset.append(task)
-                    else:
-                        print(f'Thread exist for {usernameInner}')
+            if num_tasks != 0:
+                for task in sales_rep_tasks.data['tasks']:
+                    args_string = task['task']['args']
+                    args_list = ast.literal_eval(args_string)
+                    if args_list and len(args_list) > 0:
+                        usernameInner = args_list[0]
+                        if isinstance(usernameInner, list):
+                            usernameInner = usernameInner[0]
+                        thread_exists = ig_thread_exists(usernameInner)
+                        if not thread_exists:  # Get salesrep_username from task 
+                            filtered_queryset.append(task)
+                            if num_tasks > 0 and count == num_tasks:
+                                break 
+                            count += 1
+                        else:
+                            print(f'Thread exist for {usernameInner}')
             queryset = filtered_queryset
             queryset = PeriodicTask.objects.filter(id__in=[task['task']['id'] for task in filtered_queryset])            
 
@@ -204,7 +211,7 @@ class TasksViewSet(viewsets.ModelViewSet):
             start_hour = validated_data['start_hour']
             start_minute = validated_data['start_minute']
             tasks_per_day = validated_data['tasks_per_day']
-
+            num_tasks = validated_data['num_tasks']
             # sales_rep_names = []
             # sales_rep_names.append(sales_rep)
 
@@ -214,7 +221,7 @@ class TasksViewSet(viewsets.ModelViewSet):
 
             start_time = datetime.now().replace(hour=start_hour, minute=start_minute, second=0, microsecond=0)
 
-            
+            count = 1
 
             # for now we can make do with the hardcoded interval
             hours_per_day = 12 # int(request.data.get('numperDay', 12))  # Get hours_per_day from request data
@@ -233,18 +240,22 @@ class TasksViewSet(viewsets.ModelViewSet):
                 print(sales_rep_name)
                 sales_rep_tasks = tasks_by_sales_rep("instagram.tasks.send_first_compliment", sales_rep_name)
                 filtered_queryset = [] 
-                for task in sales_rep_tasks.data['tasks']:
-                    args_string = task['task']['args']
-                    args_list = ast.literal_eval(args_string)
-                    if args_list and len(args_list) > 0:
-                        usernameInner = args_list[0]
-                        if isinstance(usernameInner, list):
-                            usernameInner = usernameInner[0]
-                        thread_exists = ig_thread_exists(usernameInner)
-                        if not thread_exists:  # Get salesrep_username from task 
-                            filtered_queryset.append(task)
-                        else:
-                            print(f'Thread exist for {usernameInner}')
+                if num_tasks != 0:
+                    for task in sales_rep_tasks.data['tasks']:
+                        args_string = task['task']['args']
+                        args_list = ast.literal_eval(args_string)
+                        if args_list and len(args_list) > 0:
+                            usernameInner = args_list[0]
+                            if isinstance(usernameInner, list):
+                                usernameInner = usernameInner[0]
+                            thread_exists = ig_thread_exists(usernameInner)
+                            if not thread_exists:  # Get salesrep_username from task 
+                                filtered_queryset.append(task)
+                                if num_tasks > 0 and count == num_tasks:
+                                    break 
+                                count += 1
+                            else:
+                                print(f'Thread exist for {usernameInner}')
                 queryset = filtered_queryset
                 queryset = PeriodicTask.objects.filter(id__in=[task['task']['id'] for task in filtered_queryset])            
 
@@ -444,4 +455,3 @@ class PeriodicTaskViewSet(viewsets.ModelViewSet):
         task_types = self.queryset.values_list('task', flat=True).distinct()
         return Response(task_types)
 
-    
