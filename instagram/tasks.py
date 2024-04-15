@@ -134,7 +134,8 @@ def send_first_compliment(username, repeat=True):
         # get last account in queue
         # delay 2 minutes
         # send  
-        ExceptionHandler(401).take_action(data={"igname": salesrep.ig_username})
+        if response.status_code == 401:
+            ExceptionHandler(response.status_code).take_action(data={"igname": salesrep.ig_username})
 
 
         reschedule_last_enabled(salesrep.ig_username)
