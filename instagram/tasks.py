@@ -17,6 +17,7 @@ from dialogflow.helpers.get_prompt_responses import get_gpt_response
 from .helpers.format_username import format_full_name
 from outreaches.utils import process_reschedule_single_task ## move
 from .utils import get_account, tasks_by_sales_rep
+from exceptions.handler import ExceptionHandler
 
 
 def sales_rep_is_logged_in(account, repeat = True):
@@ -133,6 +134,9 @@ def send_first_compliment(username, repeat=True):
         # get last account in queue
         # delay 2 minutes
         # send  
+        ExceptionHandler(401).take_action(data={"igname": salesrep.ig_username})
+
+
         reschedule_last_enabled(salesrep.ig_username)
 
         raise Exception("There is something wrong with mqtt")
