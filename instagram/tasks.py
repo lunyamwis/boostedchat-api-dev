@@ -36,8 +36,9 @@ def print_logs():
         print("\n")
 
 def sales_rep_is_logged_in(account, salesrep):
+    igname =  account_has_sales_rep(account)
     data = {
-        "igname": account_has_sales_rep(account)
+        "igname": igname
     }
     json_data = json.dumps(data)
     response = requests.post(settings.MQTT_BASE_URL + "/accounts/isloggedin", data=json_data, headers={"Content-Type": "application/json"})
