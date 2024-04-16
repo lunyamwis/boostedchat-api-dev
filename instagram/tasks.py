@@ -82,7 +82,7 @@ def reschedule_last_enabled(salesrep):
     else:
         print ('No more enabled tasks found')
     
-def outreachErrorLogger(account, sales_rep, error_message, err_code, log_level, error_type, repeat):
+def outreachErrorLogger(account, sales_rep, error_message, err_code, log_level, error_type, repeat = False):
     #save
     error_log_instance =  OutreachErrorLog()
     error_log_instance.save_log(err_code, error_message, error_type, log_level, account, sales_rep)
