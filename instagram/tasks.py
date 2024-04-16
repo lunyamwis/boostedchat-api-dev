@@ -111,7 +111,7 @@ def handleMqTTErrors(account, sales_rep, status_code, status_message, numTries, 
 
     log_level = "WARNING" # default
     if status_code in auth_codes and numTries == 1: # first trial of login, enable repeat
-        if logout_and_login(account, salesrep):
+        if logout_and_login(account, sales_rep):
             repeatLocal = True
     if status_code in auth_codes and numTries > 1:
         log_level = "ERROR"
