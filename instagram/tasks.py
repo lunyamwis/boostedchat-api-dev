@@ -40,7 +40,7 @@ def sales_rep_is_logged_in(account, salesrep):
         "igname": account_has_sales_rep(account)
     }
     json_data = json.dumps(data)
-    response = requests.post(settings.MQTT_BASE_URL + "/accounts/isloggedine", data=json_data, headers={"Content-Type": "application/json"})
+    response = requests.post(settings.MQTT_BASE_URL + "/accounts/isloggedin", data=json_data, headers={"Content-Type": "application/json"})
     if response.status_code == 200:
         account_list = None
         try:
