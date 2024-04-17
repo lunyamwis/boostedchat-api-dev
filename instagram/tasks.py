@@ -17,6 +17,7 @@ from dialogflow.helpers.get_prompt_responses import get_gpt_response
 from .helpers.format_username import format_full_name
 from outreaches.utils import process_reschedule_single_task, ig_thread_exists ## move
 from .utils import get_account, tasks_by_sales_rep
+from exceptions.handler import ExceptionHandler
 from outreaches.models import OutreachErrorLog
 
 false = False
@@ -286,20 +287,15 @@ def send_first_compliment(username, repeat=True):
                 print(error)
                 print("message not saved")
 
-        else:
-            # get last account in queue
-            # delay 2 minutes
-            # send  
-            ## send to different handler. Reschedule most, don't reschedule for log in issue the first time
-            # reschedule_last_enabled(salesrep.ig_username)
-            # print response code and message
-            print(f"Request failed with status code: {response.status_code}")
-            print(f"Response message: {response.text}")
-            # sav
-            repeatLocal = handleMqTTErrors(account, salesrep, response.status_code, response.text, numTries, repeat)
-            if repeatLocal and numTries <= 1:
-                send(numTries)
-                # pass
+    else:
+        # get last account in queue
+        # delay 2 minutes
+        # send  
+        if response.status_code == 401:
+            ExceptionHandler(response.status_code).take_action(data={"igname": salesrep.ig_username})
+
+
+        reschedule_last_enabled(salesrep.ig_username)
     send()
 
         # raise Exception("There is something wrong with mqtt")
