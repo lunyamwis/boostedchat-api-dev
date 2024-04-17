@@ -1166,6 +1166,16 @@ class DMViewset(viewsets.ModelViewSet):
         thread.save()
         return Response({"message": "OK"}, status=status.HTTP_204_NO_CONTENT)
 
+    @action(detail=True, methods=["get"], url_path="has-client-responded")
+    def has_client_responded(self, request, pk=None):
+        thread = self.get_object()
+        client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
+        
+        if client_messages.exists():
+            return Response({"has_responded":True}, status=status.HTTP_200_OK)
+        else:
+            return Response({"has_responded":False}, status=status.HTTP_200_OK)
+        
 
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()

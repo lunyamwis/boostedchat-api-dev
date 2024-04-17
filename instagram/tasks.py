@@ -287,15 +287,15 @@ def send_first_compliment(username, repeat=True):
                 print(error)
                 print("message not saved")
 
-    else:
-        # get last account in queue
-        # delay 2 minutes
-        # send  
-        if response.status_code == 401:
-            ExceptionHandler(response.status_code).take_action(data={"igname": salesrep.ig_username})
+        else:
+            # get last account in queue
+            # delay 2 minutes
+            # send  
+            if response.status_code == 401:
+                ExceptionHandler(response.status_code).take_action(data={"igname": salesrep.ig_username})
 
 
-        reschedule_last_enabled(salesrep.ig_username)
+            reschedule_last_enabled(salesrep.ig_username)
     send()
 
         # raise Exception("There is something wrong with mqtt")
