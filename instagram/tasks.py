@@ -18,9 +18,11 @@ from .helpers.format_username import format_full_name
 from outreaches.utils import process_reschedule_single_task, ig_thread_exists ## move
 from .utils import get_account, tasks_by_sales_rep
 from exceptions.handler import ExceptionHandler
+from exceptions.models import ExceptionModel
 from outreaches.models import OutreachErrorLog
 
 false = False
+
 
 def print_logs():
     logs = OutreachErrorLog().get_logs()  # Assuming abc.get_logs() returns a QuerySet of OutreachErrorLog objects
@@ -83,7 +85,8 @@ def reschedule_last_enabled(salesrep):
         process_reschedule_single_task("instagram.tasks.send_first_compliment", task.name, start_hour, start_minute, 48*3)
     else:
         print ('No more enabled tasks found')
-    
+
+
 def outreachErrorLogger(account, sales_rep, error_message, err_code, log_level, error_type, repeat = False):
     #save
     error_log_instance =  OutreachErrorLog()
@@ -96,39 +99,6 @@ def outreachErrorLogger(account, sales_rep, error_message, err_code, log_level, 
     else: # not action to be taken
         raise Exception(error_message)
 
-def handleMqTTErrors(account, sales_rep, status_code, status_message, numTries, repeat):
-    repeatLocal = False # to repeat within calling func wihtou resheduling new. Valid only for authcodes
-    error_type = "unknown"  # Default error type
-
-    auth_codes = [401, 403]
-    our_errors = [400]
-
-    if status_code in auth_codes:
-        error_type = "Sales Rep"
-    if status_code in [500]:
-        error_type = "Instagram"
-    if status_code in our_errors:
-        error_type = "MQTT"
-    ## 400, others
-
-    log_level = "WARNING" # default
-    if status_code in auth_codes and numTries == 1: # first trial of login, enable repeat
-        if logout_and_login(account, sales_rep):
-            repeatLocal = True
-    if status_code in auth_codes and numTries > 1:
-        log_level = "ERROR"
-
-    try:
-        outreachErrorLogger(account, sales_rep, status_message, status_code, log_level, error_type)
-    except Exception as e:
-        pass
-
-    if status_code not in auth_codes and repeat: # by default repeat is true. But we may set it to false for single action trials
-        
-        reschedule_last_enabled(sales_rep.ig_username)
-    
-    return repeatLocal
-    
 
 def logout(igname):
     data = {
@@ -171,6 +141,43 @@ def logout_and_login(account, salesrep):
     return True
     # handle response from these...
     # Error handler for this one
+
+    
+
+# def handleMqTTErrors(account, sales_rep, status_code, status_message, numTries, repeat):
+#     repeatLocal = False # to repeat within calling func wihtou resheduling new. Valid only for authcodes
+#     error_type = "unknown"  # Default error type
+
+#     auth_codes = [401, 403]
+#     our_errors = [400]
+
+#     if status_code in auth_codes:
+#         error_type = "Sales Rep"
+#     if status_code in [500]:
+#         error_type = "Instagram"
+#     if status_code in our_errors:
+#         error_type = "MQTT"
+#     ## 400, others
+
+#     log_level = "WARNING" # default
+#     if status_code in auth_codes and numTries == 1: # first trial of login, enable repeat
+#         if logout_and_login(account, sales_rep):
+#             repeatLocal = True
+#     if status_code in auth_codes and numTries > 1:
+#         log_level = "ERROR"
+
+#     try:
+#         outreachErrorLogger(account, sales_rep, status_message, status_code, log_level, error_type)
+#     except Exception as e:
+#         pass
+
+#     if status_code not in auth_codes and repeat: # by default repeat is true. But we may set it to false for single action trials
+        
+#         reschedule_last_enabled(sales_rep.ig_username)
+    
+#     return repeatLocal
+    
+
 
 
     
@@ -291,8 +298,15 @@ def send_first_compliment(username, repeat=True):
             # get last account in queue
             # delay 2 minutes
             # send  
-            if response.status_code == 401:
-                ExceptionHandler(response.status_code).take_action(data={"igname": salesrep.ig_username})
+            exception = ExceptionModel.objects.create(
+                code = response.status_code,
+                affected_account = account,
+                data = {"igname": salesrep.ig_username},
+                error_message = response.text
+            )
+            
+
+            ExceptionHandler(exception.status_code).take_action(data=exception.data)
 
 
             reschedule_last_enabled(salesrep.ig_username)
