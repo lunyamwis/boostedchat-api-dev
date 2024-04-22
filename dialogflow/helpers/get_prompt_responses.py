@@ -81,13 +81,14 @@ def get_gpt_response(account, thread_id=None):
     print("End Response")
     result = json.loads(response_.get("choices")[0].get("message").get("content"))
     completed = int(result.get('completed'))
+    
     if completed:
         if account.index == steps:
             raise Exception("Lead is interested and has been transferred to human takeover")
         elif account.index < steps:
             account.index = account.index + 1
             account.save()
-
+    
     if "status" in result:
         account.status_param = result.get('status','')
         account.save()
@@ -96,22 +97,22 @@ def get_gpt_response(account, thread_id=None):
         if result.get('human_takeover') == 1:
             account.assigned_to = 'Human'
             account.save()
-
+    
     if "referral" in result:
         if result.get("referral"):
             account.referral = result.get("referral",'')
             account.save()
-
+    
     if "script_score" in result:
         if result.get("script_score"):
             account.script_score = int(result.get("script_score",1))
             account.save()
-        
+   
     if "script_version" in result:
         if result.get("script_version"):
             account.script_version = result.get("script_version",'')
             account.save()
-
+    
     if "confirmed_problems" in result:
         print("these are the confirmed problems in number: ", len(result.get("confirmed_problems")))
         if len(result.get("confirmed_problems")) >= 2:

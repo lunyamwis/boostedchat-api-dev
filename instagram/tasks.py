@@ -18,22 +18,22 @@ from .helpers.format_username import format_full_name
 from outreaches.utils import process_reschedule_single_task, ig_thread_exists ## move
 from .utils import get_account, tasks_by_sales_rep
 from outreaches.models import OutreachErrorLog
-
+from tabulate import tabulate # for print_logs
 false = False
 
 def print_logs():
-    logs = OutreachErrorLog().get_logs()  # Assuming abc.get_logs() returns a QuerySet of OutreachErrorLog objects
+    logs = OutreachErrorLog.objects.all()  # Assuming OutreachErrorLog is a Django model
+    headers = ["Code", "Account", "Sales Rep", "Error Message", "Error Type", "Created At", "Log Level"]
+    data = []
+
+    ## print logs
+    
 
     for log in logs:
-        print(f"Code: {log.code}")
-        print(f"Account: {log.account}")
-        if log.sales_rep:
-            print(f"Sales_rep: {log.sales_rep.ig_username}")
-        print(f"Error Message: {log.error_message}")
-        print(f"error_type: {log.error_type}")
-        print(f"Created At: {log.created_at}")
-        print(f"Log Level: {log.log_level}")
-        print("\n")
+        sales_rep_username = log.sales_rep.ig_username if log.sales_rep else ""
+        data.append([log.code, log.account, sales_rep_username, log.error_message, log.error_type, log.created_at, log.log_level])
+
+    print(tabulate(data, headers=headers, tablefmt="pretty"))
 
 def sales_rep_is_logged_in(account, salesrep):
     igname =  account_has_sales_rep(account)
@@ -216,9 +216,11 @@ def send_first_compliment(username, repeat=True):
             err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not logged in"
             outreachErrorLogger(account, salesrep, err_str, 403, "WARNING", "Sales Rep IG")
             if not logout_and_login(account, salesrep): # Nothing to be done. We cannot try loggint in constantly
+                print("after failing to log in")
                 return # nothing to do. Wait for the account to be logged back in manually.
   
     except Exception as e:
+        print(f"An error occurred: {e}") 
         outreachErrorLogger(account, salesrep, "MQTT service unavailable. Not handled", 503, "ERROR", "MQTT") # Nothinig to be done. No action on our part can bring it up
 
     # check also if available(1)
