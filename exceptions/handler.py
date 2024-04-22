@@ -21,6 +21,10 @@ class ExceptionHandler(object):
 
         # login
         response = requests.post(settings.MQTT_BASE_URL + "/login", data=json.dumps(data))
+
+
+        time.sleep(10) # take a 10 second break after logging in so that the user can connect
+
         if response.status_code == 200:
             return True
         else:
@@ -40,6 +44,10 @@ class ExceptionHandler(object):
 
         # login
         response = requests.post(settings.MQTT_BASE_URL + "/login", data=json.dumps(data))
+
+        time.sleep(10) # take a 10 second break after logging in so that the user can connect
+
+
         if response.status_code == 200:
             return True
         else:
