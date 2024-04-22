@@ -18,22 +18,25 @@ from .helpers.format_username import format_full_name
 from outreaches.utils import process_reschedule_single_task, ig_thread_exists ## move
 from .utils import get_account, tasks_by_sales_rep
 from outreaches.models import OutreachErrorLog
+from tabulate import tabulate # for print_logs
+from urllib.parse import urlparse
+import socket
 
 false = False
 
 def print_logs():
-    logs = OutreachErrorLog().get_logs()  # Assuming abc.get_logs() returns a QuerySet of OutreachErrorLog objects
+    logs = OutreachErrorLog.objects.all()  # Assuming OutreachErrorLog is a Django model
+    headers = ["Code", "Account", "Sales Rep", "Error Message", "Error Type", "Created At", "Log Level"]
+    data = []
+
+    ## print logs
+    
 
     for log in logs:
-        print(f"Code: {log.code}")
-        print(f"Account: {log.account}")
-        if log.sales_rep:
-            print(f"Sales_rep: {log.sales_rep.ig_username}")
-        print(f"Error Message: {log.error_message}")
-        print(f"error_type: {log.error_type}")
-        print(f"Created At: {log.created_at}")
-        print(f"Log Level: {log.log_level}")
-        print("\n")
+        sales_rep_username = log.sales_rep.ig_username if log.sales_rep else ""
+        data.append([log.code, log.account, sales_rep_username, log.error_message, log.error_type, log.created_at, log.log_level])
+
+    print(tabulate(data, headers=headers, tablefmt="pretty"))
 
 def sales_rep_is_logged_in(account, salesrep):
     igname =  account_has_sales_rep(account)
@@ -88,7 +91,7 @@ def outreachErrorLogger(account, sales_rep, error_message, err_code, log_level, 
     error_log_instance =  OutreachErrorLog()
     error_log_instance.save_log(err_code, error_message, error_type, log_level, account, sales_rep)
     # react
-    if repeat:
+    if repeat and sales_rep:
         reschedule_last_enabled(sales_rep.ig_username)
     if log_level == "WARNING":
         pass
@@ -155,8 +158,9 @@ def login(account, salesrep):
         print("login successful")
         return True
     else:
-        outreachErrorLogger(account, salesrep, response.text, 401, "ERROR", "Account")
-        print("login failed:", response.text)
+        print("login failed:", response.text, response.status_code)
+        outreachErrorLogger(account, salesrep, response.text, response.status_code, "ERROR", "Account")
+        
         #  check: we ill need to handle challenges here
         return False
 
@@ -170,12 +174,42 @@ def logout_and_login(account, salesrep):
     return True
     # handle response from these...
     # Error handler for this one
+def isMQTTUP():
+    parsed_url = urlparse(settings.MQTT_BASE_URL)
 
+    # Get the host and port from the parsed URL
+    host = parsed_url.hostname
+    scheme = parsed_url.scheme
+
+    # Map the scheme to the default port
+    default_ports = {'http': 80, 'https': 443}
+    port = parsed_url.port or default_ports.get(scheme.lower(), None)
+
+    print(f"Host: {host}")
+    print(f"Port: {port}")
+    s = None
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(5)  # 5 seconds timeout
+        s.connect((host, port))
+        
+        # Connection successful
+        print(f"Microservice running on port {port} is available.")
+        return True
+        
+    except Exception as e:
+        # Connection failed or timed out
+        print(f"Microservice running on port {port} is not available: {e}")
+        return False
+        
+    finally:
+        # Close the socket
+        s.close()
 
     
 @shared_task()
 def send_first_compliment(username, repeat=True):
-
+    
     numTries = 0
     print(username)
     thread_obj = None
@@ -209,6 +243,8 @@ def send_first_compliment(username, repeat=True):
         # raise Exception(f"{account_sales_rep_ig_name} sales rep set for {username} is not available")
 
     salesrep = account.salesrep_set.first()
+    if not isMQTTUP():
+        outreachErrorLogger(account, salesrep, "MQTT service unavailable. Not handled", 503, "ERROR", "MQTT") # Nothinig to be done. No action on our part can bring it up
     # check if sales_rep is logged_in
     try:
         logged_in = sales_rep_is_logged_in(account, salesrep)
@@ -219,7 +255,8 @@ def send_first_compliment(username, repeat=True):
                 return # nothing to do. Wait for the account to be logged back in manually.
   
     except Exception as e:
-        outreachErrorLogger(account, salesrep, "MQTT service unavailable. Not handled", 503, "ERROR", "MQTT") # Nothinig to be done. No action on our part can bring it up
+        print(f"An error occurred: {e}") 
+        return
 
     # check also if available(1)
 
