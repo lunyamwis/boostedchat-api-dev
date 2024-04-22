@@ -49,6 +49,11 @@ urlpatterns = [
         name='thread_by_ig_thread_id',
     ),
     path(
+        'has-client-responded/',
+        DMViewset.as_view({'post': 'has_client_responded'}),
+        name='has_client_responded',
+    ),
+    path(
         'account/account-by-ig-thread/<str:ig_thread_id>/',
         AccountViewSet.as_view({'get': 'account_by_ig_thread_id'}),
         name='account_by_ig_thread_id',
