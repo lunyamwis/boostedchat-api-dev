@@ -144,38 +144,38 @@ def logout_and_login(account, salesrep):
 
     
 
-# def handleMqTTErrors(account, sales_rep, status_code, status_message, numTries, repeat):
-#     repeatLocal = False # to repeat within calling func wihtou resheduling new. Valid only for authcodes
-#     error_type = "unknown"  # Default error type
+def handleMqTTErrors(account, sales_rep, status_code, status_message, numTries, repeat):
+    repeatLocal = False # to repeat within calling func wihtou resheduling new. Valid only for authcodes
+    error_type = "unknown"  # Default error type
 
-#     auth_codes = [401, 403]
-#     our_errors = [400]
+    auth_codes = [401, 403]
+    our_errors = [400]
 
-#     if status_code in auth_codes:
-#         error_type = "Sales Rep"
-#     if status_code in [500]:
-#         error_type = "Instagram"
-#     if status_code in our_errors:
-#         error_type = "MQTT"
-#     ## 400, others
+    if status_code in auth_codes:
+        error_type = "Sales Rep"
+    if status_code in [500]:
+        error_type = "Instagram"
+    if status_code in our_errors:
+        error_type = "MQTT"
+    ## 400, others
 
-#     log_level = "WARNING" # default
-#     if status_code in auth_codes and numTries == 1: # first trial of login, enable repeat
-#         if logout_and_login(account, sales_rep):
-#             repeatLocal = True
-#     if status_code in auth_codes and numTries > 1:
-#         log_level = "ERROR"
+    log_level = "WARNING" # default
+    if status_code in auth_codes and numTries == 1: # first trial of login, enable repeat
+        if logout_and_login(account, sales_rep):
+            repeatLocal = True
+    if status_code in auth_codes and numTries > 1:
+        log_level = "ERROR"
 
-#     try:
-#         outreachErrorLogger(account, sales_rep, status_message, status_code, log_level, error_type)
-#     except Exception as e:
-#         pass
+    try:
+        outreachErrorLogger(account, sales_rep, status_message, status_code, log_level, error_type)
+    except Exception as e:
+        pass
 
-#     if status_code not in auth_codes and repeat: # by default repeat is true. But we may set it to false for single action trials
+    if status_code not in auth_codes and repeat: # by default repeat is true. But we may set it to false for single action trials
         
-#         reschedule_last_enabled(sales_rep.ig_username)
+        reschedule_last_enabled(sales_rep.ig_username)
     
-#     return repeatLocal
+    return repeatLocal
     
 
 
@@ -298,15 +298,26 @@ def send_first_compliment(username, repeat=True):
             # get last account in queue
             # delay 2 minutes
             # send  
-            exception = ExceptionModel.objects.create(
-                code = response.status_code,
-                affected_account = account,
-                data = {"igname": salesrep.ig_username},
-                error_message = response.text
-            )
             
+            # TODO: Dear brother please follow the example below so that we can adopt the object oriented paradigm,
+            # and increase the team as a result increasing thoroughput
+            # study the article below as we continue refactoring the codebase https://refactoring.guru/refactoring/what-is-refactoring
 
-            ExceptionHandler(exception.status_code).take_action(data=exception.data)
+            # exception = ExceptionModel.objects.create(
+            #     code = response.status_code,
+            #     affected_account = account,
+            #     data = {"igname": salesrep.ig_username},
+            #     error_message = response.text
+            # )
+            
+            # ExceptionHandler(exception.status_code).take_action(data=exception.data)
+
+            print(f"Request failed with status code: {response.status_code}")
+            print(f"Response message: {response.text}")
+            # sav
+            repeatLocal = handleMqTTErrors(account, salesrep, response.status_code, response.text, numTries, repeat)
+            if repeatLocal and numTries <= 1:
+                send(numTries)
 
 
             reschedule_last_enabled(salesrep.ig_username)
