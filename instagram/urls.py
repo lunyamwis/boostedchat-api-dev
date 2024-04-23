@@ -59,6 +59,11 @@ urlpatterns = [
         name='account_by_ig_thread_id',
     ),
     path(
+        'account/retrieve-salesrep/<str:username>/',
+        AccountViewSet.as_view({'get': 'retrieve_salesrep'}),
+        name='retrieve_salesrep',
+    ),
+    path(
         'update-thread-details/',
         update_thread_details
     )

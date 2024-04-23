@@ -241,7 +241,15 @@ class AccountViewSet(viewsets.ModelViewSet):
         account = Account.objects.get(pk=thread.account.id)
         serializer = GetSingleAccountSerializer(account)
         return Response(serializer.data)
-
+    
+    def retrieve_salesrep(self, request, *args, **kwargs):
+        account = Account.objects.filter(igname = kwargs['username'])
+        if account.exists():
+            return Response({"salesrep":list(account.last().salesrep_set.last().values())}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error":"username not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+            
     @action(detail=True, methods=['post'], url_path="schedule-outreach")
     def schedule_outreach(self, request, pk=None):
         serializer = ScheduleOutreachSerializer(data=request.data)
