@@ -243,11 +243,29 @@ class AccountViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
     
     def retrieve_salesrep(self, request, *args, **kwargs):
-        account = Account.objects.filter(igname = kwargs['username'])
-        if account.exists():
-            return Response({"salesrep":list(account.last().salesrep_set.last().values())}, status=status.HTTP_200_OK)
-        else:
-            return Response({"error":"username not found"}, status=status.HTTP_404_NOT_FOUND)
+        username = kwargs.get('username')
+
+        # Check if username is provided
+        if not username:
+            return Response({"error": "Username not provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Retrieve the account object or return 404 if not found
+        account = get_object_or_404(Account, igname=username)
+
+        # Retrieve the last salesrep associated with the account
+        salesrep = account.salesrep_set.last()
+
+        # Check if salesrep is found
+        if not salesrep:
+            return Response({"error": "Salesrep not found for this account"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Convert salesrep object to dictionary
+        salesrep_data = {
+            "id": salesrep.id,
+            "username": salesrep.ig_username,
+        }
+
+        return Response({"salesrep": salesrep_data}, status=status.HTTP_200_OK)
         
             
     @action(detail=True, methods=['post'], url_path="schedule-outreach")
