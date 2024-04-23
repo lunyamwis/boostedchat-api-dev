@@ -1146,6 +1146,15 @@ class DMViewset(viewsets.ModelViewSet):
         Message.objects.filter(thread=thread).delete()
         return Response({"message": "Messages deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
+    @action(detail=True, methods=["post"], url_path="reset-thread-count")
+    def reset_thread_count(self, request, pk=None):
+
+        thread = self.get_object()
+        thread.unread_message_count = 0
+        thread.save()
+        return Response({"message": "OK"}, status=status.HTTP_204_NO_CONTENT)
+    
+
     def messages_by_ig_thread_id(self, request, *args, **kwargs):
         thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
         messages = Message.objects.filter(thread=thread).order_by('sent_on')
@@ -1158,14 +1167,17 @@ class DMViewset(viewsets.ModelViewSet):
 
         return Response(serializer.data)
 
-    @action(detail=True, methods=["post"], url_path="reset-thread-count")
-    def reset_thread_count(self, request, pk=None):
 
-        thread = self.get_object()
-        thread.unread_message_count = 0
-        thread.save()
-        return Response({"message": "OK"}, status=status.HTTP_204_NO_CONTENT)
-
+    def has_client_responded(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        thread = Thread.objects.filter(account__igname=username).last()
+        client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
+        
+        if client_messages.exists():
+            return Response({"has_responded":True}, status=status.HTTP_200_OK)
+        else:
+            return Response({"has_responded":False}, status=status.HTTP_200_OK)
+        
 
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
