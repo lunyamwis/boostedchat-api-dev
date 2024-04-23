@@ -38,6 +38,7 @@ sqlparse
 coverage
 robotframework
 webdriver-manager
+tabulate
 
 
 
