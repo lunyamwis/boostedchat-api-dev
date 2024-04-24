@@ -17,15 +17,12 @@ from dialogflow.helpers.get_prompt_responses import get_gpt_response
 from .helpers.format_username import format_full_name
 from outreaches.utils import process_reschedule_single_task, ig_thread_exists ## move
 from .utils import get_account, tasks_by_sales_rep
-from exceptions.handler import ExceptionHandler
-from exceptions.models import ExceptionModel
 from outreaches.models import OutreachErrorLog
 from tabulate import tabulate # for print_logs
 from urllib.parse import urlparse
 import socket
 
 false = False
-
 
 def print_logs():
     logs = OutreachErrorLog.objects.all()  # Assuming OutreachErrorLog is a Django model
@@ -53,7 +50,7 @@ def sales_rep_is_logged_in(account, salesrep):
         try:
             account_list = response.json()
         except ValueError:
-            outreachErrorLogger(account, salesrep, "Wrong response data. Not JSON", 422, "WARNING", "MQTT")
+            outreachErrorLogger(account, salesrep, "Wrong response data. Not JSON", 422, "WARNING", "MQTT", False)
             return False
             # handle error and thoww
         
@@ -61,7 +58,7 @@ def sales_rep_is_logged_in(account, salesrep):
             print(f"print is returning....{account_list[igname]}")
             return account_list[igname]
         else:
-            outreachErrorLogger(account, salesrep, "Wrong Json data", 422, "WARNING", "MQTT")
+            outreachErrorLogger(account, salesrep, "Wrong Json data", 422, "WARNING", "MQTT", False)
         return False
     return False
 
@@ -88,8 +85,7 @@ def reschedule_last_enabled(salesrep):
         process_reschedule_single_task("instagram.tasks.send_first_compliment", task.name, start_hour, start_minute, 48*3)
     else:
         print ('No more enabled tasks found')
-
-
+    
 def outreachErrorLogger(account, sales_rep, error_message, err_code, log_level, error_type, repeat = False):
     #save
     error_log_instance =  OutreachErrorLog()
@@ -100,8 +96,42 @@ def outreachErrorLogger(account, sales_rep, error_message, err_code, log_level, 
     if log_level == "WARNING":
         pass
     else: # not action to be taken
-        raise Exception(error_message)
+        raise Exception(error_message) # ERROR will break execution after rescheduling if repeat is True
 
+def handleMqTTErrors(account, sales_rep, status_code, status_message, numTries, repeat):
+    repeatLocal = False # to repeat within calling func without resheduling new. Valid only for authcodes
+    error_type = "unknown"  # Default error type
+
+    auth_codes = [401, 403]
+    our_errors = [400]
+
+    if status_code in auth_codes:
+        error_type = "Sales Rep"
+    if status_code in [500]:
+        error_type = "Instagram"
+    if status_code in our_errors:
+        error_type = "MQTT"
+    ## 400, others
+
+    log_level = "WARNING" # default
+    if status_code in auth_codes and numTries == 1: # first trial of login, enable repeat
+        if logout_and_login(account, sales_rep):
+            repeatLocal = True
+    if status_code in auth_codes and numTries > 1:
+        log_level = "ERROR"
+
+    if status_code in auth_codes:
+        repeat = False # it will repeat locally using repeatLocal
+    try:
+        outreachErrorLogger(account, sales_rep, status_message, status_code, log_level, error_type, repeat)
+    except Exception as e:
+        pass
+
+    # if status_code not in auth_codes and repeat: # by default repeat is true. But we may set it to false for single action trials
+    #     reschedule_last_enabled(sales_rep.ig_username)  #### this should be handled by outreachErrorLogger
+    
+    return repeatLocal
+    
 
 def logout(igname):
     data = {
@@ -141,18 +171,17 @@ def logout_and_login(account, salesrep):
     logout(igname)
     if not login(account, salesrep):
         return False
-    time.sleep(10)
+    time.sleep(20)
     return True
     # handle response from these...
     # Error handler for this one
-    
 def isMQTTUP():
     parsed_url = urlparse(settings.MQTT_BASE_URL)
 
     # Get the host and port from the parsed URL
     host = parsed_url.hostname
     scheme = parsed_url.scheme
-    
+
     # Map the scheme to the default port
     default_ports = {'http': 80, 'https': 443}
     port = parsed_url.port or default_ports.get(scheme.lower(), None)
@@ -177,42 +206,6 @@ def isMQTTUP():
     finally:
         # Close the socket
         s.close()
-        
-
-def handleMqTTErrors(account, sales_rep, status_code, status_message, numTries, repeat):
-    repeatLocal = False # to repeat within calling func wihtou resheduling new. Valid only for authcodes
-    error_type = "unknown"  # Default error type
-
-    auth_codes = [401, 403]
-    our_errors = [400]
-
-    if status_code in auth_codes:
-        error_type = "Sales Rep"
-    if status_code in [500]:
-        error_type = "Instagram"
-    if status_code in our_errors:
-        error_type = "MQTT"
-    ## 400, others
-
-    log_level = "WARNING" # default
-    if status_code in auth_codes and numTries == 1: # first trial of login, enable repeat
-        if logout_and_login(account, sales_rep):
-            repeatLocal = True
-    if status_code in auth_codes and numTries > 1:
-        log_level = "ERROR"
-
-    try:
-        outreachErrorLogger(account, sales_rep, status_message, status_code, log_level, error_type)
-    except Exception as e:
-        pass
-
-    if status_code not in auth_codes and repeat: # by default repeat is true. But we may set it to false for single action trials
-        
-        reschedule_last_enabled(sales_rep.ig_username)
-    
-    return repeatLocal
-    
-
 
     
 @shared_task()
@@ -246,19 +239,19 @@ def send_first_compliment(username, repeat=True):
     check_value = sales_rep_is_available(account)
     if not check_value:
         err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not available"
-        outreachErrorLogger(account, None, err_str, 422, "ERROR", "Sales Rep") # Nothing to be done. No action on our part can make it available
+        outreachErrorLogger(account, None, err_str, 422, "ERROR", "Sales Rep", False) # Nothing to be done. No action on our part can make it available
         # outreachErrorLogger(err_str)
         # raise Exception(f"{account_sales_rep_ig_name} sales rep set for {username} is not available")
 
     salesrep = account.salesrep_set.first()
     if not isMQTTUP():
-        outreachErrorLogger(account, salesrep, "MQTT service unavailable. Not handled", 503, "ERROR", "MQTT") # Nothinig to be done. No action on our part can bring it up
+        outreachErrorLogger(account, salesrep, "MQTT service unavailable. Not handled", 503, "ERROR", "MQTT", False) # Nothinig to be done. No action on our part can bring it up
     # check if sales_rep is logged_in
     try:
         logged_in = sales_rep_is_logged_in(account, salesrep)
         if not logged_in: # log in will need to be handled differently from the others
             err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not logged in"
-            outreachErrorLogger(account, salesrep, err_str, 403, "WARNING", "Sales Rep IG")
+            outreachErrorLogger(account, salesrep, err_str, 403, "WARNING", "Sales Rep IG", False)  # WARNING will not break execution
             if not logout_and_login(account, salesrep): # Nothing to be done. We cannot try loggint in constantly
                 return # nothing to do. Wait for the account to be logged back in manually.
   
@@ -348,16 +341,13 @@ def send_first_compliment(username, repeat=True):
             # )
             
             # ExceptionHandler(exception.status_code).take_action(data=exception.data)
-
             print(f"Request failed with status code: {response.status_code}")
             print(f"Response message: {response.text}")
             # sav
             repeatLocal = handleMqTTErrors(account, salesrep, response.status_code, response.text, numTries, repeat)
             if repeatLocal and numTries <= 1:
                 send(numTries)
-
-
-            reschedule_last_enabled(salesrep.ig_username)
+                # pass
     send()
 
         # raise Exception("There is something wrong with mqtt")
