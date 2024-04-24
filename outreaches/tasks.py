@@ -13,7 +13,7 @@ def daily_reshedule_outreach():
     }
 
     json_data = json.dumps(data)
-    response = requests.post(settings.MQTT_BASE_URL + "/outreaches/tasks/reschedule_all/", data=json_data, headers={"Content-Type": "application/json"})
+    response = requests.post(settings.API_BASE_URL + "/outreaches/tasks/reschedule_all/", data=json_data, headers={"Content-Type": "application/json"})
 
     # Check the response status code
     if response.status_code == 200:
