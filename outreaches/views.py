@@ -133,7 +133,7 @@ class TasksViewSet(viewsets.ModelViewSet):
             day_of_week='*',  
             day_of_month='*',  
             month_of_year='*',
-            timezone=timezone.utc   # Important for UTC
+             timezone='UTC'   # Important for UTC
         )
         # PeriodicTask.objects.filter(name="daily_reshedule_outreach").delete() 
         try:
