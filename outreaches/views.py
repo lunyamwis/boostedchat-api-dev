@@ -125,16 +125,17 @@ class TasksViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def start_daily_rescheduler(self, request, *args, **kwargs):
         # get the time to start the outreaches
+        # get the time here
+        daily_start_time, start_minute, hours_per_day, tasks_per_day = outreach_time()
         schedule, _ = CrontabSchedule.objects.get_or_create(
-            minute=30,    
-            hour=8,      
+            minute=start_minute,    
+            hour=daily_start_time,      
             day_of_week='*',  
             day_of_month='*',  
             month_of_year='*',
             timezone=timezone.utc   # Important for UTC
         )
         # PeriodicTask.objects.filter(name="daily_reshedule_outreach").delete() 
-        outreach_time()
         try:
             task = PeriodicTask.objects.get(name="daily_reshedule_outreach")
             task.crontab = schedule
@@ -160,7 +161,7 @@ class TasksViewSet(viewsets.ModelViewSet):
             sales_rep = validated_data['sales_rep']
             start_hour = validated_data['start_hour']
             start_minute = validated_data['start_minute']
-            tasks_per_day = validated_data['tasks_per_day']
+            # tasks_per_day = validated_data['tasks_per_day']
             num_tasks = validated_data['num_tasks']
 
             # sales_rep_names = []
@@ -177,8 +178,9 @@ class TasksViewSet(viewsets.ModelViewSet):
             
 
             # for now we can make do with the hardcoded interval
-            hours_per_day = 12 # int(request.data.get('numperDay', 12))  # Get hours_per_day from request data
-            daily_start_time = 14
+            # hours_per_day = 12 # int(request.data.get('numperDay', 12))  # Get hours_per_day from request data
+            # daily_start_time = 14
+            daily_start_time, _, hours_per_day, tasks_per_day = outreach_time()
             daily_end_time = daily_start_time + hours_per_day
             if daily_end_time >=24 :
                 daily_end_time -= 24
@@ -237,7 +239,7 @@ class TasksViewSet(viewsets.ModelViewSet):
             task_name = validated_data['task_name']
             start_hour = validated_data['start_hour']
             start_minute = validated_data['start_minute']
-            tasks_per_day = validated_data['tasks_per_day']
+            # tasks_per_day = validated_data['tasks_per_day']# remove
             num_tasks = validated_data['num_tasks']
             # sales_rep_names = []
             # sales_rep_names.append(sales_rep)
@@ -251,8 +253,11 @@ class TasksViewSet(viewsets.ModelViewSet):
             count = 1
 
             # for now we can make do with the hardcoded interval
-            hours_per_day = 12 # int(request.data.get('numperDay', 12))  # Get hours_per_day from request data
-            daily_start_time = 14
+            # get these from 
+            # hours_per_day = 12 # int(request.data.get('numperDay', 12))  # Get hours_per_day from request data
+            # daily_start_time = 14
+            daily_start_time, _, hours_per_day, tasks_per_day = outreach_time()
+
             daily_end_time = daily_start_time + hours_per_day
             if daily_end_time >=24 :
                 daily_end_time -= 24

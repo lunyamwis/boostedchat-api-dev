@@ -67,6 +67,8 @@ OPENAI_BASE_URL = "https://api.openai.com/v1"
 # Application definition
 
 MQTT_BASE_URL = os.environ.get('MQTT_URL', "http://mqtt:3000")
+SCRAPPER_BASE_URL = os.environ.get('SCRAPPER_URL', "http://web:8003")
+API_BASE_URL = os.environ.get('API_BASE_URL', "http://web:8000/api/v1")
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

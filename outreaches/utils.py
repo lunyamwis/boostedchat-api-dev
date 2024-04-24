@@ -14,6 +14,7 @@ from sales_rep.models import SalesRep
 from authentication.models import User
 import requests
 import pytz
+from django.conf import settings
 
 
 def time_parts(time):
@@ -247,61 +248,67 @@ def ig_thread_exists(username):
     else:
         return False
 
+def round_to_nearest_hour(dt):
+    minutes_past_hour = dt.minute
+    offset_to_round = timedelta(minutes=minutes_past_hour)
+
+    if minutes_past_hour >= 30:
+        return dt - offset_to_round + timedelta(hours=1) 
+    else:
+        return dt - offset_to_round
 
 def outreach_time():
+    try:
+        url = settings.SCRAPPER_BASE_URL + '/instagram/schedulers/'
+        # Send a GET request to the URL and fetch the JSON response
+        response = requests.get(url)
+        data = response.json()
 
-    # timezone_offset = get_timezone_offset_hours('America/New_york')
-    # print(timezone_offset)  # Should output something like -7.0 
-    # Define the URL to fetch the data from
-    url = 'https://scrapper.jamel.boostedchat.com/instagram/schedulers/'
+        # Check if data is not empty and contains at least one object
+        if data and isinstance(data, list) and len(data) >= 1:
+            # Get the first object from the list
+            first_object = data[0]
+            # Extract timezone, outreach capacity, outreach start time, and outreach end time
+            timezone = first_object.get('timezone', 'N/A')
 
-    # Send a GET request to the URL and fetch the JSON response
-    response = requests.get(url)
-    data = response.json()
+            outreach_capacity = first_object.get('outreach_capacity', 'N/A')
+            outreach_starttime_str = first_object.get('outreach_starttime', 'N/A')
+            outreach_endtime_str = first_object.get('outreach_endtime', 'N/A')
 
-    # Check if data is not empty and contains at least one object
-    if data and isinstance(data, list) and len(data) >= 1:
-        # Get the first object from the list
-        first_object = data[0]
+            # Convert times to UTC if timezone is specified
+            if timezone != 'N/A':
+                original_timezone = pytz.timezone(timezone)
+                outreach_starttime = original_timezone.localize(datetime.strptime(outreach_starttime_str, '%H:%M:%S'))
+                outreach_endtime = original_timezone.localize(datetime.strptime(outreach_endtime_str, '%H:%M:%S'))
+                outreach_starttime_utc = outreach_starttime.astimezone(pytz.utc)
+                outreach_endtime_utc = outreach_endtime.astimezone(pytz.utc)
+            else:
+                outreach_starttime_utc = 'N/A'
+                outreach_endtime_utc = 'N/A'
 
-        # Extract timezone, outreach capacity, outreach start time, and outreach end time
-        timezone = first_object.get('timezone', 'N/A')
+            outreach_starttime_utc = round_to_nearest_hour(outreach_starttime_utc)
+            outreach_endtime_utc = round_to_nearest_hour(outreach_endtime_utc)
 
-        outreach_capacity = first_object.get('outreach_capacity', 'N/A')
-        outreach_starttime_str = first_object.get('outreach_starttime', 'N/A')
-        outreach_endtime_str = first_object.get('outreach_endtime', 'N/A')
+            if outreach_endtime_utc < outreach_starttime_utc:
+                outreach_endtime_utc += timedelta(days=1)  
 
-        outreach_starttime = datetime.strptime(outreach_starttime_str, '%H:%M:%S')
-        outreach_endtime = datetime.strptime(outreach_endtime_str, '%H:%M:%S')
+            duration = outreach_endtime_utc - outreach_starttime_utc
+            # duration = duration.replace(minute=0, second=0, microsecond=0) 
+            hours_per_day = int(duration.total_seconds() // 3600)  # Calculate hours using total seconds
 
-        # Convert times to UTC if timezone is specified
-        if timezone != 'N/A':
-            original_timezone = pytz.timezone(timezone)
-            outreach_starttime = original_timezone.localize(datetime.strptime(outreach_starttime_str, '%H:%M:%S'))
-            outreach_endtime = original_timezone.localize(datetime.strptime(outreach_endtime_str, '%H:%M:%S'))
-            outreach_starttime_utc = outreach_starttime.astimezone(pytz.utc)
-            outreach_endtime_utc = outreach_endtime.astimezone(pytz.utc)
+            start_hour = outreach_starttime_utc.hour
+            start_minute = outreach_starttime_utc.minute
+
+            # Convert start_hour and start_minute to integers
+            start_hour = int(start_hour)
+            start_minute = int(start_minute)
+            # return start hours, start minutes, stop.. duration, capacity, hours_per_day
+            return start_hour, start_minute, hours_per_day, outreach_capacity
+
         else:
-            outreach_starttime_utc = 'N/A'
-            outreach_endtime_utc = 'N/A'
+            print("No data or empty response received.")
+            return None
 
-        # Print the converted UTC times
-        print("Outreach Start Time ():", outreach_starttime_str)
-        print("Outreach End Time ():", outreach_endtime)
-        print("Outreach Start Time (UTC):", outreach_starttime_utc)
-        print("Outreach End Time (UTC):", outreach_endtime_utc)
-
-        # Print other information
-        print("Timezone:", timezone)
-        print("Outreach Capacity:", outreach_capacity)
-
-        if outreach_endtime_utc < outreach_starttime_utc:
-            outreach_endtime_utc += timedelta(days=1)  
-
-        duration = outreach_endtime_utc - outreach_starttime_utc
-        print(duration)
-
-        return start hours, start minuts, stop.. duration, capacity
-
-    else:
-        print("No data or empty response received.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
