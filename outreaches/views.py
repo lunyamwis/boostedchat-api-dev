@@ -122,6 +122,33 @@ class TasksViewSet(viewsets.ModelViewSet):
         number = validated_data.get('number', -1)
         return tasks_by_sales_rep(task_name, sales_rep, status, order, number)
     
+    @action(detail=False, methods=['get'])
+    def start_daily_rescheduler(self, request, *args, **kwargs):
+        # get the time to start the outreaches
+        schedule, _ = CrontabSchedule.objects.get_or_create(
+            minute=30,    
+            hour=8,      
+            day_of_week='*',  
+            day_of_month='*',  
+            month_of_year='*',
+            timezone=timezone.utc   # Important for UTC
+        )
+        # PeriodicTask.objects.filter(name="daily_reshedule_outreach").delete() 
+        outreach_time()
+        try:
+            task = PeriodicTask.objects.get(name="daily_reshedule_outreach")
+            task.crontab = schedule
+            task.save()
+        except PeriodicTask.DoesNotExist:
+            # Task doesn't exist, create it!
+            PeriodicTask.objects.create(
+                enabled=True,
+                task="outreaches.tasks.daily_reshedule_outreach",
+                crontab=schedule,
+                name="daily_reshedule_outreach"
+            )
+        return Response({'message': f'Enabled all tasks for'})
+        
     @action(detail=False, methods=['post'])
     def reschedule_by_sales_rep(self, request, *args, **kwargs):
         serializer = RescheduleBySalesRepSerializer(data=request.data)
