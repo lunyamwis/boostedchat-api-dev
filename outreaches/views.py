@@ -100,14 +100,22 @@ class TasksViewSet(viewsets.ModelViewSet):
         queryset = PeriodicTask.objects.filter(task=task_name)
         tasks = queryset.all()
         for task in tasks:
-            if task.enabled != status:
-                task.enabled = status 
+            status_to_save = status # for each task. status should remain unchanged
+            if status_to_save: # if the task is to be enabled
+                start_time = task.start_time
+                status_to_save = rescheduled_task_is_in_future(start_time) # will only enable if task is in the future
+            if task.enabled != status_to_save: # only change if task status is no the required status
+                task.enabled = status_to_save 
                 task.save()
                 
     def enableOrDisableAllTaskList(self, tasks, status):
         for task in tasks:
-            if task.enabled != status:
-                task.enabled = status 
+            status_to_save = status  # for each task. status should remain unchanged
+            if status_to_save: # if the task is to be enabled
+                start_time = task.start_time
+                status_to_save = rescheduled_task_is_in_future(start_time) # will only enable if task is in the future
+            if task.enabled != status_to_save:
+                task.enabled = status_to_save # enable oly future tasks
                 task.save()
     @action(detail=False, methods=['post'])
     def fetch_by_sales_rep(self, request, task_name=None, sales_rep=None):
@@ -126,7 +134,7 @@ class TasksViewSet(viewsets.ModelViewSet):
     def start_daily_rescheduler(self, request, *args, **kwargs):
         # get the time to start the outreaches
         # get the time here
-        daily_start_time, start_minute, hours_per_day, tasks_per_day = outreach_time()
+        daily_start_time, start_minute, hours_per_day, tasks_per_day, _ = outreach_time()
         schedule, _ = CrontabSchedule.objects.get_or_create(
             minute=start_minute,    
             hour=daily_start_time,      
@@ -180,7 +188,7 @@ class TasksViewSet(viewsets.ModelViewSet):
             # for now we can make do with the hardcoded interval
             # hours_per_day = 12 # int(request.data.get('numperDay', 12))  # Get hours_per_day from request data
             # daily_start_time = 14
-            daily_start_time, _, hours_per_day, tasks_per_day = outreach_time()
+            daily_start_time, _, hours_per_day, tasks_per_day, _ = outreach_time()
             daily_end_time = daily_start_time + hours_per_day
             if daily_end_time >=24 :
                 daily_end_time -= 24
@@ -256,7 +264,7 @@ class TasksViewSet(viewsets.ModelViewSet):
             # get these from 
             # hours_per_day = 12 # int(request.data.get('numperDay', 12))  # Get hours_per_day from request data
             # daily_start_time = 14
-            daily_start_time, _, hours_per_day, tasks_per_day = outreach_time()
+            daily_start_time, _, hours_per_day, tasks_per_day, _ = outreach_time()
 
             daily_end_time = daily_start_time + hours_per_day
             if daily_end_time >=24 :
@@ -297,7 +305,7 @@ class TasksViewSet(viewsets.ModelViewSet):
                     try:
                         PeriodicTask.objects.update_or_create(
                         # PeriodicTask.objects.create(
-                            enabled=True,
+                            enabled=task.enabled, # enable only if the time is correct.
                             name=task.name,
                             crontab=task.crontab,
                             task=task_name,  # Assuming you have a 'task_name' variable 

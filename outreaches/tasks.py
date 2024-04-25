@@ -5,7 +5,7 @@ from .utils import *
 
 @shared_task()
 def daily_reshedule_outreach():
-    daily_start_time, start_minute, hours_per_day, tasks_per_day = outreach_time()
+    daily_start_time, start_minute, hours_per_day, tasks_per_day, _ = outreach_time()
     data = {
         'task_name': "instagram.tasks.send_first_compliment",
         'start_hour': daily_start_time,

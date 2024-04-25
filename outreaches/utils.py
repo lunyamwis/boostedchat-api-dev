@@ -71,7 +71,16 @@ def get_next_time(current_time, interval_minutes):
     interval_minutes = randomize_interval(interval_minutes, interval_minutes, 0)
     return add_minutes_to_time(current_time, interval_minutes)
 
-def not_in_interval(current_task_time, daily_start_time, daily_end_time):
+def not_in_interval(current_task_time = -1, daily_start_time = -1, daily_end_time = -1): # Assumes tasks will always start at the top of the hour
+    if daily_start_time == -1 or daily_end_time == -1:
+        db_daily_start_time, _, _, _, end_hour = outreach_time()
+        if daily_start_time == -1:
+            daily_start_time = db_daily_start_time
+        if daily_end_time == -1:
+            daily_end_time = end_hour
+
+    if current_task_time == -1:
+        current_task_time = datetime.now(timezone.utc)
     start_hour = daily_start_time
     stop_hour = daily_end_time
     current_hour = current_task_time.hour  # Get the hour from current_task_time
@@ -85,6 +94,15 @@ def not_in_interval(current_task_time, daily_start_time, daily_end_time):
     if current_hour >= start_hour and current_hour < stop_hour:
         return False  # in work interval
     return True
+
+# enable task only if it is in the future
+def rescheduled_task_is_in_future(current_task_time):
+    try:
+        current_time = timezone.now()
+        return current_task_time >= current_time
+    except TypeError:  # Handle if current_task_time is timezone-naive
+        current_time = datetime.now()
+        return current_task_time >= current_time
 
 # run = 0
 def put_within_working_hour(current_task_time, start_hour, stop_hour ):
@@ -128,9 +146,14 @@ def scheduler_tasks(tasks, start_time, hours_per_day, tasks_per_day, daily_start
                     month_of_year=scheduler_datetime.month,
                     timezone='UTC'  # Set the timezone explicitly
                 )
-        task.enabled = True
+        task.enabled = rescheduled_task_is_in_future(current_task_time)
         task.start_time = scheduler_datetime  
         task.crontab = crontab_schedule
+
+
+        # if not task.enabled:
+        #     print(task)
+        # task.enabled = False ## check...
         # task.save()
         # try:
         #     PeriodicTask.objects.update_or_create(
@@ -302,8 +325,11 @@ def outreach_time():
             # Convert start_hour and start_minute to integers
             start_hour = int(start_hour)
             start_minute = int(start_minute)
+            end_hour = start_hour + hours_per_day
+            if end_hour > 23:
+                end_hour -= 24
             # return start hours, start minutes, stop.. duration, capacity, hours_per_day
-            return start_hour, start_minute, hours_per_day, outreach_capacity
+            return start_hour, start_minute, hours_per_day, outreach_capacity, end_hour
 
         else:
             print("No data or empty response received.")
