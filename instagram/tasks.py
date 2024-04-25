@@ -15,7 +15,7 @@ from sales_rep.models import SalesRep
 from dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from .helpers.format_username import format_full_name
-from outreaches.utils import process_reschedule_single_task, ig_thread_exists ## move
+from outreaches.utils import process_reschedule_single_task, ig_thread_exists, not_in_interval ## move
 from .utils import get_account, tasks_by_sales_rep
 from outreaches.models import OutreachErrorLog
 from tabulate import tabulate # for print_logs
@@ -25,7 +25,7 @@ import socket
 false = False
 
 def print_logs():
-    logs = OutreachErrorLog.objects.all()  # Assuming OutreachErrorLog is a Django model
+    logs = OutreachErrorLog.objects.all().order_by('-created_at')[:30]  # Assuming OutreachErrorLog is a Django model
     headers = ["Code", "Account", "Sales Rep", "Error Message", "Error Type", "Created At", "Log Level"]
     data = []
 
@@ -206,10 +206,28 @@ def isMQTTUP():
     finally:
         # Close the socket
         s.close()
+def user_exists_in_IG(account, salesrep):
+    data = {"username_from": salesrep.ig_username, "username_to": account.igname}
+    response = requests.post(settings.MQTT_BASE_URL + "/checkIfUserExists", data=json.dumps(data))
+    if response.status_code == 200:
+        return True
+    elif response.status_code == 404:
+        return False
+    else:
+        raise Exception(f"Unexpected status code: {response.status_code}")
 
-    
+def delete_first_compliment_task(account):
+    try:
+        PeriodicTask.objects.get(name=f"SendFirstCompliment-{account.igname}").delete()
+    except Exception as error:
+        logging.warning(error)
+
 @shared_task()
 def send_first_compliment(username, repeat=True):
+    # check if now is within working hours
+    if not_in_interval():
+        err_str = f"{username} scheduled at wrong time"
+        outreachErrorLogger(None, None, err_str, 422, "ERROR", "Time", False) # we can not do anything about the time. Do not reschedule
     
     numTries = 0
     print(username)
@@ -252,13 +270,23 @@ def send_first_compliment(username, repeat=True):
         if not logged_in: # log in will need to be handled differently from the others
             err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not logged in"
             outreachErrorLogger(account, salesrep, err_str, 403, "WARNING", "Sales Rep IG", False)  # WARNING will not break execution
-            if not logout_and_login(account, salesrep): # Nothing to be done. We cannot try loggint in constantly
+            if not logout_and_login(account, salesrep): # Nothing to be done. We cannot try logging in constantly
                 return # nothing to do. Wait for the account to be logged back in manually.
   
     except Exception as e:
         print(f"An error occurred: {e}") 
         return
 
+    try:
+        ig_account_exists = user_exists_in_IG(account, salesrep)
+        if not ig_account_exists: # log in will need to be handled differently from the others
+            delete_first_compliment_task(account)
+            err_str = f"{username} does not exist"
+            outreachErrorLogger(account, salesrep, err_str, 404, "ERROR", "Lead", True)  # WARNING will break execution and reschedule another
+  
+    except Exception as e:
+        print(f"An error occurred: {e}")  # probably an auth error
+        return
     # check also if available(1)
 
     # for development: throw this error:
@@ -328,7 +356,7 @@ def send_first_compliment(username, repeat=True):
             # get last account in queue
             # delay 2 minutes
             # send  
-            
+
             # TODO: Follow the example below so that we can adopt the object oriented paradigm,
             # and increase the team as a result increasing thoroughput
             # study the article below as we continue refactoring the codebase https://refactoring.guru/refactoring/what-is-refactoring
