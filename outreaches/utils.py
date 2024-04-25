@@ -80,7 +80,7 @@ def not_in_interval(current_task_time = -1, daily_start_time = -1, daily_end_tim
             daily_end_time = end_hour
 
     if current_task_time == -1:
-        current_task_time = datetime.now(timezone.utc)
+        current_task_time = timezone.now() # datetime.now(timezone.utc) does not work in the ms. works here. Why?
     start_hour = daily_start_time
     stop_hour = daily_end_time
     current_hour = current_task_time.hour  # Get the hour from current_task_time

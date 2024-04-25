@@ -971,7 +971,7 @@ class DMViewset(viewsets.ModelViewSet):
                 message = Message()
                 message.content = serializer.data.get("message")
                 message.sent_by = "Human"
-                message.sent_on = timezone.now()
+                message.sent_on = timezone.now() #check:task we willl need to use correct timezone
                 message.thread = thread
                 message.save()
 
