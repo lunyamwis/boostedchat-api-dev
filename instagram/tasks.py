@@ -244,7 +244,7 @@ def like_and_comment(media_id, media_comment, salesrep, account):
         response =  requests.post(settings.MQTT_BASE_URL + "/comment", data=json.dumps(datasets))
         if response.status_code == 200:
             like_comment = True
-            time.sleep(60) # we break for 1 minute then send message
+            
 
             print(f"************* {account.igname} media has been liked and commented ****************" )
         else:
@@ -254,6 +254,8 @@ def like_and_comment(media_id, media_comment, salesrep, account):
         outreachErrorLogger(account, salesrep, response.text, response.status_code, "WARNING", "Liking", False) # reshedule_next
         print(f"************* {account.igname} media has not been liked and commented ****************" )
     return like_comment
+
+
     
 
 @shared_task()
@@ -346,6 +348,7 @@ def send_first_compliment(username, repeat=True):
     is_like_and_comment = like_and_comment(media_id=media_id, media_comment=outsourced_data.last().results.get("media_comment", ""),
                      salesrep=salesrep, account=account)
     if is_like_and_comment:
+        time.sleep(60) # we break for 1 minute then send message
         print("successfully liked and commented")
 
     print(f"data=============={data}")

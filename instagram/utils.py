@@ -1,8 +1,10 @@
+import random
 from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 from rest_framework.response import Response
 from outreaches.serializers import PeriodicTaskGetSerializer
 from outreaches.serializers import PeriodicTaskPostSerializer
+from sales_rep.models import SalesRep
 from rest_framework import status
 
 def get_account(username):
@@ -18,11 +20,24 @@ def get_account(username):
         print(error)
     return account
 
+
+def assign_salesrep(account):
+    try:
+        available_sales_reps = SalesRep.objects.filter(available=True)
+        random_salesrep_index = random.randint(0,len(available_sales_reps)-1)
+        available_sales_reps[random_salesrep_index].instagram.add(account)
+    except Exception as err:
+        print(err)
+        
+
 def get_sales_rep_for_account(username):
     salesrep = None
     account = get_account(username)
     if account:
-        salesrep = account.salesrep_set.first()
+        if account.salesrep_set.exists():
+            salesrep = account.salesrep_set.first()
+        else:
+            assign_salesrep(account=account)
     return salesrep
 
 def lead_is_for_salesrep(username, salesrep_to_check):
