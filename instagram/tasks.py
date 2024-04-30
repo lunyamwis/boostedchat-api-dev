@@ -366,6 +366,10 @@ def send_first_compliment(username, repeat=True):
                 try:
                     PeriodicTask.objects.get(name=f"SendFirstCompliment-{account.igname}").delete()
                 except Exception as error:
+                    try:
+                        PeriodicTask.objects.get(name=f"SendFirstCompliment-{account.igname}-workflow").delete()
+                    except Exception as error:
+                        logging.warning(error)
                     logging.warning(error)
             except Exception as error:
                 print(error)
