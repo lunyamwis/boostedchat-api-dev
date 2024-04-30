@@ -250,7 +250,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             return Response({"error": "Username not provided"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Retrieve the account object or return 404 if not found
-        account = get_object_or_404(Account, igname=username)
+        account = Account.objects.filter(igname=username).last()
 
         # Retrieve the last salesrep associated with the account
         salesrep = account.salesrep_set.last()
