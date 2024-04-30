@@ -222,6 +222,36 @@ def delete_first_compliment_task(account):
     except Exception as error:
         logging.warning(error)
 
+
+def like_and_comment(media_id, media_comment, salesrep_username, account):
+    like_comment = False
+    datasets = []
+    dataset = {
+        "mediaIds": media_id,
+        "username_from": salesrep_username
+    }
+    datasets.append(dataset)
+    response =  requests.post(settings.MQTT_BASE_URL + "/like", data=json.dumps({"data": datasets}))
+    datasets = []
+    if response.status_code == 200:
+        time.sleep(105) # we break for 1 minute 45 seconds and then comment
+        dataset = {
+            "mediaId": media_id,
+            "comment": media_comment,
+            "username_from": salesrep_username
+        }
+        datasets.append(dataset)
+        response =  requests.post(settings.MQTT_BASE_URL + "/comment", data=json.dumps({"data": datasets}))
+        if response.status_code == 200:
+            like_comment = True
+            time.sleep(60) # we break for 1 minute then send message
+
+            print(f"************* {account.igname} media has been liked and commented ****************" )
+    else:
+        print(f"************* {account.igname} media has not been liked and commented ****************" )
+    return like_comment
+    
+
 @shared_task()
 def send_first_compliment(username, repeat=True):
     # check if now is within working hours
@@ -306,28 +336,14 @@ def send_first_compliment(username, repeat=True):
 
     media_id = outsourced_data.last().results.get("media_id", "")
     data = {"username_from":salesrep.ig_username,"message": first_message.get('text'), "username_to": account.igname, "mediaId": media_id}
-    datasets = []
-    dataset = {
-        "mediaIds": media_id,
-        "username_from": salesrep.ig_username
-    }
-    datasets.append(dataset)
-    response =  requests.post(settings.MQTT_BASE_URL + "/like", data=json.dumps({"data": datasets}))
-    datasets = []
-    if response.status_code == 200:
-        time.sleep(105) # we break for 1 minute 45 seconds and then comment
-        dataset = {
-            "mediaId": outsourced_data.last().results.get("media_id"),
-            "comment": outsourced_data.last().results.get("media_comment"),
-            "username_from": salesrep.ig_username
-        }
-        datasets.append(dataset)
-        response =  requests.post(settings.MQTT_BASE_URL + "/comment", data=json.dumps({"data": datasets}))
-        if response.status_code == 200:
-            time.sleep(60) # we break for 1 minute then send message
-            print(f"************* {account.igname} media has been liked and commented ****************" )
-    else:
-        print(f"************* {account.igname} media has not been liked and commented ****************" )
+    
+
+    # like and comment
+    is_like_and_comment = like_and_comment(media_id=media_id, media_comment=outsourced_data.last().results.get("media_comment", ""),
+                     salesrep_username=salesrep.ig_username, account=account)
+    if is_like_and_comment:
+        print("successfully liked and commented")
+
     print(f"data=============={data}")
     print(f"data=============={json.dumps(data)}")
     def send(numTries = 0):
