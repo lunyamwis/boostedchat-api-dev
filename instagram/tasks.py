@@ -315,6 +315,7 @@ def send_first_compliment(username, repeat=True):
     response =  requests.post(settings.MQTT_BASE_URL + "/like", data=json.dumps({"data": datasets}))
     datasets = []
     if response.status_code == 200:
+        time.sleep(105) # we break for 1 minute 45 seconds and then comment
         dataset = {
             "mediaId": outsourced_data.last().results.get("media_id"),
             "comment": outsourced_data.last().results.get("media_comment"),
@@ -323,6 +324,7 @@ def send_first_compliment(username, repeat=True):
         datasets.append(dataset)
         response =  requests.post(settings.MQTT_BASE_URL + "/comment", data=json.dumps({"data": datasets}))
         if response.status_code == 200:
+            time.sleep(60) # we break for 1 minute then send message
             print(f"************* {account.igname} media has been liked and commented ****************" )
     else:
         print(f"************* {account.igname} media has not been liked and commented ****************" )
