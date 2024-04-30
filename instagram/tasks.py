@@ -247,6 +247,7 @@ def like_and_comment(media_id, media_comment, salesrep_username, account):
             time.sleep(60) # we break for 1 minute then send message
 
             print(f"************* {account.igname} media has been liked and commented ****************" )
+        
     else:
         print(f"************* {account.igname} media has not been liked and commented ****************" )
     return like_comment
@@ -255,9 +256,9 @@ def like_and_comment(media_id, media_comment, salesrep_username, account):
 @shared_task()
 def send_first_compliment(username, repeat=True):
     # check if now is within working hours
-    if not_in_interval():
-        err_str = f"{username} scheduled at wrong time"
-        outreachErrorLogger(None, None, err_str, 422, "ERROR", "Time", False) # we can not do anything about the time. Do not reschedule
+    # if not_in_interval():
+    #     err_str = f"{username} scheduled at wrong time"
+    #     outreachErrorLogger(None, None, err_str, 422, "ERROR", "Time", False) # we can not do anything about the time. Do not reschedule
     
     numTries = 0
     print(username)
