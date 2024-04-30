@@ -306,7 +306,26 @@ def send_first_compliment(username, repeat=True):
 
     media_id = outsourced_data.last().results.get("media_id", "")
     data = {"username_from":salesrep.ig_username,"message": first_message.get('text'), "username_to": account.igname, "mediaId": media_id}
-
+    datasets = []
+    dataset = {
+        "mediaIds": media_id,
+        "username_from": salesrep.ig_username
+    }
+    datasets.append(dataset)
+    response =  requests.post(settings.MQTT_BASE_URL + "/like", data=json.dumps({"data": datasets}))
+    datasets = []
+    if response.status_code == 200:
+        dataset = {
+            "mediaId": outsourced_data.last().results.get("media_id"),
+            "comment": outsourced_data.last().results.get("media_comment"),
+            "username_from": salesrep.ig_username
+        }
+        datasets.append(dataset)
+        response =  requests.post(settings.MQTT_BASE_URL + "/comment", data=json.dumps({"data": datasets}))
+        if response.status_code == 200:
+            print(f"************* {account.igname} media has been liked and commented ****************" )
+    else:
+        print(f"************* {account.igname} media has not been liked and commented ****************" )
     print(f"data=============={data}")
     print(f"data=============={json.dumps(data)}")
     def send(numTries = 0):
