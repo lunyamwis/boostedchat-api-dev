@@ -231,7 +231,7 @@ def like_and_comment(media_id, media_comment, salesrep, account):
         "username_from": salesrep.ig_username
     }
     datasets.append(dataset)
-    response =  requests.post(settings.MQTT_BASE_URL + "/like", data=json.dumps({"data": datasets}))
+    response =  requests.post(settings.MQTT_BASE_URL + "/like", data=json.dumps(datasets))
     datasets = []
     if response.status_code == 200:
         time.sleep(105) # we break for 1 minute 45 seconds and then comment
@@ -241,7 +241,7 @@ def like_and_comment(media_id, media_comment, salesrep, account):
             "username_from": salesrep.ig_username
         }
         datasets.append(dataset)
-        response =  requests.post(settings.MQTT_BASE_URL + "/comment", data=json.dumps({"data": datasets}))
+        response =  requests.post(settings.MQTT_BASE_URL + "/comment", data=json.dumps(datasets))
         if response.status_code == 200:
             like_comment = True
             time.sleep(60) # we break for 1 minute then send message
