@@ -7,20 +7,6 @@ from outreaches.serializers import PeriodicTaskPostSerializer
 from sales_rep.models import SalesRep
 from rest_framework import status
 
-def get_account(username):
-    account = None
-    try:
-        first_account = Account.objects.filter(igname="".join(username)).first()
-        last_account = Account.objects.filter(igname="".join(username)).last()
-        if first_account.salesrep_set.filter().exists():
-            account = first_account
-        elif last_account.salesrep_set.filter().exists():
-            account = last_account
-    except Exception as error:
-        print(error)
-    return account
-
-
 def assign_salesrep(account):
     salesrep = None
     try:
@@ -32,20 +18,41 @@ def assign_salesrep(account):
         print(err)
     return salesrep
 
+
+def get_account(username):
+    account = None
+    try:
+        first_account = Account.objects.filter(igname__icontains=''.join(username).split('-')[0]).first()
+        last_account = Account.objects.filter(igname__icontains=''.join(username).split('-')[0]).last()
+        if first_account.salesrep_set.exists():
+            account = first_account
+        elif last_account.salesrep_set.exists():
+            account = last_account
+        else:
+            assign_salesrep(last_account)
+            account = last_account
+
+    except Exception as error:
+        print(error)
+    return account
+
+
+
 def get_sales_rep_for_account(username):
     salesrep = None
+    username = username
     account = get_account(username)
     if account:
         if account.salesrep_set.exists():
             salesrep = account.salesrep_set.first()
-        else:
-            assign_salesrep(account=account)
+        
     return salesrep
 
 def lead_is_for_salesrep(username, salesrep_to_check):
     ret = False
     account_salesrep = get_sales_rep_for_account(username)
     account_sales_rep_igname = account_salesrep.ig_username
+
     if account_sales_rep_igname == salesrep_to_check:
         ret = True 
     return ret

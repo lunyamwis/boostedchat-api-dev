@@ -264,6 +264,7 @@ class TasksViewSet(viewsets.ModelViewSet):
             # get these from 
             # hours_per_day = 12 # int(request.data.get('numperDay', 12))  # Get hours_per_day from request data
             # daily_start_time = 14
+            # import pdb;pdb.set_trace()
             daily_start_time, _, hours_per_day, tasks_per_day, _ = outreach_time()
 
             daily_end_time = daily_start_time + hours_per_day
