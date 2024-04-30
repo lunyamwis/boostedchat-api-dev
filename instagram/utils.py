@@ -22,13 +22,15 @@ def get_account(username):
 
 
 def assign_salesrep(account):
+    salesrep = None
     try:
         available_sales_reps = SalesRep.objects.filter(available=True)
         random_salesrep_index = random.randint(0,len(available_sales_reps)-1)
         available_sales_reps[random_salesrep_index].instagram.add(account)
+        salesrep = available_sales_reps[random_salesrep_index]
     except Exception as err:
         print(err)
-        
+    return salesrep
 
 def get_sales_rep_for_account(username):
     salesrep = None
