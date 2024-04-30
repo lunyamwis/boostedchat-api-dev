@@ -244,7 +244,7 @@ def like_and_comment(media_id, media_comment, salesrep, account):
         response =  requests.post(settings.MQTT_BASE_URL + "/comment", data=json.dumps(datasets))
         if response.status_code == 200:
             like_comment = True
-            time.sleep(60) # we break for 1 minute then send message
+            
 
             print(f"************* {account.igname} media has been liked and commented ****************" )
         else:
@@ -294,7 +294,7 @@ def send_first_compliment(username, repeat=True):
         err_str = f"{username} has no sales rep assigned"
         # before rescheduling to next we can first of all assign a salesrep
         assign_salesrep(account=account)
-        
+
         outreachErrorLogger(account, None, err_str, 404, "ERROR", "Sales Rep", True) # reshedule_next
         # outreachErrorLogger(err_str)
         # raise Exception(err_str)
@@ -359,6 +359,7 @@ def send_first_compliment(username, repeat=True):
     is_like_and_comment = like_and_comment(media_id=media_id, media_comment=outsourced_data.last().results.get("media_comment", ""),
                      salesrep=salesrep, account=account)
     if is_like_and_comment:
+        time.sleep(60) # we break for 1 minute then send message
         print("successfully liked and commented")
 
     print(f"data=============={data}")
