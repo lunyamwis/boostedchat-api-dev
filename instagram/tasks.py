@@ -223,12 +223,12 @@ def delete_first_compliment_task(account):
         logging.warning(error)
 
 
-def like_and_comment(media_id, media_comment, salesrep_username, account):
+def like_and_comment(media_id, media_comment, salesrep, account):
     like_comment = False
     datasets = []
     dataset = {
         "mediaIds": media_id,
-        "username_from": salesrep_username
+        "username_from": salesrep.ig_username
     }
     datasets.append(dataset)
     response =  requests.post(settings.MQTT_BASE_URL + "/like", data=json.dumps({"data": datasets}))
@@ -238,7 +238,7 @@ def like_and_comment(media_id, media_comment, salesrep_username, account):
         dataset = {
             "mediaId": media_id,
             "comment": media_comment,
-            "username_from": salesrep_username
+            "username_from": salesrep.ig_username
         }
         datasets.append(dataset)
         response =  requests.post(settings.MQTT_BASE_URL + "/comment", data=json.dumps({"data": datasets}))
@@ -247,8 +247,11 @@ def like_and_comment(media_id, media_comment, salesrep_username, account):
             time.sleep(60) # we break for 1 minute then send message
 
             print(f"************* {account.igname} media has been liked and commented ****************" )
+        else:
+            outreachErrorLogger(account, salesrep, response.text, response.status_code, "WARNING", "Commenting", False) # reshedule_next
         
     else:
+        outreachErrorLogger(account, salesrep, response.text, response.status_code, "WARNING", "Liking", False) # reshedule_next
         print(f"************* {account.igname} media has not been liked and commented ****************" )
     return like_comment
     
@@ -341,7 +344,7 @@ def send_first_compliment(username, repeat=True):
 
     # like and comment
     is_like_and_comment = like_and_comment(media_id=media_id, media_comment=outsourced_data.last().results.get("media_comment", ""),
-                     salesrep_username=salesrep.ig_username, account=account)
+                     salesrep=salesrep, account=account)
     if is_like_and_comment:
         print("successfully liked and commented")
 
