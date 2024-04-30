@@ -256,14 +256,6 @@ def like_and_comment(media_id, media_comment, salesrep, account):
     return like_comment
 
 
-def assign_salesrep(account):
-    try:
-        available_sales_reps = SalesRep.objects.filter(available=True)
-        random_salesrep_index = random.randint(0,len(available_sales_reps)-1)
-        available_sales_reps[random_salesrep_index].instagram.add(account)
-    except Exception as err:
-        outreachErrorLogger(account, None, err, 404, "ERROR", "SalesrepAssign", True)
-        
     
 
 @shared_task()
@@ -292,9 +284,6 @@ def send_first_compliment(username, repeat=True):
 
     if not check_value:
         err_str = f"{username} has no sales rep assigned"
-        # before rescheduling to next we can first of all assign a salesrep
-        assign_salesrep(account=account)
-
         outreachErrorLogger(account, None, err_str, 404, "ERROR", "Sales Rep", True) # reshedule_next
         # outreachErrorLogger(err_str)
         # raise Exception(err_str)
