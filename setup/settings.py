@@ -46,6 +46,7 @@ ALLOWED_HOSTS = [
     "https://ed48-196-105-37-1.ngrok-free.app",
     "web",
     "api",
+    "8000-lunyamwidev-boostedchat-4qp4oxj8hjx.ws-eu114.gitpod.io"
 ]
 CSRF_TRUSTED_ORIGINS = [
     f"https://api.{os.environ.get('DOMAIN1', '')}.boostedchat.com",
@@ -57,7 +58,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://3e6a-62-8-92-218.ngrok-free.app",
     "https://3e6a-62-8-92-218.ngrok-fr",
     "https://ce2d-105-161-11-162.ngrok-free.app",
-    "https://ed48-196-105-37-1.ngrok-free.app"
+    "https://ed48-196-105-37-1.ngrok-free.app",
+    "https://8000-lunyamwidev-boostedchat-4qp4oxj8hjx.ws-eu114.gitpod.io/"
 
     ]
 DIALOGFLOW_BASE_URL = (

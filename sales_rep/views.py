@@ -16,8 +16,8 @@ from instagram.helpers.login import login_user
 from instagram.models import Account, StatusCheck
 from instagram.tasks import send_first_compliment
 
-from .helpers.task_allocation import no_consecutives, no_more_than_x
-from .models import SalesRep
+from .helpers.task_allocation import no_consecutives, no_more_than_x,get_moving_average
+from .models import SalesRep, Influencer, LeadAssignmentHistory
 from .serializers import AccountAssignmentSerializer, SalesRepSerializer
 
 # Create your views here.
@@ -51,6 +51,8 @@ class SalesRepManager(viewsets.ModelViewSet):
         sales_reps = SalesRep.objects.all()
         serializer = SalesRepSerializer(sales_reps, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
 
     @action(detail=True, methods=["post"], url_path="reassign")
     def reassign_salesrep(self, request, pk=None):
@@ -67,6 +69,52 @@ class SalesRepManager(viewsets.ModelViewSet):
         salesrep.save()
 
         return Response({"success":True}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=["post"], url_path="assign-salesrep")
+    def assign_salesrep(self, request):
+
+        lead = get_object_or_404(Account, igname=request.data.get('username'))
+
+        # Get all sales reps
+        sales_reps = SalesRep.objects.all()
+
+        # Calculate moving averages for all sales reps
+        sales_rep_moving_averages = {
+            sales_rep: get_moving_average(sales_rep) for sales_rep in sales_reps
+        }
+
+        # Find the sales rep with the minimum moving average
+        best_sales_rep = min(sales_rep_moving_averages, key=sales_rep_moving_averages.get)
+
+        # Assign the lead to the best sales rep
+        lead.assigned_to = best_sales_rep
+        lead.save()
+        # Record the assignment in the history
+        LeadAssignmentHistory.objects.create(sales_rep=best_sales_rep, lead=lead)
+        return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
+
+
+    @action(detail=False, methods=["post"], url_path="assign-influencer")
+    def assign_influencer(self, request):
+        lead = get_object_or_404(Account, igname=request.data.get('username'))
+
+        # Get all influencers
+        influencers = Influencer.objects.all()
+
+        # Calculate moving averages for all influencers
+        influencer_moving_averages = {
+            influencer: get_moving_average(sales_rep) for sales_rep in influencers
+        }
+
+        # Find the sales rep with the minimum moving average
+        best_influencer = min(influencer_moving_averages, key=influencer_moving_averages.get)
+
+        # Assign the lead to the best sales rep
+        lead.assigned_to = best_influencer
+        lead.save()
+        # Record the assignment in the history
+        LeadAssignmentHistory.objects.create(influencer=best_influencer, lead=lead)
+        return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
     @action(detail=False, methods=["post"], url_path="assign-accounts")
     def assign_accounts(self, request, pk=None):
