@@ -26,6 +26,7 @@ SECRET_KEY = "@yxw+2^(foid*3-@@uvjpm)!to+63zo4-%^3&_@((-+5%po=p-"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+APPEND_SLASH = False
 ALLOWED_HOSTS = [
     # "*",
     f"{os.environ.get('DOMAIN1', '')}.boostedchat.com",
@@ -46,7 +47,9 @@ ALLOWED_HOSTS = [
     "https://ed48-196-105-37-1.ngrok-free.app",
     "web",
     "api",
-    "8000-lunyamwidev-boostedchat-4qp4oxj8hjx.ws-eu114.gitpod.io"
+    "8000-lunyamwidev-boostedchat-4qp4oxj8hjx.ws-eu114.gitpod.io",
+    "03bc-2c0f-2a80-10e1-4210-817-bada-7f30-a73c.ngrok-free.app",
+    "9ccf-2c0f-2a80-10e3-6910-17d0-37c3-e0d3-185a.ngrok-free.app"
 ]
 CSRF_TRUSTED_ORIGINS = [
     f"https://api.{os.environ.get('DOMAIN1', '')}.boostedchat.com",
@@ -59,8 +62,9 @@ CSRF_TRUSTED_ORIGINS = [
     "https://3e6a-62-8-92-218.ngrok-fr",
     "https://ce2d-105-161-11-162.ngrok-free.app",
     "https://ed48-196-105-37-1.ngrok-free.app",
-    "https://8000-lunyamwidev-boostedchat-4qp4oxj8hjx.ws-eu114.gitpod.io/"
-
+    "https://8000-lunyamwidev-boostedchat-4qp4oxj8hjx.ws-eu114.gitpod.io/",
+    "https://03bc-2c0f-2a80-10e1-4210-817-bada-7f30-a73c.ngrok-free.app",
+    "https://9ccf-2c0f-2a80-10e3-6910-17d0-37c3-e0d3-185a.ngrok-free.app"
     ]
 DIALOGFLOW_BASE_URL = (
     "https://us-central1-dialogflow.googleapis.com/v3beta1/projects/boostedchatapi/locations/us-central1/"

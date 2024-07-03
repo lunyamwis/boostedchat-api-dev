@@ -179,3 +179,5 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = "__all__"
+        extra_kwargs = {"id": {"required": False, "allow_null": True},
+                        "sent_on": {"required": False, "allow_null": True}}        
