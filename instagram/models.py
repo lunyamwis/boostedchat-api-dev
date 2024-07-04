@@ -56,7 +56,9 @@ class OutSourced(BaseModel):
     results = models.JSONField()
     account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
 
-
+    def __str__(self) -> str:
+        return self.id
+    
 auditlog.register(Account)
 
 

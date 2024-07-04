@@ -11,10 +11,12 @@ from .views import (
     ReelViewSet,
     StoryViewSet,
     VideoViewSet,
+    OutSourcedViewSet,
     update_thread_details,
 )
 
 router = DefaultRouter()
+router.register(r"outsourced",OutSourcedViewSet,basename="outsourced")
 router.register(r"account", AccountViewSet, basename="account")
 router.register(r"comment", CommentViewSet, basename="comment")
 router.register(r"hashtag", HashTagViewSet, basename="hashtag")

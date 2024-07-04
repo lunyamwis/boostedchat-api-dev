@@ -1,7 +1,14 @@
 from rest_framework import serializers
 
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, StatusCheck, OutSourced
+from .models import Account, OutSourced, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, StatusCheck, OutSourced
 from django_celery_beat.models import PeriodicTask
+
+
+class OutSourcedSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OutSourced
+        fields = '__all__'
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 class AccountSerializer(serializers.ModelSerializer):
     # account_history = serializers.CharField(source="history.latest",read_only=True)
@@ -157,7 +164,8 @@ class ThreadSerializer(serializers.ModelSerializer):
         model = Thread
         fields = ["id", "username", "thread_id", "assigned_to", "account_id",
                   "unread_message_count", "last_message_content", "stage", "last_message_at",]
-        extra_kwargs = {"id": {"required": False, "allow_null": True}}
+        extra_kwargs = {"id": {"required": False, "allow_null": True},
+                        "account": {"required": False, "allow_null": True}}
 
 
     def to_representation(self, instance):

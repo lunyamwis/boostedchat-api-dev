@@ -35,6 +35,7 @@ from .helpers.init_db import init_db
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced
 from .serializers import (
     AccountSerializer,
+    OutSourcedSerializer,
     AddContentSerializer,
     CommentSerializer,
     HashTagSerializer,
@@ -58,6 +59,16 @@ class PaginationClass(PageNumberPagination):
     page_size_query_param = 'page_size'
     max_page_size = 100
 
+class OutSourcedViewSet(viewsets.ModelViewSet):
+    """
+    A viewset that provides the standard actions
+    """
+
+    queryset = OutSourced.objects.filter(account__isnull=False)
+    serializer_class = OutSourcedSerializer
+    # import pdb;pdb.set_trace()
+    pagination_class = PaginationClass
+    
 class AccountViewSet(viewsets.ModelViewSet):
     """
     A viewset that provides the standard actions
@@ -114,6 +125,40 @@ class AccountViewSet(viewsets.ModelViewSet):
         user = get_object_or_404(queryset, pk=pk)
         serializer = GetSingleAccountSerializer(user)
         return Response(serializer.data)
+
+    @action(detail=True,methods=["post"],url_path="add-outsourced")
+    def add_outsourced(self,request,pk=None):
+        account = self.get_object()
+        outsourced_json = request.data.get("results")
+        outsourced_source = request.data.get("source")
+        outsourced = OutSourced.objects.create(source=outsourced_source,results=outsourced_json,account=account)
+        return Response(
+            {
+                "message": "outsourced data saved succesfully",
+                "id": outsourced.id,
+                "result": outsourced.results,
+                "source": outsourced.source
+            }
+        )
+
+
+    @action(detail=False,methods=['post'],url_path='qualify-account')
+    def qualify_account(self, request, pk=None):
+        accounts = Account.objects.filter(igname = request.data.get('username'))
+        accounts_qualified = []
+        if accounts.exists():
+            for account in accounts:
+                if account.outsourced_set.exists():
+                    account.qualified = request.data.get('qualify_flag')
+                    account.save()
+                    accounts_qualified.append(
+                        {
+                            "qualified":account.qualified,
+                            "account_id":account.id
+                        }
+                    )
+        
+        return Response(accounts_qualified, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["get"], url_path="potential-buy")
     def potential_buy(self, request, pk=None):
@@ -871,6 +916,13 @@ class DMViewset(viewsets.ModelViewSet):
             "handled":True
         }, status = status.HTTP_202_ACCEPTED)
 
+    @action(detail=False,methods=['post'],url_path="create-with-account")
+    def create_with_account(self, request):
+        account = get_object_or_404(Account,id = request.data.pop('account_id'))
+        print(request.data)
+        print(account)
+        thread = Thread.objects.create(**request.data,account=account)
+        return Response({'id':thread.id}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["post"], url_path="download-csv")
     def download_csv(self, request):
@@ -1096,8 +1148,7 @@ class DMViewset(viewsets.ModelViewSet):
             subject = 'Hello Team'
             message = f'Please login to the system @https://booksy.us.boostedchat.com/ and respond to the following thread {account.igname}'
             from_email = 'lutherlunyamwi@gmail.com'
-            recipient_list = ['darwinokuku@gmail.com', 'lutherlunyamwi@gmail.com',
-                              'tomek@boostedchat.com', 'tuckertaylor@gmail.com']
+            recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
             send_mail(subject, message, from_email, recipient_list)
         except Exception as error:
             print(error)
