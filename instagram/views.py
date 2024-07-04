@@ -1081,13 +1081,13 @@ class DMViewset(viewsets.ModelViewSet):
 
         if thread.account.assigned_to == "Robot":
             try:
-                gpt_resp = get_gpt_response(account, thread.thread_id)
+                gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
 
-                thread.last_message_content = gpt_resp.get('text')
+                thread.last_message_content = gpt_resp
                 thread.last_message_at = timezone.now()
                 thread.save()
 
-                result = gpt_resp.get('text')
+                result = gpt_resp
                 Message.objects.create(
                     content=result,
                     sent_by="Robot",
