@@ -1067,7 +1067,7 @@ class DMViewset(viewsets.ModelViewSet):
                 for thread in threads:  
                     client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
                     if client_messages.exists() and client_messages.count() == 1:
-                        response = requests.post(f"https://api.{os.environ.get('DOMAIN2', '')}.boostedchat.comv1/instagram/ dflow/{thread.thread_id}/generate-response/ ")
+                        response = requests.post(f"https://api.{os.environ.get('DOMAIN2', '')}.boostedchat.comv1/instagram/dflow/{thread.thread_id}/generate-response/",data=json.dumps({"message":thread.last_message_content}),headers={'Content-Type': 'application/json'})
                         if response.status_code in [200,201]:
                             print(response.json())
                             account_messages_sent.append({
