@@ -1058,6 +1058,24 @@ class DMViewset(viewsets.ModelViewSet):
                 }
             )
 
+    def get_qualified_threads_and_respond(self, request, *args, **kwargs):
+        accounts = Account.objects.filter(index=1908)
+        account_messages_sent = []
+        if accounts.exists():
+            for account in accounts:
+                threads = Thread.objects.filter(account=account)  
+                for thread in threads:  
+                    client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
+                    if client_messages.exists() and client_messages.count() == 1:
+                        response = requests.post(f"https://api.{os.environ.get('DOMAIN2', '')}.boostedchat.comv1/instagram/ dflow/{thread.thread_id}/generate-response/ ")
+                        if response.status_code in [200,201]:
+                            print(response.json())
+                            account_messages_sent.append({
+                                "account":account.igname,
+                                "message":response.json()
+                            })
+        return Response(account_messages_sent,status=status.HTTP_200_OK)
+
     def generate_response(self, request, *args, **kwargs):
         thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
         req = request.data

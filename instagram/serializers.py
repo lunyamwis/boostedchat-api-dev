@@ -19,8 +19,10 @@ class AccountSerializer(serializers.ModelSerializer):
             "id",
             "igname",
             "full_name",
+            "index"
         ]
-        extra_kwargs = {"id": {"required": False, "allow_null": True}}
+        extra_kwargs = {"id": {"required": False, "allow_null": True},
+                        "index": {"required": False, "allow_null": True}}
 
 
 class GetAccountSerializer(serializers.ModelSerializer):

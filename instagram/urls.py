@@ -36,6 +36,11 @@ urlpatterns = [
         name='generate_response',
     ),
     path(
+        'sendFirstResponses/',
+        DMViewset.as_view({'post': 'get_qualified_threads_and_respond'}),
+        name='get_qualified_threads_and_respond',
+    ),
+    path(
         'fallback/<str:thread_id>/assign-operator/',
         DMViewset.as_view({'post': 'assign_operator'}),
         name='assign_operator',
