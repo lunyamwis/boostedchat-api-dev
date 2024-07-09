@@ -1,6 +1,7 @@
 # Create your views here.
 import csv
 import io
+import os
 import logging
 import uuid
 import json
@@ -1059,7 +1060,7 @@ class DMViewset(viewsets.ModelViewSet):
             )
 
     def get_qualified_threads_and_respond(self, request, *args, **kwargs):
-        accounts = Account.objects.filter(Q(index=1908) & Q(qualified=True))
+        accounts = Account.objects.filter(Q(qualified=True))
         account_messages_sent = []
         if accounts.exists():
             for account in accounts:
