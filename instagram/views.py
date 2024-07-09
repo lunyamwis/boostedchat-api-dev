@@ -1059,7 +1059,7 @@ class DMViewset(viewsets.ModelViewSet):
             )
 
     def get_qualified_threads_and_respond(self, request, *args, **kwargs):
-        accounts = Account.objects.filter(index=1908)
+        accounts = Account.objects.filter(Q(index=1908) & Q(qualified=True))
         account_messages_sent = []
         if accounts.exists():
             for account in accounts:
@@ -1074,7 +1074,9 @@ class DMViewset(viewsets.ModelViewSet):
                                 "account":account.igname,
                                 "message":response.json()
                             })
-        return Response(account_messages_sent,status=status.HTTP_200_OK)
+            return Response(account_messages_sent,status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'accounts do not exist'})
 
     def generate_response(self, request, *args, **kwargs):
         thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
