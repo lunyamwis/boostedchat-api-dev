@@ -72,8 +72,7 @@ class SalesRepManager(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="assign-salesrep/")
     def assign_salesrep(self, request):
-
-        lead = get_object_or_404(Account, igname=request.data.get('username'))
+        lead = Account.objects.filter(igname=request.data.get('username')).latest('created_at')
 
         # Get all sales reps
         sales_reps = SalesRep.objects.filter(available=True)
@@ -97,7 +96,7 @@ class SalesRepManager(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="assign-influencer/")
     def assign_influencer(self, request):
-        lead = get_object_or_404(Account, igname=request.data.get('username'))
+        lead = Account.objects.filter(igname=request.data.get('username')).latest('created_at')
 
         # Get all sales reps
         sales_reps = SalesRep.objects.filter(available=True)
