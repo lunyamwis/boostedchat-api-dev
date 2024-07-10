@@ -70,8 +70,8 @@ class SalesRepManager(viewsets.ModelViewSet):
 
         return Response({"success":True}, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=["post"], url_path="assign-salesrep/")
     def assign_salesrep(self, request):
+        # import pdb;pdb.set_trace()
         lead = Account.objects.filter(igname=request.data.get('username')).latest('created_at')
 
         # Get all sales reps
@@ -94,7 +94,6 @@ class SalesRepManager(viewsets.ModelViewSet):
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
 
-    @action(detail=False, methods=["post"], url_path="assign-influencer/")
     def assign_influencer(self, request):
         lead = Account.objects.filter(igname=request.data.get('username')).latest('created_at')
 
