@@ -1060,7 +1060,16 @@ class DMViewset(viewsets.ModelViewSet):
             )
 
     def get_qualified_threads_and_respond(self, request, *args, **kwargs):
-        accounts = Account.objects.filter(Q(qualified=True))
+        
+        # Get the start of yesterday's date
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+
+        # Filter accounts that are qualified and created from yesterday onwards
+        accounts = Account.objects.filter(
+            Q(qualified=True) & Q(created_at__gte=yesterday_start)
+        )
+
         account_messages_sent = []
         if accounts.exists():
             for account in accounts:
