@@ -48,7 +48,7 @@ class Account(BaseModel):
     index = models.IntegerField(default=1)
 
     def __str__(self) -> str:
-        return self.igname
+        return self.igname if self.igname else self.id
 
 
 class OutSourced(BaseModel):
