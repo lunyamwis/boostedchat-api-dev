@@ -16,7 +16,7 @@ class SalesRep(BaseModel):
     city = models.TextField(default="Pasadena")
 
     def __str__(self) -> str:
-        return self.user.email
+        return self.ig_username
 
 
 class Influencer(BaseModel):
