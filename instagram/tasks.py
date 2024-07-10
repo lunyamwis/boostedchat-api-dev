@@ -177,7 +177,7 @@ def logout_and_login(account, salesrep):
     # Error handler for this one
 def isMQTTUP():
     parsed_url = urlparse(settings.MQTT_BASE_URL)
-
+    print(settings.MQTT_BASE_URL)
     # Get the host and port from the parsed URL
     host = parsed_url.hostname
     scheme = parsed_url.scheme
@@ -259,7 +259,7 @@ def like_and_comment(media_id, media_comment, salesrep, account):
     
 
 @shared_task()
-def send_first_compliment(username, repeat=True):
+def send_first_compliment(username, message, repeat=True):
     # check if now is within working hours
     # if not_in_interval():
     #     err_str = f"{username} scheduled at wrong time"
@@ -276,9 +276,10 @@ def send_first_compliment(username, repeat=True):
         # raise Exception(err_str)
 
         
-    thread_exists = ig_thread_exists(username)
-    if thread_exists:
-        outreachErrorLogger(account, None, "Already has thread", 422, "ERROR", "Lead", True) # reshedule_next
+    # thread_exists = ig_thread_exists(username)
+    # if thread_exists:
+    #     outreachErrorLogger(account, None, "Already has thread", 422, "ERROR", "Lead", True) # reshedule_next
+    
     # check that account has sales_rep
     check_value = account_has_sales_rep(account)
 
@@ -338,10 +339,10 @@ def send_first_compliment(username, repeat=True):
     # raise Exception("There is something wrong with mqt----t")
     outsourced_data = OutSourced.objects.filter(account=account)
     
-    first_message = get_gpt_response(account)
+    first_message = get_gpt_response(account,message)
 
     media_id = outsourced_data.last().results.get("media_id", "")
-    data = {"username_from":salesrep.ig_username,"message": first_message.get('text'), "username_to": account.igname, "mediaId": media_id}
+    data = {"username_from":salesrep.ig_username,"message": first_message, "username_to": account.igname, "mediaId": media_id}
     
 
     # like and comment
@@ -372,22 +373,22 @@ def send_first_compliment(username, repeat=True):
                 except Exception as error:
                     print(error)
                     try:
-                        thread_obj = Thread.objects.get(thread_id=returned_data["thread_id"])
+                        thread_obj = Thread.objects.filter(thread_id=returned_data["thread_id"]).latest('created_at')
                     except Exception as error:
                         print(error)
-                thread_obj.thread_id = returned_data["thread_id"]
-                thread_obj.account = account
-                thread_obj.last_message_content = first_message.get('text')
-                thread_obj.unread_message_count = 0
-                thread_obj.last_message_at = datetime.datetime.fromtimestamp(int(returned_data['timestamp'])/1000000) # use UTC
-                thread_obj.save()
+                        thread_obj.thread_id = returned_data["thread_id"]
+                        thread_obj.account = account
+                        thread_obj.last_message_content = first_message
+                        thread_obj.unread_message_count = 0
+                        thread_obj.last_message_at = datetime.datetime.fromtimestamp(int(returned_data['timestamp'])/1000000) # use UTC
+                        thread_obj.save()
 
-                message = Message()
-                message.content = first_message.get('text')
-                message.sent_by = "Robot"
-                message.sent_on = datetime.datetime.fromtimestamp(int(returned_data["timestamp"]) / 1000000)
-                message.thread = thread_obj
-                message.save()
+                        message = Message()
+                        message.content = first_message
+                        message.sent_by = "Robot"
+                        message.sent_on = datetime.datetime.fromtimestamp(int(returned_data["timestamp"]) / 1000000)
+                        message.thread = thread_obj
+                        message.save()
                 try:
                     PeriodicTask.objects.get(name=f"SendFirstCompliment-{account.igname}").delete()
                 except Exception as error:

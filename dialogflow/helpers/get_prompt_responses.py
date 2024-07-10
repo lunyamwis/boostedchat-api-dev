@@ -55,17 +55,20 @@ def get_gpt_response(account, message, thread_id=None):
 
     payload = {
         "department":"Engagement Department",
+        "agent_name":"Engagement Persona Influencer Audit Rapport Building Agent",
         "Assigned":{
             "message":message,
-            "sales_rep":account.salesrep_set.first(),
-            "influencer_ig_name":account.salesrep_set.last(),
-            "outsourced_info":outsourced,
+            "sales_rep":account.salesrep_set.first().ig_username,
+            "influencer_ig_name":account.salesrep_set.last().ig_username,
+            "outsourced_info":outsourced_object.results,
             "relevant_information":outsourced_object.results
         }
     }
 
     url = os.getenv("SCRIPTING_URL") + '/agentSetup/'
-    resp = requests.post(url, data=payload)
+    print(url)
+    # import pdb;pdb.set_trace()
+    resp = requests.post(url, data=json.dumps(payload),headers = {'Content-Type': 'application/json'})
     response = resp.json()
-    result = response.get("output")
+    result = response.get("result")
     return result

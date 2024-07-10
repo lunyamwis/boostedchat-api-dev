@@ -32,6 +32,7 @@ from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
 from sales_rep.models import SalesRep
 
+from .tasks import send_first_compliment
 from .helpers.init_db import init_db
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced
 from .serializers import (
@@ -1073,17 +1074,18 @@ class DMViewset(viewsets.ModelViewSet):
         account_messages_sent = []
         if accounts.exists():
             for account in accounts:
-                threads = Thread.objects.filter(account=account)  
-                for thread in threads:  
-                    client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
-                    if client_messages.exists() and client_messages.count() == 1:
-                        response = requests.post(f"https://api.{os.environ.get('DOMAIN2', '')}.boostedchat.com/v1/instagram/dflow/{thread.thread_id}/generate-response/",data=json.dumps({"message":thread.last_message_content}),headers={'Content-Type': 'application/json'})
-                        if response.status_code in [200,201]:
-                            print(response.json())
-                            account_messages_sent.append({
-                                "account":account.igname,
-                                "message":response.json()
-                            })
+                if account.salesrep_set.exists(): # if they are assigned a salesrep
+                    threads = Thread.objects.filter(account=account)  
+                    for thread in threads:  
+                        client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
+                        robot_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Robot")).order_by("-sent_on")
+                        if client_messages.count() > 0 and robot_messages.count() == 0:
+                            print("gotten here")
+                            # import pdb;pdb.set_trace()
+                            try:
+                                send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
+                            except Exception as err:
+                                print(err)
             return Response(account_messages_sent,status=status.HTTP_200_OK)
         else:
             return Response({'message': 'accounts do not exist'})

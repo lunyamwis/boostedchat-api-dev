@@ -72,7 +72,7 @@ class SalesRepManager(viewsets.ModelViewSet):
 
     def assign_salesrep(self, request):
         # import pdb;pdb.set_trace()
-        lead = Account.objects.filter(igname=request.data.get('username')).latest('created_at')
+        lead = Account.objects.filter(Q(igname=request.data.get('username')) & Q(qualified=True)).latest('created_at')
 
         # Get all sales reps
         sales_reps = SalesRep.objects.filter(available=True)
@@ -81,7 +81,6 @@ class SalesRepManager(viewsets.ModelViewSet):
         sales_rep_moving_averages = {
             sales_rep: get_moving_average(sales_rep) for sales_rep in sales_reps
         }
-
         # Find the sales rep with the minimum moving average
         best_sales_rep = min(sales_rep_moving_averages, key=sales_rep_moving_averages.get)
         best_sales_rep.instagram.add(lead)
@@ -95,7 +94,7 @@ class SalesRepManager(viewsets.ModelViewSet):
 
 
     def assign_influencer(self, request):
-        lead = Account.objects.filter(igname=request.data.get('username')).latest('created_at')
+        lead = Account.objects.filter(Q(igname=request.data.get('username')) & Q(qualified=True)).latest('created_at')
 
         # Get all sales reps
         sales_reps = SalesRep.objects.filter(available=True)
