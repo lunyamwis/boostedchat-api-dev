@@ -374,8 +374,6 @@ def send_first_compliment(username, message, repeat=True):
                     print(error)
                     try:
                         thread_obj = Thread.objects.filter(thread_id=returned_data["thread_id"]).latest('created_at')
-                    except Exception as error:
-                        print(error)
                         thread_obj.thread_id = returned_data["thread_id"]
                         thread_obj.account = account
                         thread_obj.last_message_content = first_message
@@ -389,14 +387,9 @@ def send_first_compliment(username, message, repeat=True):
                         message.sent_on = datetime.datetime.fromtimestamp(int(returned_data["timestamp"]) / 1000000)
                         message.thread = thread_obj
                         message.save()
-                try:
-                    PeriodicTask.objects.get(name=f"SendFirstCompliment-{account.igname}").delete()
-                except Exception as error:
-                    try:
-                        PeriodicTask.objects.get(name=f"SendFirstCompliment-{account.igname}-workflow").delete()
+                        print("message is saved")
                     except Exception as error:
-                        logging.warning(error)
-                    logging.warning(error)
+                        print(error)
             except Exception as error:
                 print(error)
                 print("message not saved")

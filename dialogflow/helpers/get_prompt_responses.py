@@ -53,9 +53,17 @@ def get_gpt_response(account, message, thread_id=None):
     except Exception as error:
         print(error)
 
+    url = os.getenv("SCRIPTING_URL") + '/getAgent/'
+    get_agent_payload = {
+        "message":message
+    }
+    agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
+    agent_json_response = agent_response.json()
+
     payload = {
         "department":"Engagement Department",
-        "agent_name":"Engagement Persona Influencer Audit Rapport Building Agent",
+        "agent_name": agent_json_response.get("agent_name"),
+        "agent_task": agent_json_response.get("agent_task"),
         "Assigned":{
             "message":message,
             "sales_rep":account.salesrep_set.first().ig_username,
@@ -65,10 +73,12 @@ def get_gpt_response(account, message, thread_id=None):
         }
     }
 
+    print(url)
     url = os.getenv("SCRIPTING_URL") + '/agentSetup/'
     print(url)
     # import pdb;pdb.set_trace()
     resp = requests.post(url, data=json.dumps(payload),headers = {'Content-Type': 'application/json'})
     response = resp.json()
     result = response.get("result")
-    return result
+    # import pdb;pdb.set_trace()
+    return json.loads(result)['text']
