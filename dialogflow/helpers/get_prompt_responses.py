@@ -79,6 +79,10 @@ def get_gpt_response(account, message, thread_id=None):
     # import pdb;pdb.set_trace()
     resp = requests.post(url, data=json.dumps(payload),headers = {'Content-Type': 'application/json'})
     response = resp.json()
+    print(resp.json())
     result = response.get("result")
+    # print(result)
     # import pdb;pdb.set_trace()
-    return json.loads(result)['text']
+    results = json.loads(result.replace('```json\n','').replace('```',''))['text']
+    print(results)
+    return results
