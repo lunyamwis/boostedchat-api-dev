@@ -54,8 +54,10 @@ def get_gpt_response(account, message, thread_id=None):
         print(error)
 
     url = os.getenv("SCRIPTING_URL") + '/getAgent/'
+    conversations = get_conversation_so_far(account.thread_set.latest('created_at').thread_id)
     get_agent_payload = {
-        "message":message
+        "message":message,
+        "conversations":conversations if conversations else ""
     }
     agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
     agent_json_response = agent_response.json()
