@@ -18,7 +18,7 @@ from .helpers.format_username import format_full_name
 from outreaches.utils import process_reschedule_single_task, ig_thread_exists, not_in_interval ## move
 from .utils import get_account, tasks_by_sales_rep
 from outreaches.models import OutreachErrorLog
-from tabulate import tabulate # for print_logs
+# from tabulate import tabulate # for print_logs
 from urllib.parse import urlparse
 import socket
 
@@ -36,7 +36,7 @@ def print_logs():
         sales_rep_username = log.sales_rep.ig_username if log.sales_rep else ""
         data.append([log.code, log.account, sales_rep_username, log.error_message, log.error_type, log.created_at, log.log_level])
 
-    print(tabulate(data, headers=headers, tablefmt="pretty"))
+    # print(tabulate(data, headers=headers, tablefmt="pretty"))
 
 def sales_rep_is_logged_in(account, salesrep):
     igname =  account_has_sales_rep(account)
