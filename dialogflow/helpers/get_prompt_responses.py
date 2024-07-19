@@ -62,6 +62,7 @@ def get_gpt_response(account, message, thread_id=None):
     agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
     agent_json_response = agent_response.json()
     print(agent_json_response)
+    # import pdb;pdb.set_trace()
     payload = {
         "department":"Engagement Department",
         "agent_name": agent_json_response.get("agent_name"),
@@ -74,6 +75,7 @@ def get_gpt_response(account, message, thread_id=None):
             "relevant_information":outsourced_object.results
         }
     }
+    print(payload)
     print(message)
     print(url)
     url = os.getenv("SCRIPTING_URL") + '/agentSetup/'
