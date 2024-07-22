@@ -147,6 +147,13 @@ WSGI_APPLICATION = "setup.wsgi.application"
 
 ROLEPERMISSIONS_MODULE = "roles.roles"
 
+# And add 'pgcrypto' to `INSTALLED_APPS` to create the extension for
+# pgcrypto (in a migration).
+# INSTALLED_APPS = (
+#     'pgcrypto',
+#     # Other installed apps
+# )
+
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 # if DEBUG:
@@ -158,13 +165,28 @@ ROLEPERMISSIONS_MODULE = "roles.roles"
 #         }
 #     }
 # else:
+
+# set up the database to work on development and production databases
+env = os.getenv("ENV", "").strip()
+dev_dbname = os.getenv("DEV_POSTGRES_DBNAME", "").strip()
+dev_dbusername = os.getenv("DEV_POSTGRES_USERNAME", "").strip()
+dev_db_password = os.getenv("DEV_POSTGRES_PASSWORD", "").strip()
+dev_db_host = os.getenv("DEVELOPMENT_POSTGRES_HOST", "").strip()
+
+
+
+db_name =  dev_dbname if env == 'development'  else os.getenv("POSTGRES_DBNAME").strip()
+db_user  =  dev_dbusername if env == 'development'  else os.getenv("POSTGRES_USERNAME").strip()
+db_password =  dev_db_password if env == 'development'  else os.getenv("POSTGRES_PASSWORD").strip()
+db_host =  dev_db_host if env == 'development'  else os.getenv("POSTGRES_HOST").strip()
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DBNAME").strip(),
-        "USER": os.getenv("POSTGRES_USERNAME").strip(),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD").strip(),
-        "HOST": os.getenv("POSTGRES_HOST").strip(),
+        "NAME": db_name,
+        "USER": db_user,
+        "PASSWORD": db_password,
+        "HOST": db_host,
         "PORT": 5432,
     }
 }
