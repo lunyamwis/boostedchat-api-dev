@@ -80,42 +80,14 @@ def get_gpt_response(account, message, thread_id=None):
     
     agent_name = agent_json_response.get("agent_name")
     agent_task = agent_json_response.get("agent_task")
+    if account.confirmed_problems:
+        agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
+        agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
+    elif account.solution_presented:
+        agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
+        agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
+                        
 
-    # Extract the confirmed problems from the text blob
-    confirmed_problems_str = conversations.split('"confirmed_problems": [')[1].split(']')[0]
-    confirmed_problems = [problem.strip('"') for problem in confirmed_problems_str.split(',')]
-
-    # Iterate over the confirmed problems
-    for problem in confirmed_problems:
-        # Check if the problem exists in the text
-        if problem.lower() in conversations.lower():
-            print(f"Confirmed problem found: {problem}")
-            agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
-            agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
-            # account.confirmed_problems = problem.lower().strip()
-            # account.save()
-            index = conversations.find('"solution_presented":')
-            if index != -1:
-                # Extract the value of 'solution_presented'
-                solution_presented = conversations[index + 19:].split(',')[0].strip()
-                # Find the first digit in the text
-                match = re.search(r'\d', solution_presented)
-
-                # If a digit is found
-                if match:
-                    # Extract the digit
-                    first_digit = match.group(0)
-                    if int(first_digit) == 1:
-                        agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
-                        agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
-                        print(f"The first digit found in the text is: {first_digit}")
-                else:
-                    print("No digit found in the text.")
-                #print(f"The value of 'solution_presented' is: {solution_presented}")
-            else:
-                print("'solution_presented' not found in the text.")
-        else:
-            print(f"No match found for: {problem}")
     
     print("agent_name:",agent_name,"agent_task:",agent_task)
 
@@ -143,11 +115,61 @@ def get_gpt_response(account, message, thread_id=None):
     response = resp.json()
     print(resp.json())
     result = response.get("result")
+    # Find the index of the opening quote after "text":
+    confirmed_problems_str = result.split('"confirmed_problems": [')[1].split(']')[0]
+    confirmed_problems = [problem.strip('"') for problem in confirmed_problems_str.split(',')]
+
+    # Iterate over the confirmed problems
+    for problem in confirmed_problems:
+        # Check if the problem exists in the text
+        if problem.lower() in result.lower():
+            print(f"Confirmed problem found: {problem}")
+            # agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
+            # agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
+            
+            account.confirmed_problems = problem.lower().strip().replace("\"","")
+            account.save()
+            index = result.find('"solution_presented":')
+            if index != -1:
+                # Extract the value of 'solution_presented'
+                solution_presented = result[index + 19:].split(',')[0].strip()
+                # Find the first digit in the text
+                match = re.search(r'\d', solution_presented)
+
+                # If a digit is found
+                if match:
+                    # Extract the digit
+                    first_digit = match.group(0)
+                    if int(first_digit) == 1:
+                        print(f"The first digit found in the text is: {first_digit}")
+                        # agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
+                        # agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
+                        
+                        account.solution_presented = True
+                        account.save()
+                else:
+                    print("No digit found in the text.")
+                #print(f"The value of 'solution_presented' is: {solution_presented}")
+            else:
+                print("'solution_presented' not found in the text.")
+        else:
+            print(f"No match found for: {problem}")
+    
+    print(result)
+    
+    start_index = result.find('"text": "') + len('"text": "')
+    
+    # Find the index of the closing quote before the end of the text
+    end_index = result.rfind('"', start_index)
+    
+    # Extract the text
+    extracted_text = result[start_index:end_index]
 
     # print(result)
     # import pdb;pdb.set_trace()
     #results = json.loads(result.replace('```json\n','').replace('```',''))['text']
-    print(result)
+    extracted_text = extracted_text.replace('\n\n', ' ').replace('\n', ' ')
+    print(extracted_text)
 
 
-    return result
+    return extracted_text

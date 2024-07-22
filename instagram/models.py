@@ -40,6 +40,7 @@ class Account(BaseModel):
     script_version = models.CharField(max_length=255,null=True,blank=True)
     status_param = models.CharField(max_length=255, null=True, unique=False, blank=True)
     confirmed_problems = models.TextField(null=True, blank=True, default="test")
+    solution_presented = models.BooleanField(default=False)
     rejected_problems = models.TextField(null=True, blank=True, default="test")
     linked_to = models.CharField(max_length=255, null=True, blank=True, default="no_one")
     history = AuditlogHistoryField(pk_indexable=False)
