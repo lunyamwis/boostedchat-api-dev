@@ -3,6 +3,7 @@ from django.utils import timezone
 from authentication.models import User
 from base.models import BaseModel
 from instagram.models import Account
+from pgcrypto import fields
 
 
 # Create your models here.
@@ -26,6 +27,7 @@ class SalesRep(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     ig_username = models.CharField(max_length=255, null=True, blank=True)
     ig_password = models.CharField(max_length=255, null=True, blank=True)
+    # ig_password = fields.CharPGPSymmetricKeyField(("ig_password"),max_length=255, null=True, blank=True)
     instagram = models.ManyToManyField(Account, blank=True)
     available = models.BooleanField(default=True)
     country = models.TextField(default="US")
