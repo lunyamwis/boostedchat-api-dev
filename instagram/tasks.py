@@ -36,7 +36,7 @@ def print_logs():
         sales_rep_username = log.sales_rep.ig_username if log.sales_rep else ""
         data.append([log.code, log.account, sales_rep_username, log.error_message, log.error_type, log.created_at, log.log_level])
 
-    print(tabulate(data, headers=headers, tablefmt="pretty"))
+    # print(tabulate(data, headers=headers, tablefmt="pretty"))
 
 def sales_rep_is_logged_in(account, salesrep):
     igname =  account_has_sales_rep(account)

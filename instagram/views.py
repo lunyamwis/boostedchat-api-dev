@@ -1091,12 +1091,13 @@ class DMViewset(viewsets.ModelViewSet):
             return Response({'message': 'accounts do not exist'})
 
     def generate_response(self, request, *args, **kwargs):
-        thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
+        thread = Thread.objects.filter(thread_id=kwargs.get('thread_id')).latest('created_at')
         req = request.data
         query = req.get("message")
 
-        account = Account.objects.get(id=thread.account.id)
-        thread = Thread.objects.filter(account=account).last()
+        account = Account.objects.filter(id=thread.account.id).latest('created_at')
+        print(account.id)
+        thread = Thread.objects.filter(account=account).latest('created_at')
 
         client_messages = query.split("#*eb4*#")
         for client_message in client_messages:

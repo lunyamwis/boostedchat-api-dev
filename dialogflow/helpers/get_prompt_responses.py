@@ -54,12 +54,15 @@ def get_gpt_response(account, message, thread_id=None):
         print(error)
 
     url = os.getenv("SCRIPTING_URL") + '/getAgent/'
+    conversations = get_conversation_so_far(account.thread_set.latest('created_at').thread_id)
     get_agent_payload = {
-        "message":message
+        "message":message,
+        "conversations":conversations if conversations else ""
     }
     agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
     agent_json_response = agent_response.json()
-
+    print(agent_json_response)
+    # import pdb;pdb.set_trace()
     payload = {
         "department":"Engagement Department",
         "agent_name": agent_json_response.get("agent_name"),
@@ -72,13 +75,18 @@ def get_gpt_response(account, message, thread_id=None):
             "relevant_information":outsourced_object.results
         }
     }
-
+    print(payload)
+    print(message)
     print(url)
     url = os.getenv("SCRIPTING_URL") + '/agentSetup/'
     print(url)
     # import pdb;pdb.set_trace()
     resp = requests.post(url, data=json.dumps(payload),headers = {'Content-Type': 'application/json'})
     response = resp.json()
+    print(resp.json())
     result = response.get("result")
+    # print(result)
     # import pdb;pdb.set_trace()
-    return json.loads(result)['text']
+    #results = json.loads(result.replace('```json\n','').replace('```',''))['text']
+    print(result)
+    return result
