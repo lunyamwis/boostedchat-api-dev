@@ -67,6 +67,7 @@ def get_gpt_response(account, message, thread_id=None):
         "department":"Engagement Department",
         "agent_name": agent_json_response.get("agent_name"),
         "agent_task": agent_json_response.get("agent_task"),
+        "converstations": conversations if conversations else "",
         "Assigned":{
             "message":message,
             "sales_rep":account.salesrep_set.first().ig_username,
