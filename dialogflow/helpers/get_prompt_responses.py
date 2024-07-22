@@ -116,45 +116,48 @@ def get_gpt_response(account, message, thread_id=None):
     print(resp.json())
     result = response.get("result")
     # Find the index of the opening quote after "text":
-    confirmed_problems_str = result.split('"confirmed_problems": [')[1].split(']')[0]
-    confirmed_problems = [problem.strip('"') for problem in confirmed_problems_str.split(',')]
+    try:
+        confirmed_problems_str = result.split('"confirmed_problems": [')[1].split(']')[0]
+        confirmed_problems = [problem.strip('"') for problem in confirmed_problems_str.split(',')]
 
-    # Iterate over the confirmed problems
-    for problem in confirmed_problems:
-        # Check if the problem exists in the text
-        if problem.lower() in result.lower():
-            print(f"Confirmed problem found: {problem}")
-            # agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
-            # agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
-            
-            account.confirmed_problems = problem.lower().strip().replace("\"","")
-            account.save()
-            index = result.find('"solution_presented":')
-            if index != -1:
-                # Extract the value of 'solution_presented'
-                solution_presented = result[index + 19:].split(',')[0].strip()
-                # Find the first digit in the text
-                match = re.search(r'\d', solution_presented)
+        # Iterate over the confirmed problems
+        for problem in confirmed_problems:
+            # Check if the problem exists in the text
+            if problem.lower() in result.lower():
+                print(f"Confirmed problem found: {problem}")
+                # agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
+                # agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
+                
+                account.confirmed_problems = problem.lower().strip().replace("\"","")
+                account.save()
+                index = result.find('"solution_presented":')
+                if index != -1:
+                    # Extract the value of 'solution_presented'
+                    solution_presented = result[index + 19:].split(',')[0].strip()
+                    # Find the first digit in the text
+                    match = re.search(r'\d', solution_presented)
 
-                # If a digit is found
-                if match:
-                    # Extract the digit
-                    first_digit = match.group(0)
-                    if int(first_digit) == 1:
-                        print(f"The first digit found in the text is: {first_digit}")
-                        # agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
-                        # agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
-                        
-                        account.solution_presented = True
-                        account.save()
+                    # If a digit is found
+                    if match:
+                        # Extract the digit
+                        first_digit = match.group(0)
+                        if int(first_digit) == 1:
+                            print(f"The first digit found in the text is: {first_digit}")
+                            # agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
+                            # agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
+                            
+                            account.solution_presented = True
+                            account.save()
+                    else:
+                        print("No digit found in the text.")
+                    #print(f"The value of 'solution_presented' is: {solution_presented}")
                 else:
-                    print("No digit found in the text.")
-                #print(f"The value of 'solution_presented' is: {solution_presented}")
+                    print("'solution_presented' not found in the text.")
             else:
-                print("'solution_presented' not found in the text.")
-        else:
-            print(f"No match found for: {problem}")
-    
+                print(f"No match found for: {problem}")
+    except Exception as err:
+        print("There are no confirmed problems")
+            
     print(result)
 
     start_index = result.find('"text": "') + len('"text": "')
