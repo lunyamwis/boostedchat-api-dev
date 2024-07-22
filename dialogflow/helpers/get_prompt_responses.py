@@ -61,34 +61,64 @@ def get_gpt_response(account, message, thread_id=None):
     }
     agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
     agent_json_response = agent_response.json()
-    print(agent_json_response)
-    confirmed_problems = [
-        "Need for new clients or increased clientele and market visibility",
-        "Missed opportunities in diversifying revenue streams",
-        "Inefficient payment processing",
-        "Missed opportunity to promote your high-potential IG account by posting regularly with social media post creator tools",
-        "Missed opportunity to enable bookings from platforms (Google, Instagram, Facebook, Booksy which is the biggest beauty marketplace, their Website) where clients discover and book beauty services",
-        "Not assigning the right priority to engaging the returning, loyal clients",
-        "Missed opportunity to reengage clients and fill up slower days with time-sensitive promotions",
-        "Lack of ability to invite back to the chair the clients who stopped booking to build long-term success on returning clients",
-        "Reviews are not visible across Google, Facebook, IG, and Booksy which is the major beauty marketplace",
-        "Unclear and high client acquisition costs with Google Ads, Instagram Ads, and others that don't show total marketing cost per new client",
-        "Missed opportunity to convert current and future IG followers to clients in the chair",
-        "Need for new clients or increased clientele and market visibility ",
-        "No-shows and cancellations ruining the bottom line",
-    ]
+    # print(agent_json_response)
+    # confirmed_problems = [
+    #     "Need for new clients or increased clientele and market visibility",
+    #     "Missed opportunities in diversifying revenue streams",
+    #     "Inefficient payment processing",
+    #     "Missed opportunity to promote your high-potential IG account by posting regularly with social media post creator tools",
+    #     "Missed opportunity to enable bookings from platforms (Google, Instagram, Facebook, Booksy which is the biggest beauty marketplace, their Website) where clients discover and book beauty services",
+    #     "Not assigning the right priority to engaging the returning, loyal clients",
+    #     "Missed opportunity to reengage clients and fill up slower days with time-sensitive promotions",
+    #     "Lack of ability to invite back to the chair the clients who stopped booking to build long-term success on returning clients",
+    #     "Reviews are not visible across Google, Facebook, IG, and Booksy which is the major beauty marketplace",
+    #     "Unclear and high client acquisition costs with Google Ads, Instagram Ads, and others that don't show total marketing cost per new client",
+    #     "Missed opportunity to convert current and future IG followers to clients in the chair",
+    #     "Need for new clients or increased clientele and market visibility ",
+    #     "No-shows and cancellations ruining the bottom line",
+    # ]
     
     agent_name = agent_json_response.get("agent_name")
     agent_task = agent_json_response.get("agent_task")
 
+    # Extract the confirmed problems from the text blob
+    confirmed_problems_str = conversations.split('"confirmed_problems": [')[1].split(']')[0]
+    confirmed_problems = [problem.strip('"') for problem in confirmed_problems_str.split(',')]
+
+    # Iterate over the confirmed problems
     for problem in confirmed_problems:
         # Check if the problem exists in the text
-        if problem.lower() in conversations:
+        if problem.lower() in conversations.lower():
             print(f"Confirmed problem found: {problem}")
             agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
             agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
+            # account.confirmed_problems = problem.lower().strip()
+            # account.save()
+            index = conversations.find('"solution_presented":')
+            if index != -1:
+                # Extract the value of 'solution_presented'
+                solution_presented = conversations[index + 19:].split(',')[0].strip()
+                # Find the first digit in the text
+                match = re.search(r'\d', solution_presented)
+
+                # If a digit is found
+                if match:
+                    # Extract the digit
+                    first_digit = match.group(0)
+                    if int(first_digit) == 1:
+                        agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
+                        agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
+                        print(f"The first digit found in the text is: {first_digit}")
+                else:
+                    print("No digit found in the text.")
+                #print(f"The value of 'solution_presented' is: {solution_presented}")
+            else:
+                print("'solution_presented' not found in the text.")
         else:
             print(f"No match found for: {problem}")
+    
+    print("agent_name:",agent_name,"agent_task:",agent_task)
+
     # import pdb;pdb.set_trace()
     payload = {
         "department":"Engagement Department",
