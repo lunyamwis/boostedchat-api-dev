@@ -243,6 +243,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://jamel.boostedchat.com",
     f"https://{os.environ.get('DOMAIN1', '')}.boostedchat.com",
     f"https://{os.environ.get('DOMAIN2', '')}.boostedchat.com",
+    "https://mqtt.booksy.us.boostedchat.com"
 ]
 
 CORS_ALLOW_HEADERS = (
