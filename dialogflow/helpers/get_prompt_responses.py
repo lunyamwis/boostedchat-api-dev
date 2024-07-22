@@ -80,7 +80,7 @@ def get_gpt_response(account, message, thread_id=None):
     
     agent_name = agent_json_response.get("agent_name")
     agent_task = agent_json_response.get("agent_task")
-    if account.confirmed_problems:
+    if account.confirmed_problems and account.confirmed_problems != "test":
         agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
         agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
     elif account.solution_presented:
@@ -156,7 +156,7 @@ def get_gpt_response(account, message, thread_id=None):
             print(f"No match found for: {problem}")
     
     print(result)
-    
+
     start_index = result.find('"text": "') + len('"text": "')
     
     # Find the index of the closing quote before the end of the text
