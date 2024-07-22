@@ -117,7 +117,13 @@ def get_gpt_response(account, message, thread_id=None):
     result = response.get("result")
     # Find the index of the opening quote after "text":
     try:
-        confirmed_problems_str = result.split('"confirmed_problems": [')[1].split(']')[0]
+        try:
+            confirmed_problems_str = result.split('"confirmed_problems": [')[1].split(']')[0]
+        except Exception as error:
+            try:
+                confirmed_problems_str = result.split('"confirmed_problems":')[1].split(']')[0]
+            except Exception as error:
+                print (error)            
         confirmed_problems = [problem.strip('"') for problem in confirmed_problems_str.split(',')]
 
         # Iterate over the confirmed problems
@@ -157,7 +163,7 @@ def get_gpt_response(account, message, thread_id=None):
                 print(f"No match found for: {problem}")
     except Exception as err:
         print("There are no confirmed problems")
-            
+
     print(result)
 
     start_index = result.find('"text": "') + len('"text": "')
