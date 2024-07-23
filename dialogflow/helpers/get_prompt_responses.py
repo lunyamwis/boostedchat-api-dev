@@ -55,9 +55,14 @@ def get_gpt_response(account, message, thread_id=None):
 
     url = os.getenv("SCRIPTING_URL") + '/getAgent/'
     conversations = get_conversation_so_far(account.thread_set.latest('created_at').thread_id)
+    # active_stage = None
+    # if account.status_param:
+    #     active_stage = account.status_param
+
     get_agent_payload = {
         "message":message,
-        "conversations":conversations if conversations else ""
+        "conversations":conversations if conversations else "",
+        "active_stage": account.status_param if account.status_param else ""
     }
     agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
     agent_json_response = agent_response.json()
@@ -81,6 +86,7 @@ def get_gpt_response(account, message, thread_id=None):
     agent_name = agent_json_response.get("agent_name")
     agent_task = agent_json_response.get("agent_task")
 
+    
 
     # if account.question_asked and not account.confirmed_problems or account.confirmed_problems == "test" and not account.solution_presented:
     #     agent_name = "Engagement Persona Influencer Audit Needs Assessment Agent"
@@ -123,6 +129,13 @@ def get_gpt_response(account, message, thread_id=None):
     # Find the index of the opening quote after "text":
     try:
         prepended_result  = json.loads(result.replace('```json\n','').replace('```',''))
+        try:
+            active_stage_res = prepended_result['active_stage']
+            account.status_param = active_stage_res
+            account.save()
+        except Exception as err:
+            print("Active stage problem: ",err)
+
         try:
             question_asked_res = prepended_result['question_asked']
             account.question_asked = bool(int(question_asked_res))
