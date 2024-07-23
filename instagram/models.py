@@ -41,6 +41,7 @@ class Account(BaseModel):
     status_param = models.CharField(max_length=255, null=True, unique=False, blank=True)
     confirmed_problems = models.TextField(null=True, blank=True, default="test")
     solution_presented = models.BooleanField(default=False)
+    question_asked = models.BooleanField(default=False)
     rejected_problems = models.TextField(null=True, blank=True, default="test")
     linked_to = models.CharField(max_length=255, null=True, blank=True, default="no_one")
     # history = AuditlogHistoryField(pk_indexable=False)
@@ -60,7 +61,7 @@ class OutSourced(BaseModel):
     def __str__(self) -> str:
         return self.id
     
-auditlog.register(Account)
+# auditlog.register(Account)
 
 
 class HashTag(BaseModel):

@@ -80,10 +80,15 @@ def get_gpt_response(account, message, thread_id=None):
     
     agent_name = agent_json_response.get("agent_name")
     agent_task = agent_json_response.get("agent_task")
-    if account.confirmed_problems and account.confirmed_problems != "test":
+
+
+    if account.question_asked and not account.confirmed_problems or account.confirmed_problems == "test" and not account.solution_presented:
+        agent_name = "Engagement Persona Influencer Audit Needs Assessment Agent"
+        agent_task = "ED_PersonaInfluencerAuditNeedsAssessmentA_BuildMessageT"
+    elif account.question_asked and account.confirmed_problems and account.confirmed_problems != "test" and not account.solution_presented:
         agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
         agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
-    elif account.solution_presented:
+    elif account.question_asked and account.confirmed_problems and account.confirmed_problems != "test" and account.solution_presented:
         agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
         agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
                         
@@ -117,6 +122,27 @@ def get_gpt_response(account, message, thread_id=None):
     result = response.get("result")
     # Find the index of the opening quote after "text":
     try:
+        index = result.find('"question_asked":')
+        if index != -1:
+            # Extract the value of 'solution_presented'
+            question_asked = result[index + 19:].split(',')[0].strip()
+            # Find the first digit in the text
+            match = re.search(r'\d', question_asked)
+
+            # If a digit is found
+            if match:
+                # Extract the digit
+                first_digit = match.group(0)
+                if int(first_digit) == 1:
+                    print(f"The first digit found in the text is: {first_digit}")
+                    # agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
+                    # agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
+                    
+                    account.question_asked = True
+                    account.save()
+            else:
+                print("No digit found in the text.")
+
         try:
             confirmed_problems_str = result.split('"confirmed_problems": [')[1].split(']')[0]
         except Exception as error:
