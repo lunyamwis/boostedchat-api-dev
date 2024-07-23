@@ -125,7 +125,7 @@ def get_gpt_response(account, message, thread_id=None):
         prepended_result  = json.loads(result.replace('```json\n','').replace('```',''))
         try:
             question_asked_res = prepended_result['question_asked']
-            account.question_asked = int(question_asked_res)
+            account.question_asked = bool(int(question_asked_res))
             account.save()
         except Exception as err:
             print("Question not asked: ",err)
@@ -139,7 +139,7 @@ def get_gpt_response(account, message, thread_id=None):
         
         try:
             solution_presented_res = prepended_result['solution_presented']
-            account.solution_presented = int(solution_presented_res)
+            account.solution_presented = bool(int(solution_presented_res))
             account.save()
         except Exception as err:
             print("Solution not presented: ",err)    
