@@ -43,7 +43,7 @@ class Account(BaseModel):
     solution_presented = models.BooleanField(default=False)
     rejected_problems = models.TextField(null=True, blank=True, default="test")
     linked_to = models.CharField(max_length=255, null=True, blank=True, default="no_one")
-    history = AuditlogHistoryField(pk_indexable=False)
+    # history = AuditlogHistoryField(pk_indexable=False)
     dormant_profile_created = models.BooleanField(default=True, null=True, blank=True)
     qualified = models.BooleanField(default=False)
     index = models.IntegerField(default=1)
