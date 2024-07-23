@@ -125,7 +125,7 @@ def get_gpt_response(account, message, thread_id=None):
     resp = requests.post(url, data=json.dumps(payload),headers = {'Content-Type': 'application/json'})
     response = resp.json()
     print(resp.json())
-    result = response.get("result")
+    result = response.get('result')[0][1]
     # Find the index of the opening quote after "text":
     try:
         prepended_result  = json.loads(result.replace('```json\n','').replace('```',''))
