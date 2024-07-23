@@ -122,73 +122,94 @@ def get_gpt_response(account, message, thread_id=None):
     result = response.get("result")
     # Find the index of the opening quote after "text":
     try:
-        index = result.find('"question_asked":')
-        if index != -1:
-            # Extract the value of 'solution_presented'
-            question_asked = result[index + 19:].split(',')[0].strip()
-            # Find the first digit in the text
-            match = re.search(r'\d', question_asked)
-
-            # If a digit is found
-            if match:
-                # Extract the digit
-                first_digit = match.group(0)
-                if int(first_digit) == 1:
-                    print(f"The first digit found in the text is: {first_digit}")
-                    # agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
-                    # agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
-                    
-                    account.question_asked = True
-                    account.save()
-            else:
-                print("No digit found in the text.")
-
+        prepended_result  = json.loads(result.replace('```json\n','').replace('```',''))
         try:
-            confirmed_problems_str = result.split('"confirmed_problems": [')[1].split(']')[0]
-        except Exception as error:
-            try:
-                confirmed_problems_str = result.split('"confirmed_problems":')[1].split(']')[0]
-            except Exception as error:
-                print (error)            
-        confirmed_problems = [problem.strip('"') for problem in confirmed_problems_str.split(',')]
+            question_asked_res = prepended_result['question_asked']
+            account.question_asked = int(question_asked_res)
+            account.save()
+        except Exception as err:
+            print("Question not asked: ",err)
+        
+        try:
+            confirmed_problems_res = prepended_result['confirmed_problems']
+            account.confirmed_problems = confirmed_problems_res
+            account.save()
+        except Exception as err:
+            print("Problems not confirmed: ",err)
+        
+        try:
+            solution_presented_res = prepended_result['solution_presented']
+            account.solution_presented = int(solution_presented_res)
+            account.save()
+        except Exception as err:
+            print("Solution not presented: ",err)    
+        # index = result.find('"question_asked":')
+        # if index != -1:
+        #     # Extract the value of 'solution_presented'
+        #     question_asked = result[index + 19:].split(',')[0].strip()
+        #     # Find the first digit in the text
+        #     match = re.search(r'\d', question_asked)
 
-        # Iterate over the confirmed problems
-        for problem in confirmed_problems:
-            # Check if the problem exists in the text
-            if problem.lower() in result.lower():
-                print(f"Confirmed problem found: {problem}")
-                # agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
-                # agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
+        #     # If a digit is found
+        #     if match:
+        #         # Extract the digit
+        #         first_digit = match.group(0)
+        #         if int(first_digit) == 1:
+        #             print(f"The first digit found in the text is: {first_digit}")
+        #             # agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
+        #             # agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
+                    
+        #             account.question_asked = True
+        #             account.save()
+        #     else:
+        #         print("No digit found in the text.")
+
+        # try:
+        #     confirmed_problems_str = result.split('"confirmed_problems": [')[1].split(']')[0]
+        # except Exception as error:
+        #     try:
+        #         confirmed_problems_str = result.split('"confirmed_problems":')[1].split(']')[0]
+        #     except Exception as error:
+        #         print (error)            
+        # confirmed_problems = [problem.strip('"') for problem in confirmed_problems_str.split(',')]
+
+        # # Iterate over the confirmed problems
+        # for problem in confirmed_problems:
+        #     # Check if the problem exists in the text
+        #     if problem.lower() in result.lower():
+        #         print(f"Confirmed problem found: {problem}")
+        #         # agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
+        #         # agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
                 
-                account.confirmed_problems = problem.lower().strip().replace("\"","")
-                account.save()
-                index = result.find('"solution_presented":')
-                if index != -1:
-                    # Extract the value of 'solution_presented'
-                    solution_presented = result[index + 19:].split(',')[0].strip()
-                    # Find the first digit in the text
-                    match = re.search(r'\d', solution_presented)
+        #         account.confirmed_problems = problem.lower().strip().replace("\"","")
+        #         account.save()
+        #         index = result.find('"solution_presented":')
+        #         if index != -1:
+        #             # Extract the value of 'solution_presented'
+        #             solution_presented = result[index + 19:].split(',')[0].strip()
+        #             # Find the first digit in the text
+        #             match = re.search(r'\d', solution_presented)
 
-                    # If a digit is found
-                    if match:
-                        # Extract the digit
-                        first_digit = match.group(0)
-                        if int(first_digit) == 1:
-                            print(f"The first digit found in the text is: {first_digit}")
-                            # agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
-                            # agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
+        #             # If a digit is found
+        #             if match:
+        #                 # Extract the digit
+        #                 first_digit = match.group(0)
+        #                 if int(first_digit) == 1:
+        #                     print(f"The first digit found in the text is: {first_digit}")
+        #                     # agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
+        #                     # agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
                             
-                            account.solution_presented = True
-                            account.save()
-                    else:
-                        print("No digit found in the text.")
-                    #print(f"The value of 'solution_presented' is: {solution_presented}")
-                else:
-                    print("'solution_presented' not found in the text.")
-            else:
-                print(f"No match found for: {problem}")
+        #                     account.solution_presented = True
+        #                     account.save()
+        #             else:
+        #                 print("No digit found in the text.")
+        #             #print(f"The value of 'solution_presented' is: {solution_presented}")
+        #         else:
+        #             print("'solution_presented' not found in the text.")
+        #     else:
+        #         print(f"No match found for: {problem}")
     except Exception as err:
-        print("There are no confirmed problems")
+        print("Improper json: ",err)
 
     print(result)
 
