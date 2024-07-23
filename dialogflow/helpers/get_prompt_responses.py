@@ -192,18 +192,18 @@ def get_gpt_response(account, message, thread_id=None):
 
     print(result)
 
-    start_index = result.find('"text": "') + len('"text": "')
+    # start_index = result.find('"text": "') + len('"text": "')
     
-    # Find the index of the closing quote before the end of the text
-    end_index = result.rfind('"', start_index)
+    # # Find the index of the closing quote before the end of the text
+    # end_index = result.rfind('"', start_index)
     
-    # Extract the text
-    extracted_text = result[start_index:end_index]
-
+    # # Extract the text
+    # extracted_text = result[start_index:end_index]
+    
     # print(result)
     # import pdb;pdb.set_trace()
-    #results = json.loads(result.replace('```json\n','').replace('```',''))['text']
-    extracted_text = extracted_text.replace('\n\n', ' ').replace('\n', ' ')
+    extracted_text = json.loads(result.replace('```json\n','').replace('```',''))['text']
+    # extracted_text = extracted_text.replace('\n\n', ' ').replace('\n', ' ')
     print(extracted_text)
 
 
