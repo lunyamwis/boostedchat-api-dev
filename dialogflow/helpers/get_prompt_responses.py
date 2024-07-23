@@ -82,15 +82,15 @@ def get_gpt_response(account, message, thread_id=None):
     agent_task = agent_json_response.get("agent_task")
 
 
-    if account.question_asked and not account.confirmed_problems or account.confirmed_problems == "test" and not account.solution_presented:
-        agent_name = "Engagement Persona Influencer Audit Needs Assessment Agent"
-        agent_task = "ED_PersonaInfluencerAuditNeedsAssessmentA_BuildMessageT"
-    elif account.question_asked and account.confirmed_problems and account.confirmed_problems != "test" and not account.solution_presented:
-        agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
-        agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
-    elif account.question_asked and account.confirmed_problems and account.confirmed_problems != "test" and account.solution_presented:
-        agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
-        agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
+    # if account.question_asked and not account.confirmed_problems or account.confirmed_problems == "test" and not account.solution_presented:
+    #     agent_name = "Engagement Persona Influencer Audit Needs Assessment Agent"
+    #     agent_task = "ED_PersonaInfluencerAuditNeedsAssessmentA_BuildMessageT"
+    # elif account.question_asked and account.confirmed_problems and account.confirmed_problems != "test" and not account.solution_presented:
+    #     agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
+    #     agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
+    # elif account.question_asked and account.confirmed_problems and account.confirmed_problems != "test" and account.solution_presented:
+    #     agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
+    #     agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
                         
 
     
