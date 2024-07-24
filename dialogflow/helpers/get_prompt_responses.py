@@ -128,10 +128,17 @@ def get_gpt_response(account, message, thread_id=None):
     result = response.get('result')[0][1]
     # Find the index of the opening quote after "text":
     try:
-        prepended_result_  = result.replace('```json\n','').replace('```','').replace("\n","")
-        to_be_replaced = prepended_result_[prepended_result_.find("conversation_history")-4:len(prepended_result_)-1]
-        prepended_result = json.loads(prepended_result_.replace(to_be_replaced,""))
-
+        prepended_result = None
+        try:
+            prepended_result = json.loads(result.replace('```json\n','').replace('```','').replace("\n",""))
+        except Exception as err:
+            print("Trying json repair method 2: ",err)
+            try:
+                prepended_result_  = result.replace('```json\n','').replace('```','').replace("\n","")
+                to_be_replaced = prepended_result_[prepended_result_.find("conversation_history")-4:len(prepended_result_)-1]
+                prepended_result = json.loads(prepended_result_.replace(to_be_replaced,""))
+            except Exception as err:
+                print("Both trials have failed to repair the json: ",err)
         try:
             active_stage_res = prepended_result['active_stage']
             account.status_param = active_stage_res
