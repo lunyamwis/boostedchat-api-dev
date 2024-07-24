@@ -140,11 +140,13 @@ def get_gpt_response(account, message, thread_id=None):
             except Exception as err:
                 print("Both trials have failed to repair the json: ",err)
         try:
+
             active_stage_res = prepended_result['active_stage']
+            print('********************',active_stage_res,'****************')
             account.status_param = active_stage_res
             account.save()
         except Exception as err:
-            print("Active stage problem: ",err)
+            print("Active stage issue *****: ",err)
 
         try:
             question_asked_res = prepended_result['question_asked']
