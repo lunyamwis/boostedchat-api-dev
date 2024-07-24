@@ -113,7 +113,7 @@ def get_gpt_response(account, message, thread_id=None):
             "sales_rep":account.salesrep_set.first().ig_username,
             "influencer_ig_name":account.salesrep_set.last().ig_username,
             "outsourced_info":outsourced_object.results,
-            "relevant_information":outsourced_object.results
+            "relevant_information":account.confirmed_problems if account.confirmed_problems else ""
         }
     }
     print(payload)
