@@ -1170,7 +1170,7 @@ class DMViewset(viewsets.ModelViewSet):
 
     def assign_operator(self, request, *args, **kwargs):
         try:
-            thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
+            thread = Thread.objects.filter(account__igname=kwargs.get('username')).latest('created_at')
             account = get_object_or_404(Account, id=thread.account.id)
             account.assigned_to = request.data.get("assigned_to") if request.data.get('assigned_to') else 'Human'
             account.save()
