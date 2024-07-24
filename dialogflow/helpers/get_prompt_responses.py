@@ -107,12 +107,12 @@ def get_gpt_response(account, message, thread_id=None):
         "department":"Engagement Department",
         "agent_name": agent_name,
         "agent_task": agent_task,
-        "converstations": conversations if conversations else "",
         "Assigned":{
             "message":message,
             "sales_rep":account.salesrep_set.first().ig_username,
             "influencer_ig_name":account.salesrep_set.last().ig_username,
             "outsourced_info":outsourced_object.results,
+            "conversation_history": conversations if conversations else "",
             "relevant_information":account.confirmed_problems if account.confirmed_problems else ""
         }
     }
