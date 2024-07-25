@@ -2,7 +2,6 @@ from rest_framework import serializers
 
 from .models import SalesRep
 
-
 class SalesRepSerializer(serializers.ModelSerializer):
     class Meta:
         model = SalesRep

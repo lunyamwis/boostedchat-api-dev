@@ -4,6 +4,7 @@ from authentication.models import User
 from base.models import BaseModel
 from instagram.models import Account
 from pgcrypto import fields
+import binascii
 
 
 # Create your models here.
@@ -25,9 +26,10 @@ class SalesRep(BaseModel):
     version_code = models.CharField(max_length=22,null=True, blank=True)
     status = models.IntegerField(choices=STATUS_CHOICES,default=0,null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    ig_username = models.CharField(max_length=255, null=True, blank=True)
-    ig_password = models.CharField(max_length=255, null=True, blank=True)
-    # ig_password = fields.CharPGPSymmetricKeyField(("ig_password"),max_length=255, null=True, blank=True)
+    # ig_username = models.CharField(max_length=255, null=True, blank=True)
+    ig_username = fields.CharPGPSymmetricKeyField(("ig_username"),max_length=255, null=True, blank=True)
+    # ig_password = models.CharField(max_length=255, null=True, blank=True)
+    ig_password = fields.CharPGPSymmetricKeyField(("ig_password"),max_length=255, null=True, blank=True)  
     instagram = models.ManyToManyField(Account, blank=True)
     available = models.BooleanField(default=True)
     country = models.TextField(default="US")
@@ -35,7 +37,16 @@ class SalesRep(BaseModel):
 
     def __str__(self) -> str:
         return self.ig_username
-
+    
+    def get_encrypted_ig_password(self):
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT ig_password FROM sales_rep_salesrep WHERE id = %s", [self.id])
+            encrypted_value = cursor.fetchone()[0]
+            return binascii.hexlify(encrypted_value).decode('ascii')
+    
+    def get_ig_password(self) -> str:
+        return self.get_encrypted_ig_password()
 
 class Influencer(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)

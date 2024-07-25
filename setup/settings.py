@@ -109,7 +109,8 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.facebook",
     "allauth.socialaccount.providers.twitter",
     "outreaches",
-    "exceptions"
+    "exceptions",
+    "pgcrypto"
 ]
 
 MIDDLEWARE = [
@@ -147,12 +148,8 @@ WSGI_APPLICATION = "setup.wsgi.application"
 
 ROLEPERMISSIONS_MODULE = "roles.roles"
 
-# And add 'pgcrypto' to `INSTALLED_APPS` to create the extension for
-# pgcrypto (in a migration).
-# INSTALLED_APPS = (
-#     'pgcrypto',
-#     # Other installed apps
-# )
+# Used by TextHMACField and PGPSymmetricKeyField if not specified by the db
+PGCRYPTO_KEY = os.getenv("PGCRYPTO_KEY").strip()
 
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases

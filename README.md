@@ -26,6 +26,29 @@ $ pip install -r requirements.txt
 (drfx) $ python manage.py runserver
 ```
 
+4. Set up you .env file and add the variables
+5. Create your PGCRYPTO_KEY and add it in your .env file
+    ```
+    import os
+    import base64
+
+    # Generate a 32-byte key
+    key = base64.b64encode(os.urandom(32)).decode('utf-8')
+    print(key)
+
+    ```
+6. Login to the database and enable PGCRYPTO extension 
+   ```
+    sudo -i -u dbusername
+    psql
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+   ```
+7. Back up & Delete sales rep data then alter the columns incase migrations fail
+   ```
+    ALTER TABLE "sales_rep_salesrep" ALTER COLUMN "ig_password" TYPE bytea USING ig_password::bytea;
+    ALTER TABLE "sales_rep_salesrep" ALTER COLUMN "ig_username" TYPE bytea USING ig_password::bytea;
+   ```
 ## Docker Setup
 OS X Instructions
 - Build images - docker-compose build
@@ -33,7 +56,7 @@ OS X Instructions
 - Create migrations - docker-compose run web /usr/local/bin/python manage.py migrate
 
 ## Endpoints
-4. Endpoints available in this api are as follows:
+6. Endpoints available in this api are as follows:
 - api/v1/ [name='users']
 - api/v1/authentication/token/obtain/ [name='token_create']
 - api/v1/authentication/token/refresh/ [name='token_refresh']
