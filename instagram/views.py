@@ -146,20 +146,18 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     @action(detail=False,methods=['post'],url_path='qualify-account')
     def qualify_account(self, request, pk=None):
-        accounts = Account.objects.filter(igname = request.data.get('username'))
+        account = Account.objects.filter(igname = request.data.get('username')).latest('created_at')
         accounts_qualified = []
-        if accounts.exists():
-            for account in accounts:
-                if account.outsourced_set.exists():
-                    account.qualified = request.data.get('qualify_flag')
-                    account.save()
-                    accounts_qualified.append(
-                        {
-                            "qualified":account.qualified,
-                            "account_id":account.id
-                        }
-                    )
-        
+        if account.outsourced_set.exists():
+            account.qualified = request.data.get('qualify_flag')
+            account.save()
+            accounts_qualified.append(
+                {
+                    "qualified":account.qualified,
+                    "account_id":account.id
+                }
+            )
+    
         return Response(accounts_qualified, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["get"], url_path="potential-buy")
