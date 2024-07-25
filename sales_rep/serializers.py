@@ -21,6 +21,7 @@ class SalesRepSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "id": {"required": False, "allow_null": True},
             "instagram": {"required": False, "allow_null": True},
+             "ig_password": {"write_only": True},
         }
 
 
