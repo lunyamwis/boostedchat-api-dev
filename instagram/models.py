@@ -47,6 +47,8 @@ class Account(BaseModel):
     # history = AuditlogHistoryField(pk_indexable=False)
     dormant_profile_created = models.BooleanField(default=True, null=True, blank=True)
     qualified = models.BooleanField(default=False)
+    scraped = models.BooleanField(default=False)
+    relevant_information = models.JSONField(null=True,blank=True)
     index = models.IntegerField(default=1)
 
     def __str__(self) -> str:

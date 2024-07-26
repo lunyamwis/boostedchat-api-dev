@@ -103,6 +103,7 @@ def get_gpt_response(account, message, thread_id=None):
     print("agent_name:",agent_name,"agent_task:",agent_task)
 
     # import pdb;pdb.set_trace()
+    relevant_information = str(account.relevant_information) if account.relevant_information else ""
     payload = {
         "department":"Engagement Department",
         "agent_name": agent_name,
@@ -113,7 +114,7 @@ def get_gpt_response(account, message, thread_id=None):
             "influencer_ig_name":account.salesrep_set.last().ig_username,
             "outsourced_info":outsourced_object.results,
             "conversation_history": conversations if conversations else "",
-            "relevant_information":account.confirmed_problems if account.confirmed_problems else ""
+            "relevant_information":account.confirmed_problems + relevant_information if account.confirmed_problems else ""
         }
     }
     print(payload)
