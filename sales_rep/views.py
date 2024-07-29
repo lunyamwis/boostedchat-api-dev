@@ -1,5 +1,6 @@
 import json
 import logging
+import requests
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -75,8 +76,10 @@ class SalesRepManager(viewsets.ModelViewSet):
 
     def assign_salesrep(self, request):
         # import pdb;pdb.set_trace()
+
         lead = Account.objects.filter(Q(igname=request.data.get('username')) & Q(qualified=True)).latest('created_at')
 
+        
         # Get all sales reps
         sales_reps = SalesRep.objects.filter(available=True)
 
@@ -93,6 +96,18 @@ class SalesRepManager(viewsets.ModelViewSet):
         best_sales_rep.save()
         # Record the assignment in the history
         LeadAssignmentHistory.objects.create(sales_rep=best_sales_rep, lead=lead)
+        endpoint = "https://mqtt.booksy.us.boostedchat.com"
+
+        srep_username = best_sales_rep.ig_username
+        thread = lead.thread_set.latest('created_at')
+        response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
+        
+        # Check the status code of the response
+        if response.status_code == 200:
+            print('Request approved')
+        else:
+            print(f'Request failed with status code {response.status_code}')
+
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
 
@@ -116,6 +131,17 @@ class SalesRepManager(viewsets.ModelViewSet):
         best_sales_rep.save()
         # Record the assignment in the history
         LeadAssignmentHistory.objects.create(sales_rep=best_sales_rep, lead=lead)
+        endpoint = "https://mqtt.booksy.us.boostedchat.com"
+
+        srep_username = best_sales_rep.ig_username
+        thread = lead.thread_set.latest('created_at')
+        response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
+        
+        # Check the status code of the response
+        if response.status_code == 200:
+            print('Request approved')
+        else:
+            print(f'Request failed with status code {response.status_code}')
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
 
