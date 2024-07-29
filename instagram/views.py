@@ -1089,6 +1089,7 @@ class DMViewset(viewsets.ModelViewSet):
         )
 
         account_messages_sent = []
+        
         if accounts.exists():
             for account in accounts:
                 if account.salesrep_set.exists(): # if they are assigned a salesrep
@@ -1103,7 +1104,10 @@ class DMViewset(viewsets.ModelViewSet):
                             try:
                                 schedule = None
                                 for time_slot in time_slots:
-                                    if not account:
+                                    # import pdb;pdb.set_trace()
+                                    if time_slot.account_to_be_assigned:
+                                        pass
+                                    else:
                                         time_slot.account_to_be_assigned = account
                                         time_slot.save()
                                         schedule = CrontabSchedule.objects.create(

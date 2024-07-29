@@ -114,6 +114,8 @@ class SalesRepManager(viewsets.ModelViewSet):
 
             # send first compliment
             send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+            # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
+            # import pdb;pdb.set_trace()
             response = requests.post(send_compliment_endpoint)
             if response.status_code in [200,201]:
                 print("Successfully set outreach time for compliment and will send at appropriate time")
@@ -129,6 +131,7 @@ class SalesRepManager(viewsets.ModelViewSet):
         yesterday = timezone.now().date() - timezone.timedelta(days=1)
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
         accounts  = Account.objects.filter(Q(qualified=True) & Q(created_at__gte=yesterday_start))
+        print(accounts)
         for lead in accounts:
         
             # Get all sales reps
@@ -162,12 +165,14 @@ class SalesRepManager(viewsets.ModelViewSet):
             
             # send first compliment
             send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+            # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
+            # import pdb;pdb.set_trace()
             response = requests.post(send_compliment_endpoint)
             if response.status_code in [200,201]:
                 print("Successfully set outreach time for compliment and will send at appropriate time")
             else:
                 logging.warning("not going through")
-                
+
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
 
