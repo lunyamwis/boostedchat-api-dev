@@ -114,9 +114,12 @@ class SalesRepManager(viewsets.ModelViewSet):
 
             # send first compliment
             send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
-            response = requests.post(send_compliment_endpoint, data={})
+            response = requests.post(send_compliment_endpoint)
             if response.status_code in [200,201]:
                 print("Successfully set outreach time for compliment and will send at appropriate time")
+
+            else:
+                logging.warning("not going through")
 
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
@@ -159,9 +162,11 @@ class SalesRepManager(viewsets.ModelViewSet):
             
             # send first compliment
             send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
-            response = requests.post(send_compliment_endpoint, data={})
+            response = requests.post(send_compliment_endpoint)
             if response.status_code in [200,201]:
                 print("Successfully set outreach time for compliment and will send at appropriate time")
+            else:
+                logging.warning("not going through")
                 
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
