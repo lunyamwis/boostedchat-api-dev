@@ -6,6 +6,7 @@ from outreaches.serializers import PeriodicTaskGetSerializer
 from outreaches.serializers import PeriodicTaskPostSerializer
 from sales_rep.models import SalesRep
 from rest_framework import status
+from datetime import datetime, timedelta
 
 def assign_salesrep(account):
     salesrep = None
@@ -95,3 +96,15 @@ def tasks_by_sales_rep(task_name, sales_rep, task_status="any", order=1, number=
     return Response({'tasks': populated_tasks}, status=status.HTTP_200_OK)
 
 
+
+
+def generate_time_slots(year, month, day, start_time, end_time, interval):
+    start = datetime(year, month, day, *map(int, start_time.split(':')))
+    end = datetime(year, month, day, *map(int, end_time.split(':')))
+    time_slots = []
+
+    while start <= end:
+        time_slots.append(start)
+        start += timedelta(minutes=interval)
+
+    return time_slots

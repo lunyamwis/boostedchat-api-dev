@@ -32,9 +32,11 @@ from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
 from sales_rep.models import SalesRep
 
+from .utils import generate_time_slots
+
 from .tasks import send_first_compliment
 from .helpers.init_db import init_db
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime
 from .serializers import (
     AccountSerializer,
     OutSourcedSerializer,
@@ -1059,6 +1061,21 @@ class DMViewset(viewsets.ModelViewSet):
                     "success": True
                 }
             )
+    
+    def generate_outreach_times(self, request, *args,**kwargs):
+        start_time = request.data.get("start_time")
+        end_time = requests.data.get("end_time")
+        slots = request.data.get("slots")
+        time_slots = generate_time_slots(start_time, end_time, slots)
+        for time_slot in time_slots:
+            try:
+                OutreachTime.objects.update_or_create(time_slot)
+            except Exception as err:
+                print(err)
+            print(time_slot)
+        return Response({"message":"time slots successfully generated"})
+
+        
 
     def get_qualified_threads_and_respond(self, request, *args, **kwargs):
         
@@ -1082,8 +1099,33 @@ class DMViewset(viewsets.ModelViewSet):
                         if client_messages.count() > 0 and robot_messages.count() == 0:
                             print("gotten here")
                             # import pdb;pdb.set_trace()
+                            time_slots = OutreachTime.objects.order_by('time_slot')
                             try:
-                                send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
+                                schedule = None
+                                for time_slot in time_slots:
+                                    if not account:
+                                        time_slot.account_to_be_assigned = account
+                                        time_slot.save()
+                                        schedule = CrontabSchedule.objects.create(
+                                            minute=time_slot.time_slot.minute,
+                                            hour=time_slot.time_slot.hour,
+                                            day_of_week="*",
+                                            day_of_month=time_slot.time_slot.day,
+                                            month_of_year=time_slot.time_slot.month,
+                                        )
+                                        break
+                                try:
+                                    PeriodicTask.objects.update_or_create(
+                                        name=f"SendFirstCompliment-{account.igname}",
+                                        crontab=schedule,
+                                        task="instagram.tasks.send_first_compliment",
+                                        args=json.dumps([account.igname,thread.last_message_content])
+                                    )
+                                    
+                                except Exception as error:
+                                    logging.warning(error)
+
+                                # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
                             except Exception as err:
                                 print(err)
             return Response(account_messages_sent,status=status.HTTP_200_OK)

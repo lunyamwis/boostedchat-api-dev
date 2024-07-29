@@ -123,3 +123,9 @@ def initialize_account(sender, instance, created, **kwargs):
         account.outsourced = instance
         account.save()
         print(f"initialized outsourced account - {instance}")
+
+
+
+class OutreachTime(BaseModel):
+    time_slot = models.DateTimeField()
+    account_to_be_assigned = models.ForeignKey(Account,on_delete=models.CASCADE,null=True,blank=True)
