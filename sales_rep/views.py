@@ -77,9 +77,9 @@ class SalesRepManager(viewsets.ModelViewSet):
     def assign_salesrep(self, request):
         # import pdb;pdb.set_trace()
 
+        print(request.data)
         lead = Account.objects.filter(Q(igname=request.data.get('username')) & Q(qualified=True)).latest('created_at')
 
-        
         # Get all sales reps
         sales_reps = SalesRep.objects.filter(available=True)
 
@@ -112,6 +112,7 @@ class SalesRepManager(viewsets.ModelViewSet):
 
 
     def assign_influencer(self, request):
+        print(request.data)
         lead = Account.objects.filter(Q(igname=request.data.get('username')) & Q(qualified=True)).latest('created_at')
 
         # Get all sales reps
