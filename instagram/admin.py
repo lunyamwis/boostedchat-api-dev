@@ -2,10 +2,17 @@
 
 from django.contrib import admin
 
-from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video
+from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime
 
 admin.site.register(Photo)
 admin.site.register(Video)
+
+@admin.register(OutreachTime)
+class OutreachTimeAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(OutreachTimeAdmin, self).get_form(request, obj, **kwargs)
+        return form
 
 
 @admin.register(Account)
