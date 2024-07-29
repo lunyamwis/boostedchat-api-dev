@@ -78,71 +78,77 @@ class SalesRepManager(viewsets.ModelViewSet):
         # import pdb;pdb.set_trace()
 
         print(request.data)
-        lead = Account.objects.filter(Q(igname=request.data.get('username')) & Q(qualified=True)).latest('created_at')
-
-        # Get all sales reps
-        sales_reps = SalesRep.objects.filter(available=True)
-
-        # Calculate moving averages for all sales reps
-        sales_rep_moving_averages = {
-            sales_rep: get_moving_average(sales_rep) for sales_rep in sales_reps
-        }
-        # Find the sales rep with the minimum moving average
-        best_sales_rep = min(sales_rep_moving_averages, key=sales_rep_moving_averages.get)
-        best_sales_rep.instagram.add(lead)
-        # Assign the lead to the best sales rep
-        #lead.assigned_to = best_sales_rep
-        #lead.save()
-        best_sales_rep.save()
-        # Record the assignment in the history
-        LeadAssignmentHistory.objects.create(sales_rep=best_sales_rep, lead=lead)
-        endpoint = "https://mqtt.booksy.us.boostedchat.com"
-
-        srep_username = best_sales_rep.ig_username
-        thread = lead.thread_set.latest('created_at')
-        response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+        accounts  = Account.objects.filter(Q(qualified=True) & Q(created_at__gte=yesterday_start))
+        for lead in accounts:
         
-        # Check the status code of the response
-        if response.status_code == 200:
-            print('Request approved')
-        else:
-            print(f'Request failed with status code {response.status_code}')
+            # Get all sales reps
+            sales_reps = SalesRep.objects.filter(available=True)
 
+            # Calculate moving averages for all sales reps
+            sales_rep_moving_averages = {
+                sales_rep: get_moving_average(sales_rep) for sales_rep in sales_reps
+            }
+
+            # Find the sales rep with the minimum moving average
+            best_sales_rep = min(sales_rep_moving_averages, key=sales_rep_moving_averages.get)
+            best_sales_rep.instagram.add(lead)
+            # Assign the lead to the best sales rep
+            #lead.assigned_to = best_sales_rep
+            #lead.save()
+            best_sales_rep.save()
+            # Record the assignment in the history
+            LeadAssignmentHistory.objects.create(sales_rep=best_sales_rep, lead=lead)
+            endpoint = "https://mqtt.booksy.us.boostedchat.com"
+
+            srep_username = best_sales_rep.ig_username
+            thread = lead.thread_set.latest('created_at')
+            response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
+            
+            # Check the status code of the response
+            if response.status_code == 200:
+                print('Request approved')
+            else:
+                print(f'Request failed with status code {response.status_code}')
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
 
     def assign_influencer(self, request):
         print(request.data)
-        lead = Account.objects.filter(Q(igname=request.data.get('username')) & Q(qualified=True)).latest('created_at')
-
-        # Get all sales reps
-        sales_reps = SalesRep.objects.filter(available=True)
-
-        # Calculate moving averages for all sales reps
-        sales_rep_moving_averages = {
-            sales_rep: get_moving_average(sales_rep) for sales_rep in sales_reps
-        }
-
-        # Find the sales rep with the minimum moving average
-        best_sales_rep = min(sales_rep_moving_averages, key=sales_rep_moving_averages.get)
-        best_sales_rep.instagram.add(lead)
-        # Assign the lead to the best sales rep
-        #lead.assigned_to = best_sales_rep
-        #lead.save()
-        best_sales_rep.save()
-        # Record the assignment in the history
-        LeadAssignmentHistory.objects.create(sales_rep=best_sales_rep, lead=lead)
-        endpoint = "https://mqtt.booksy.us.boostedchat.com"
-
-        srep_username = best_sales_rep.ig_username
-        thread = lead.thread_set.latest('created_at')
-        response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+        accounts  = Account.objects.filter(Q(qualified=True) & Q(created_at__gte=yesterday_start))
+        for lead in accounts:
         
-        # Check the status code of the response
-        if response.status_code == 200:
-            print('Request approved')
-        else:
-            print(f'Request failed with status code {response.status_code}')
+            # Get all sales reps
+            sales_reps = SalesRep.objects.filter(available=True)
+
+            # Calculate moving averages for all sales reps
+            sales_rep_moving_averages = {
+                sales_rep: get_moving_average(sales_rep) for sales_rep in sales_reps
+            }
+
+            # Find the sales rep with the minimum moving average
+            best_sales_rep = min(sales_rep_moving_averages, key=sales_rep_moving_averages.get)
+            best_sales_rep.instagram.add(lead)
+            # Assign the lead to the best sales rep
+            #lead.assigned_to = best_sales_rep
+            #lead.save()
+            best_sales_rep.save()
+            # Record the assignment in the history
+            LeadAssignmentHistory.objects.create(sales_rep=best_sales_rep, lead=lead)
+            endpoint = "https://mqtt.booksy.us.boostedchat.com"
+
+            srep_username = best_sales_rep.ig_username
+            thread = lead.thread_set.latest('created_at')
+            response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
+            
+            # Check the status code of the response
+            if response.status_code == 200:
+                print('Request approved')
+            else:
+                print(f'Request failed with status code {response.status_code}')
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
 
