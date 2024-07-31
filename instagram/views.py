@@ -9,7 +9,7 @@ import requests
 import random
 from urllib.parse import urlparse
 from auditlog.models import LogEntry
-from datetime import datetime
+from datetime import datetime,timedelta
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -1100,7 +1100,7 @@ class DMViewset(viewsets.ModelViewSet):
                         if client_messages.count() > 0 and robot_messages.count() == 0:
                             print("gotten here")
                             # import pdb;pdb.set_trace()
-                            time_slots = OutreachTime.objects.order_by('time_slot')
+                            time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
                             try:
                                 schedule = None
                                 for time_slot in time_slots:
