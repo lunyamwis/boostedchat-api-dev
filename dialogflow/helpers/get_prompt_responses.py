@@ -66,7 +66,6 @@ def get_gpt_response(account, message, thread_id=None):
     }
     print(get_agent_payload)
     agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
-    print(agent_json_response.text)
     agent_json_response = agent_response.json()
     print(agent_json_response)
     # print(agent_json_response)

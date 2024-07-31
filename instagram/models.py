@@ -50,7 +50,7 @@ class Account(BaseModel):
     scraped = models.BooleanField(default=False)
     relevant_information = models.JSONField(null=True,blank=True)
     index = models.IntegerField(default=1)
-
+    
     def __str__(self) -> str:
         return self.igname if self.igname else self.id
 
