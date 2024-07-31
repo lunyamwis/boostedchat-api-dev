@@ -64,10 +64,10 @@ def get_gpt_response(account, message, thread_id=None):
         "conversations":conversations if conversations else "",
         "active_stage": account.status_param if account.status_param else ""
     }
-    agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
-    agent_json_response = agent_response.json()
     print(get_agent_payload)
+    agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
     print(agent_json_response)
+    agent_json_response = agent_response.json()
     # print(agent_json_response)
     # confirmed_problems = [
     #     "Need for new clients or increased clientele and market visibility",
