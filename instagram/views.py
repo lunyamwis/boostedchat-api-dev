@@ -1123,7 +1123,7 @@ class DMViewset(viewsets.ModelViewSet):
                                         name=f"SendFirstCompliment-{account.igname}",
                                         crontab=schedule,
                                         task="instagram.tasks.send_first_compliment",
-                                        args=json.dumps([account.igname,thread.last_message_content])
+                                        args=json.dumps([[account.igname],thread.last_message_content])
                                     )
                                     
                                 except Exception as error:
