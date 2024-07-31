@@ -80,7 +80,7 @@ class SalesRepManager(viewsets.ModelViewSet):
         print(request.data)
         yesterday = timezone.now().date() - timezone.timedelta(days=1)
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
-        accounts  = Account.objects.filter(Q(qualified=True) & Q(created_at__gte=yesterday_start))
+        accounts  = Account.objects.filter(Q(qualified=True) & Q(created_at__gte=yesterday_start)).exclude(status__name="sent_compliment")
         for lead in accounts:
         
             # Get all sales reps
@@ -90,6 +90,7 @@ class SalesRepManager(viewsets.ModelViewSet):
             sales_rep_moving_averages = {
                 sales_rep: get_moving_average(sales_rep) for sales_rep in sales_reps
             }
+
 
             # Find the sales rep with the minimum moving average
             best_sales_rep = min(sales_rep_moving_averages, key=sales_rep_moving_averages.get)
@@ -130,7 +131,7 @@ class SalesRepManager(viewsets.ModelViewSet):
         print(request.data)
         yesterday = timezone.now().date() - timezone.timedelta(days=1)
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
-        accounts  = Account.objects.filter(Q(qualified=True) & Q(created_at__gte=yesterday_start))
+        accounts  = Account.objects.filter(Q(qualified=True) & Q(created_at__gte=yesterday_start)).exclude(status__name="sent_compliment")
         print(accounts)
         for lead in accounts:
         
