@@ -66,6 +66,8 @@ def get_gpt_response(account, message, thread_id=None):
     }
     agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
     agent_json_response = agent_response.json()
+    print(get_agent_payload)
+    print(agent_json_response)
     # print(agent_json_response)
     # confirmed_problems = [
     #     "Need for new clients or increased clientele and market visibility",
