@@ -361,6 +361,7 @@ def send_first_compliment(username, message, repeat=True):
         if response.status_code == 200:
             sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
             account.status = sent_compliment_status
+            account.status_param = 'Needs Assessment'
             account.save()
             print(f"response============{response}")
             try:
