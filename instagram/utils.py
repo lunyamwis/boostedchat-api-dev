@@ -98,9 +98,9 @@ def tasks_by_sales_rep(task_name, sales_rep, task_status="any", order=1, number=
 
 
 
-def generate_time_slots(year, month, day, start_time, end_time, interval):
-    start = datetime(year, month, day, *map(int, start_time.split(':')))
-    end = datetime(year, month, day, *map(int, end_time.split(':')))
+def generate_time_slots(start_datetime, end_datetime, interval):
+    start = datetime.strptime(start_datetime, "%Y-%m-%d %H:%M")
+    end = datetime.strptime(end_datetime, "%Y-%m-%d %H:%M")
     time_slots = []
 
     while start <= end:

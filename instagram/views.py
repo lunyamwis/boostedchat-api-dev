@@ -1083,6 +1083,7 @@ class DMViewset(viewsets.ModelViewSet):
         end_time = requests.data.get("end_time")
         slots = request.data.get("slots")
         time_slots = generate_time_slots(start_time, end_time, slots)
+        # make it dynamic
         for time_slot in time_slots:
             try:
                 OutreachTime.objects.update_or_create(time_slot)
