@@ -1092,6 +1092,19 @@ class DMViewset(viewsets.ModelViewSet):
         return Response({"message":"time slots successfully generated"})
 
         
+    def check_account_exists(self,request,*args,**kwargs):
+        account = Account.objects.filter(igname = request.data.get('username'))
+        if account.exists():
+            return Response({"exists":True})
+        else:
+            return Response({"exists":False})
+        
+    def check_thread_exists(self,request,*args,**kwargs):
+        account = Account.objects.filter(igname = request.data.get('username')).latest('created_at')
+        if account.thread_set.exists():
+            return Response({"exists":True})
+        else:
+            return Response({"exists":False})
 
     def get_qualified_threads_and_respond(self, request, *args, **kwargs):
         

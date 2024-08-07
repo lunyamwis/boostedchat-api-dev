@@ -41,6 +41,16 @@ urlpatterns = [
         name='get_qualified_threads_and_respond',
     ),
     path(
+        'checkAccountExists/',
+        DMViewset.as_view({'post': 'check_account_exists'}),
+        name='check_account_exists',
+    ),
+    path(
+        'checkThreadExists/',
+        DMViewset.as_view({'post': 'check_thread_exists'}),
+        name='check_thread_exists',
+    ),
+    path(
         'fallback/<str:username>/assign-operator/',
         DMViewset.as_view({'post': 'assign_operator'}),
         name='assign_operator',
