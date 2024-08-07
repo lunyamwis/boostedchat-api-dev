@@ -163,6 +163,22 @@ class AccountViewSet(viewsets.ModelViewSet):
             )
     
         return Response(accounts_qualified, status=status.HTTP_200_OK)
+    
+    @action(detail=False,methods=['post'],url_path='manually-trigger')
+    def manually_trigger(self, request, pk=None):
+        account = Account.objects.filter(igname = request.data.get('username')).latest('created_at')
+        accounts_triggered = []
+        if account.outsourced_set.exists():
+            account.is_manually_triggered = True
+            account.save()
+            accounts_triggered.append(
+                {
+                    "manually_triggered":account.is_manually_triggered,
+                    "account_id":account.id
+                }
+            )
+    
+        return Response(accounts_triggered, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["get"], url_path="potential-buy")
     def potential_buy(self, request, pk=None):

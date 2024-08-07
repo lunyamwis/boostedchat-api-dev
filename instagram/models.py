@@ -49,6 +49,7 @@ class Account(BaseModel):
     qualified = models.BooleanField(default=False)
     scraped = models.BooleanField(default=False)
     relevant_information = models.JSONField(null=True,blank=True)
+    is_manually_triggered = models.BooleanField(default=False)
     index = models.IntegerField(default=1)
     
     def __str__(self) -> str:
