@@ -111,7 +111,7 @@ def get_gpt_response(account, message, thread_id=None):
         "agent_name": agent_name,
         "agent_task": agent_task,
         "Assigned":{
-            "message":message if message else "Hi I request an audit",
+            "message":message if message else "",
             "sales_rep":account.salesrep_set.first().ig_username,
             "influencer_ig_name":account.salesrep_set.last().ig_username,
             "outsourced_info":outsourced_object.results,
