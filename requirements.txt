@@ -8,7 +8,7 @@ djangorestframework==3.14.0
 django-allauth==0.54.0
 django-auditlog==2.3.0
 django-snowflake
-django-celery-beat
+django-celery-beat==2.5.0
 django-snowflake
 django-cors-headers
 dj-rest-auth
