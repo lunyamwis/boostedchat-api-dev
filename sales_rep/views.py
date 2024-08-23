@@ -104,25 +104,32 @@ class SalesRepManager(viewsets.ModelViewSet):
             endpoint = "https://mqtt.booksy.us.boostedchat.com"
 
             srep_username = best_sales_rep.ig_username
-            thread = lead.thread_set.latest('created_at')
-            response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
-            
-            # Check the status code of the response
-            if response.status_code == 200:
-                print('Request approved')
-            else:
-                print(f'Request failed with status code {response.status_code}')
+            if lead.thread_set.exists():
+                thread = lead.thread_set.latest('created_at')
+                response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
+                
+                # Check the status code of the response
+                if response.status_code == 200:
+                    print('Request approved')
+                else:
+                    print(f'Request failed with status code {response.status_code}')
 
             # send first compliment
-            send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+            # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
             # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
-            # import pdb;pdb.set_trace()
-            response = requests.post(send_compliment_endpoint)
-            if response.status_code in [200,201]:
-                print("Successfully set outreach time for compliment and will send at appropriate time")
+            # # import pdb;pdb.set_trace()
+            # response = requests.post(send_compliment_endpoint)
+            # if response.status_code in [200,201]:
+            #     print("Successfully set outreach time for compliment and will send at appropriate time")
 
             else:
                 logging.warning("not going through")
+        send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+        # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
+        # import pdb;pdb.set_trace()
+        response = requests.post(send_compliment_endpoint)
+        if response.status_code in [200,201]:
+            print("Successfully set outreach time for compliment and will send at appropriate time")
 
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
@@ -165,14 +172,22 @@ class SalesRepManager(viewsets.ModelViewSet):
                 print(f'Request failed with status code {response.status_code}')
             
             # send first compliment
-            send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
-            # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
-            # import pdb;pdb.set_trace()
-            response = requests.post(send_compliment_endpoint)
-            if response.status_code in [200,201]:
-                print("Successfully set outreach time for compliment and will send at appropriate time")
-            else:
-                logging.warning("not going through")
+            # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+            # # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
+            # # import pdb;pdb.set_trace()
+            # response = requests.post(send_compliment_endpoint)
+            # if response.status_code in [200,201]:
+            #     print("Successfully set outreach time for compliment and will send at appropriate time")
+            # else:
+        
+        
+            #     logging.warning("not going through")
+        send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+        # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
+        # import pdb;pdb.set_trace()
+        response = requests.post(send_compliment_endpoint)
+        if response.status_code in [200,201]:
+            print("Successfully set outreach time for compliment and will send at appropriate time")
 
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 

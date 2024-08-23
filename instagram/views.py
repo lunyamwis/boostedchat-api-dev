@@ -1122,46 +1122,82 @@ class DMViewset(viewsets.ModelViewSet):
         
         if accounts.exists():
             for account in accounts:
-                if account.salesrep_set.exists(): # if they are assigned a salesrep
+                # if account.salesrep_set.exists(): # if they are assigned a salesrep
                     threads = Thread.objects.filter(account=account)  
-                    for thread in threads:  
-                        client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
-                        robot_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Robot")).order_by("-sent_on")
-                        if client_messages.count() > 0 and robot_messages.count() == 0:
-                            print("gotten here")
-                            # import pdb;pdb.set_trace()
-                            time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
-                            try:
-                                schedule = None
-                                for time_slot in time_slots:
-                                    # import pdb;pdb.set_trace()
-                                    if time_slot.account_to_be_assigned:
-                                        pass
-                                    else:
-                                        time_slot.account_to_be_assigned = account
-                                        time_slot.save()
-                                        schedule = CrontabSchedule.objects.create(
-                                            minute=time_slot.time_slot.minute,
-                                            hour=time_slot.time_slot.hour,
-                                            day_of_week="*",
-                                            day_of_month=time_slot.time_slot.day,
-                                            month_of_year=time_slot.time_slot.month,
-                                        )
-                                        break
+                    if threads.exists():
+                        for thread in threads:  
+                            client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
+                            robot_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Robot")).order_by("-sent_on")
+                            if client_messages.count() > 0 and robot_messages.count() == 0:
+                                print("inbound sales")
+                                # import pdb;pdb.set_trace()
+                                time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
                                 try:
-                                    PeriodicTask.objects.update_or_create(
-                                        name=f"SendFirstCompliment-{account.igname}",
-                                        crontab=schedule,
-                                        task="instagram.tasks.send_first_compliment",
-                                        args=json.dumps([[account.igname],thread.last_message_content])
-                                    )
-                                    
-                                except Exception as error:
-                                    logging.warning(error)
+                                    schedule = None
+                                    for time_slot in time_slots:
+                                        # import pdb;pdb.set_trace()
+                                        if time_slot.account_to_be_assigned:
+                                            pass
+                                        else:
+                                            time_slot.account_to_be_assigned = account
+                                            time_slot.save()
+                                            schedule = CrontabSchedule.objects.create(
+                                                minute=time_slot.time_slot.minute,
+                                                hour=time_slot.time_slot.hour,
+                                                day_of_week="*",
+                                                day_of_month=time_slot.time_slot.day,
+                                                month_of_year=time_slot.time_slot.month,
+                                            )
+                                            break
+                                    try:
+                                        PeriodicTask.objects.update_or_create(
+                                            name=f"SendFirstCompliment-{account.igname}",
+                                            crontab=schedule,
+                                            task="instagram.tasks.send_first_compliment",
+                                            args=json.dumps([[account.igname],thread.last_message_content])
+                                        )
+                                        
+                                    except Exception as error:
+                                        logging.warning(error)
 
-                                # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
-                            except Exception as err:
-                                print(err)
+                                    # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
+                                except Exception as err:
+                                    print(err)
+                    else:
+                        print("outbound sales")
+                        # import pdb;pdb.set_trace()
+                        time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
+                        try:
+                            schedule = None
+                            for time_slot in time_slots:
+                                # import pdb;pdb.set_trace()
+                                if time_slot.account_to_be_assigned:
+                                    pass
+                                else:
+                                    time_slot.account_to_be_assigned = account
+                                    time_slot.save()
+                                    schedule = CrontabSchedule.objects.create(
+                                        minute=time_slot.time_slot.minute,
+                                        hour=time_slot.time_slot.hour,
+                                        day_of_week="*",
+                                        day_of_month=time_slot.time_slot.day,
+                                        month_of_year=time_slot.time_slot.month,
+                                    )
+                                    break
+                            try:
+                                PeriodicTask.objects.update_or_create(
+                                    name=f"SendFirstCompliment-{account.igname}",
+                                    crontab=schedule,
+                                    task="instagram.tasks.send_first_compliment",
+                                    args=json.dumps([[account.igname],""])
+                                )
+                                
+                            except Exception as error:
+                                logging.warning(error)
+
+                            # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
+                        except Exception as err:
+                            print(err)
             return Response(account_messages_sent,status=status.HTTP_200_OK)
         else:
             return Response({'message': 'accounts do not exist'})
