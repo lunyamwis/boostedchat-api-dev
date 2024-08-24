@@ -54,7 +54,9 @@ def get_gpt_response(account, message, thread_id=None):
         print(error)
 
     url = os.getenv("SCRIPTING_URL") + '/getAgent/'
-    conversations = get_conversation_so_far(account.thread_set.latest('created_at').thread_id)
+    conversations = None
+    if message:
+        conversations = get_conversation_so_far(account.thread_set.latest('created_at').thread_id)
     # active_stage = None
     # if account.status_param:
     #     active_stage = account.status_param
