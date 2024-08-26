@@ -89,6 +89,9 @@ def get_gpt_response(account, message, thread_id=None):
     
     agent_name = agent_json_response.get("agent_name")
     agent_task = agent_json_response.get("agent_task")
+    if not message:
+        agent_name = "Engagement Persona Influencer Audit Rapport Building Agent"
+        agent_task = "ED_PersonaInfluencerAuditRapportBuildlingA_BuildMessageT"
 
     
 
