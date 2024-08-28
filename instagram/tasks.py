@@ -370,6 +370,20 @@ def send_first_compliment(username, message, repeat=True):
 
                 try:
                     thread_obj, _ = Thread.objects.get_or_create(thread_id=returned_data["thread_id"])
+                    thread_obj.thread_id = returned_data["thread_id"]
+                    thread_obj.account = account
+                    thread_obj.last_message_content = first_message
+                    thread_obj.unread_message_count = 0
+                    thread_obj.last_message_at = datetime.datetime.fromtimestamp(int(returned_data['timestamp'])/1000000) # use UTC
+                    thread_obj.save()
+
+                    message = Message()
+                    message.content = first_message
+                    message.sent_by = "Robot"
+                    message.sent_on = datetime.datetime.fromtimestamp(int(returned_data["timestamp"]) / 1000000)
+                    message.thread = thread_obj
+                    message.save()
+                    print("message created then saved")
                 except Exception as error:
                     print(error)
                     try:
