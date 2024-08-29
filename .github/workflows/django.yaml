@@ -50,6 +50,7 @@ jobs:
         context: .
         push: true
         tags: ${{ secrets.DOCKER_USERNAME }}/boostedchat-api-dev:actionT
+        password: ${{ secrets.DOCKER_PASSWORD }}
         # registry: docker.io
         # username: ${{ secrets.DOCKER_USERNAME }}
         # password: ${{ secrets.DOCKER_PASSWORD }}
