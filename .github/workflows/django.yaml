@@ -2,8 +2,8 @@ name: Django CI
 
 on:
   push:
-    branches: [ action-test ]
-    # branches: [ "*" ]
+    # branches: [ action-test ]
+    branches: [ "*" ]
   # pull_request:
   #   branches: [ "*" ]
   #   types: [opened, closed, reopened]
