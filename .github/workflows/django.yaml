@@ -45,7 +45,7 @@ jobs:
     #     python manage.py test
 
     - name: Build and Push Docker Image
-      uses: docker/build-push-action@v2 # mr-smithers-excellent/docker-build-push@v4 # use existing coker actiion
+      uses: docker/build-push-action@v2 # mr-smithers-excellent/docker-build-push@v4 # use existing coker action
       with:
         context: .
         push: true
