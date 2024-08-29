@@ -1,4 +1,15 @@
-steps:
-  # running docker-compose
-  - name: 'docker/compose:2.20.0'
-    args: ['up', '-d']
+name: Boosted Chat API CI
+
+on:
+  push:
+    branches: [ action-test ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .
