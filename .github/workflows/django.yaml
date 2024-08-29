@@ -52,7 +52,7 @@ jobs:
         tags: lunyamwimages/boostedchat-api-dev:latest
         # registry: docker.io
         # username: ${{ secrets.DOCKER_USERNAME }}
-        # password: ${{ secrets.DOCKER_PASSWORD }}
+        # password: ${{ secrets.DOCKER_PASSWORD }} 
 
 
     # - name: Create a comment
