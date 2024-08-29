@@ -44,11 +44,9 @@ jobs:
     #   run: |
     #     python manage.py test
 
-    - name: Log out of Docker Hub
-      run: docker logout docker.io
 
 
-    - name: Build and Push Docker Image
+    - name: Login To Docker Hub
       uses: docker/login-action@v3 # mr-smithers-excellent/docker-build-push@v4 # use existing coker action
       with:
         context: .
@@ -57,6 +55,16 @@ jobs:
         # registry: docker.io
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }} 
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: lunyamwimages/boostedchat-api-dev:latest
 
 
     # - name: Create a comment
