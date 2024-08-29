@@ -64,7 +64,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: lunyamwimages/boostedchat-api-dev:latest
+        tags: lunyamwimages/boostedchatapi-dev:latest
 
 
     # - name: Create a comment
