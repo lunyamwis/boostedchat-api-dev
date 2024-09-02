@@ -70,8 +70,8 @@ jobs:
     - name: Add server to known_hosts
       run: |
         ssh-keyscan -H 84.247.184.136 >> ~/.ssh/known_hosts
-        
-     - name: Test SSH connection
+
+    - name: Test SSH connection
       run: |
         ssh -v ubuntu@84.247.184.136 'echo "I AM IN THE SERVER"'
       env:
