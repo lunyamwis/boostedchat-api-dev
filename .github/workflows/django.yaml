@@ -2,8 +2,8 @@ name: Django CI
 
 on:
   push:
-    # branches: [ action-test ]
-    branches: [ "*" ]
+    branches: [ action-test ]
+    # branches: [ "*" ]
   # pull_request:
   #   branches: [ "*" ]
   #   types: [opened, closed, reopened]
@@ -64,7 +64,7 @@ jobs:
       with:
         context: .
         push: true
-        tags: lunyamwimages/boostedchatapi-dev:test
+        tags: lunyamwimages/boostedchatapi-dev:staging
 
 
     # - name: Create a comment
