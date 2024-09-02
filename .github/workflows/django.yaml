@@ -62,10 +62,11 @@ jobs:
         push: true
         tags: lunyamwimages/boostedchatapi-dev:staging
 
-    - name: Deploy to Staging Server
+    - name: SSH to Staging Server
       uses: webfactory/ssh-agent@v0.9.0
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    - name: Pull latest image and builde docker
       run: |
         ssh ubuntu@84.247.184.136 'docker pull lunyamwimages/boostedchatapi-dev:staging && docker stop boostedchatapi-dev || true && docker rm boostedchatapi-dev || true && docker run -d --name boostedchatapi-dev lunyamwimages/boostedchatapi-dev:staging'
       env:
