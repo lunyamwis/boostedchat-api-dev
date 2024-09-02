@@ -75,5 +75,3 @@ jobs:
           ssh ubuntu@84.247.184.136 'docker pull lunyamwimages/boostedchatapi-dev:staging && docker stop boostedchatapi-dev || true && docker rm boostedchatapi-dev || true && docker run -d --name boostedchatapi-dev lunyamwimages/boostedchatapi-dev:staging'
         env:
           SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
-        with:
-          ssh-private-key: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
