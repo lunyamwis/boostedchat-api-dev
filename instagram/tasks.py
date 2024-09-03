@@ -455,7 +455,8 @@ def send_report():
                 "sent_by":message.sent_by,
                 "sent_at":message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "content":message.content,
-                "assigned": thread.account.assigned_to
+                "assigned": thread.account.assigned_to,
+                "username": thread.account.igname
             })
     try:
         subject = 'Hello Team'
