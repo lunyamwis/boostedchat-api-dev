@@ -440,7 +440,7 @@ def send_first_compliment(username, message, repeat=True):
 
 
 
-@shared_task
+@shared_task()
 def send_report():
     yesterday = timezone.now().date() - timezone.timedelta(days=1)
     yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
