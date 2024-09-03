@@ -77,14 +77,8 @@ jobs:
       env:
         SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
   
-    - name: Pull latest image and builde docker
-      #'docker pull lunyamwimages/boostedchatapi-dev:staging && docker stop boostedchatapi-dev || true && docker rm boostedchatapi-dev || true && docker run -d --name boostedchatapi-dev lunyamwimages/boostedchatapi-dev:staging'
-      run: |
-        ssh ubuntu@84.247.184.136 'echo "I AM IN THE SERVER"'
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
 
-    - name: SSH to Staging Server
+    - name: Pull latest image and builde docker on staging server
       run: |
         ssh ubuntu@84.247.184.136 'docker pull lunyamwimages/boostedchatapi-dev:staging && docker stop boostedchat-api-dev || true && docker rm boostedchat-api-dev || true && docker run -d --name boostedchat-api-dev lunyamwimages/boostedchatapi-dev:staging'
       env:
