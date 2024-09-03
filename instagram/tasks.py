@@ -453,7 +453,7 @@ def send_report():
         for message in thread.message_set.all():
             messages.append({
                 "sent_by":message.sent_by,
-                "sent_at":message.created_at,
+                "sent_at":message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "content":message.content,
                 "assigned": thread.account.assigned_to
             })
