@@ -9,6 +9,8 @@ from celery import shared_task
 from django.conf import settings
 from django_celery_beat.models import PeriodicTask
 from django.shortcuts import get_object_or_404
+from django.core.mail import send_mail
+from django.utils import timezone
 
 from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
 from sales_rep.models import SalesRep
@@ -435,3 +437,31 @@ def send_first_compliment(username, message, repeat=True):
     send()
 
         # raise Exception("There is something wrong with mqtt")
+
+
+
+@shared_task
+def send_report():
+    yesterday = timezone.now().date() - timezone.timedelta(days=1)
+    yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+
+    threads = Thread.objects.filter(created_at__gte=yesterday_start)
+
+    messages = []
+
+    for thread in threads:
+        for message in thread.message_set.all():
+            messages.append({
+                "sent_by":message.sent_by,
+                "sent_at":message.created_at,
+                "content":message.content,
+                "assigned": thread.account.assigned_to
+            })
+    try:
+        subject = 'Hello Team'
+        message = f'Here are the outreach results for the previous day {json.dumps(messages)}'
+        from_email = 'lutherlunyamwi@gmail.com'
+        recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com',"tech-notifications-aaaalfvmpt4blxn4bjxku3hag4@boostedchat.slack.com"]
+        send_mail(subject, message, from_email, recipient_list)
+    except Exception as error:
+        print(error)
