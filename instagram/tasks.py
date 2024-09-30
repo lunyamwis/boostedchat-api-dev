@@ -340,15 +340,20 @@ def send_first_compliment(username, message, repeat=True):
     
     # raise Exception("There is something wrong with mqt----t")
     outsourced_data = OutSourced.objects.filter(account=account)
-    
+    results = None
+    if isinstance(outsourced_data.last().results, str):
+        results = eval(outsourced_data.last().results)
+    else:
+        results = outsourced_data.last().results
+    print(f"results================{results}")
     first_message = get_gpt_response(account,message)
 
-    media_id = outsourced_data.last().results.get("media_id", "")
+    media_id = results.get("media_id", "")
     data = {"username_from":salesrep.ig_username,"message": first_message, "username_to": account.igname, "mediaId": media_id}
     
 
     # like and comment
-    is_like_and_comment = like_and_comment(media_id=media_id, media_comment=outsourced_data.last().results.get("media_comment", ""),
+    is_like_and_comment = like_and_comment(media_id=media_id, media_comment=results.get("media_comment", ""),
                      salesrep=salesrep, account=account)
     if is_like_and_comment:
         time.sleep(60) # we break for 1 minute then send message

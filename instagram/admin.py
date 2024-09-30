@@ -40,8 +40,6 @@ class ThreadAdmin(admin.ModelAdmin):
         form = super(ThreadAdmin, self).get_form(request, obj, **kwargs)
         return form
 
-
-
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
