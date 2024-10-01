@@ -27,7 +27,7 @@ env:
   SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
   SMTP_PORT: ${{ secrets.SMTP_PORT }}
   SMTP_HOST: ${{ secrets.SMTP_HOST }}
-
+  MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
   APP_URL: 'https://api.booksy.us.boostedchat.com'
   SCRAPPER_URL: 'http://127.0.0.1:8003'
   DOMAIN1: 'booksy.us'
