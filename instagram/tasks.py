@@ -9,6 +9,8 @@ from celery import shared_task
 from django.conf import settings
 from django_celery_beat.models import PeriodicTask
 from django.shortcuts import get_object_or_404
+from django.core.mail import send_mail
+from django.utils import timezone
 
 from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
 from sales_rep.models import SalesRep
@@ -338,15 +340,20 @@ def send_first_compliment(username, message, repeat=True):
     
     # raise Exception("There is something wrong with mqt----t")
     outsourced_data = OutSourced.objects.filter(account=account)
-    
+    results = None
+    if isinstance(outsourced_data.last().results, str):
+        results = eval(outsourced_data.last().results)
+    else:
+        results = outsourced_data.last().results
+    print(f"results================{results}")
     first_message = get_gpt_response(account,message)
 
-    media_id = outsourced_data.last().results.get("media_id", "")
+    media_id = results.get("media_id", "")
     data = {"username_from":salesrep.ig_username,"message": first_message, "username_to": account.igname, "mediaId": media_id}
     
 
     # like and comment
-    is_like_and_comment = like_and_comment(media_id=media_id, media_comment=outsourced_data.last().results.get("media_comment", ""),
+    is_like_and_comment = like_and_comment(media_id=media_id, media_comment=results.get("media_comment", ""),
                      salesrep=salesrep, account=account)
     if is_like_and_comment:
         time.sleep(60) # we break for 1 minute then send message
@@ -435,3 +442,32 @@ def send_first_compliment(username, message, repeat=True):
     send()
 
         # raise Exception("There is something wrong with mqtt")
+
+
+
+@shared_task()
+def send_report():
+    yesterday = timezone.now().date() - timezone.timedelta(days=1)
+    yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+
+    threads = Thread.objects.filter(created_at__gte=yesterday_start)
+
+    messages = []
+
+    for thread in threads:
+        for message in thread.message_set.all():
+            messages.append({
+                "sent_by":message.sent_by,
+                "sent_at":message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+                "content":message.content,
+                "assigned": thread.account.assigned_to,
+                "username": thread.account.igname
+            })
+    try:
+        subject = 'Hello Team'
+        message = f'Here are the outreach results for the previous day {json.dumps(messages)}'
+        from_email = 'lutherlunyamwi@gmail.com'
+        recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com',"tech-notifications-aaaalfvmpt4blxn4bjxku3hag4@boostedchat.slack.com"]
+        send_mail(subject, message, from_email, recipient_list)
+    except Exception as error:
+        print(error)

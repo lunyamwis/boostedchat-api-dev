@@ -17,6 +17,8 @@ class OutreachTimeAdmin(admin.ModelAdmin):
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
+    search_fields = ['igname__icontains',]
+
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
         form = super(AccountAdmin, self).get_form(request, obj, **kwargs)
@@ -37,8 +39,6 @@ class ThreadAdmin(admin.ModelAdmin):
         self.exclude = ("id",)
         form = super(ThreadAdmin, self).get_form(request, obj, **kwargs)
         return form
-
-
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
