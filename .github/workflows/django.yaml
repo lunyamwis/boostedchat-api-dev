@@ -34,7 +34,6 @@ env:
   DOMAIN2: 'booksy.us'
   MQTT_URL: 'https://mqtt.booksy.us.boostedchat.com'
   SCRIPTING_URL: 'https://promptemplate.booksy.us.boostedchat.com'
-  OPENAI_API_KEY: ${{secrets.OPENAI_API_KEY}}
 
 jobs:
   build:
