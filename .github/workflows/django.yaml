@@ -9,15 +9,11 @@ on:
   #   types: [opened, closed, reopened]
 
 env:
-  CELERY_BROKER_URL_API: $CELERY_BROKER_URL_API
-  CELERY_RESULT_BACKEND_API: $CELERY_RESULT_BACKEND_API
-  MAILCHIMP_API_KEY: $MAILCHIMP_API_KEY
-  MAILCHIMP_DATA_CENTER: $MAILCHIMP_DATA_CENTER
-  MAILCHIMP_EMAIL_LIST_ID: $MAILCHIMP_EMAIL_LIST_ID
-  EMAIL_HOST_USER: $EMAIL_HOST_USER
-  EMAIL_HOST_PASSWORD: $EMAIL_HOST_PASSWORD
-  IG_USERNAME: ${{SECRETS.IG_USERNAME}}
-  IG_PASSWORD: ${{SECRETS.IG_PASSWORD}}
+  CELERY_BROKER_URL: redis://localhost:6379
+  CELERY_RESULT_BACKEND: redis://localhost:6379
+  OPENAI_API_KEY: ${{SECRETS.OPENAI_API_KEY}} 
+  EMAIL_HOST_USER: ${{SECRETS.EMAIL_HOST_USER}}
+  EMAIL_HOST_PASSWORD: ${{SECRETS.EMAIL_HOST_PASSWORD}}
   CHALLENGE_EMAIL: ${{SECRETS.CHALLENGE_EMAIL}}
   CHALLENGE_PASSWORD: ${{SECRETS.CHALLENGE_PASSWORD}}
   POSTGRES_DBNAME: ${{ secrets.STAGING_POSTGRES_DBNAME }}
@@ -25,6 +21,19 @@ env:
   POSTGRES_PASSWORD: ${{ secrets.STAGING_POSTGRES_PASSWORD }}
   POSTGRES_HOST: ${{ secrets.STAGING_POSTGRES_HOST }}
   POSTGRES_PORT: 5432
+  EMAIL_RECIPIENTS: "${{ secrets.EMAIL_HOST_USER }},${{ secrets.TECH_CHANNEL_EMAIL }}"
+  API_BASE_URL: http://web:8000/api/v1
+  CLIENT_ORG:  ${{ secrets.CLIENT_ORG}}
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  SMTP_PORT: ${{ secret.SMTP_PORT }}
+  SMTP_HOST: ${{ secret.SMTP_HOST }}
+
+  APP_URL: 'https://api.booksy.us.boostedchat.com'
+  SCRAPPER_URL: 'http://127.0.0.1:8003'
+  DOMAIN1: 'booksy.us'
+  DOMAIN2: 'booksy.us'
+  MQTT_URL: 'https://mqtt.booksy.us.boostedchat.com'
+  SCRIPTING_URL: 'https://promptemplate.booksy.us.boostedchat.com'
 
 jobs:
   build:
@@ -84,6 +93,32 @@ jobs:
   
     - name: Pull latest image and builde docker on staging server
       run: |
-        ssh ubuntu@84.247.184.136 'docker pull lunyamwimages/boostedchatapi-dev:staging && docker stop boostedchat-api-dev || true && docker rm boostedchat-api-dev || true && docker run -d --name boostedchat-api-dev lunyamwimages/boostedchatapi-dev:staging'
+        ssh ubuntu@84.247.184.136 'docker pull lunyamwimages/boostedchatapi-dev:staging && docker stop boostedchat-api-dev || true && docker rm boostedchat-api-dev || true && docker run -d --name boostedchat-api-dev \
+                docker run -d --name boostedchat-api-dev \
+        -e CELERY_BROKER_URL=redis://localhost:6379 \
+        -e CELERY_RESULT_BACKEND=redis://localhost:6379 \
+        -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+        -e EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }} \
+        -e EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }} \
+        -e CHALLENGE_EMAIL=${{ secrets.CHALLENGE_EMAIL }} \
+        -e CHALLENGE_PASSWORD=${{ secrets.CHALLENGE_PASSWORD }} \
+        -e POSTGRES_DBNAME=${{ secrets.STAGING_POSTGRES_DBNAME }} \
+        -e POSTGRES_USERNAME=${{ secrets.STAGING_POSTGRES_USERNAME }} \
+        -e POSTGRES_PASSWORD=${{ secrets.STAGING_POSTGRES_PASSWORD }} \
+        -e POSTGRES_HOST=${{ secrets.STAGING_POSTGRES_HOST }} \
+        -e POSTGRES_PORT=5432 \
+        -e EMAIL_RECIPIENTS="${{ secrets.EMAIL_HOST_USER }},${{ secrets.TECH_CHANNEL_EMAIL }}" \
+        -e API_BASE_URL=http://web:8000/api/v1 \
+        -e CLIENT_ORG=${{ secrets.CLIENT_ORG }} \
+        -e SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
+        -e SMTP_PORT=${{ secrets.SMTP_PORT }} \
+        -e SMTP_HOST=${{ secrets.SMTP_HOST }} \
+        -e APP_URL=https://api.booksy.us.boostedchat.com \
+        -e SCRAPPER_URL=http://127.0.0.1:8003 \
+        -e DOMAIN1=booksy.us \
+        -e DOMAIN2=booksy.us \
+        -e MQTT_URL=https://mqtt.booksy.us.boostedchat.com \
+        -e SCRIPTING_URL=https://promptemplate.booksy.us.boostedchat.com \
+        lunyamwimages/boostedchatapi-dev:staging'
       env:
         SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
