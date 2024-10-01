@@ -93,7 +93,6 @@ jobs:
   
     - name: Pull latest image and builde docker on staging server
       run: |
-        ssh ubuntu@84.247.184.136 'docker pull lunyamwimages/boostedchatapi-dev:staging && docker stop boostedchat-api-dev || true && docker rm boostedchat-api-dev || true && unset DOCKER_HOST && docker run -d --name boostedchat-api-dev \
-        docker run -d --name boostedchat-api-dev lunyamwimages/boostedchatapi-dev:staging'
+        ssh ubuntu@84.247.184.136 'docker pull lunyamwimages/boostedchatapi-dev:staging && docker stop boostedchat-api-dev || true && docker rm boostedchat-api-dev || true && unset DOCKER_HOST && docker run -d --name boostedchat-api-dev docker run -d --name boostedchat-api-dev lunyamwimages/boostedchatapi-dev:staging'
       env:
         SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
