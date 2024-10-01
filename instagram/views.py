@@ -34,7 +34,7 @@ from sales_rep.models import SalesRep
 
 from .utils import generate_time_slots
 
-from .tasks import send_first_compliment
+from .tasks import send_first_compliment,generate_response_automatic
 from .helpers.init_db import init_db
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime
 from .serializers import (
@@ -1399,6 +1399,12 @@ class DMViewset(viewsets.ModelViewSet):
             return Response({"has_responded":True}, status=status.HTTP_200_OK)
         else:
             return Response({"has_responded":False}, status=status.HTTP_200_OK)
+    
+
+    def webhook(self,request,*args,**kwargs):
+        data = request.data
+        print(data)
+        return Response({"message":"webhook received"})
         
 
 class MessageViewSet(viewsets.ModelViewSet):

@@ -56,6 +56,11 @@ urlpatterns = [
         name='assign_operator',
     ),
     path(
+        'webhook/',
+        DMViewset.as_view({'post': 'webhook'}),
+        name='webhook',
+    ),
+    path(
         'dm/messages-by-ig-thread/<str:ig_thread_id>/',
         DMViewset.as_view({'get': 'messages_by_ig_thread_id'}),
         name='messages_by_ig_thread_id',
