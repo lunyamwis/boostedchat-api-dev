@@ -94,7 +94,7 @@ jobs:
     - name: Pull latest image and builde docker on staging server
       run: |
         ssh ubuntu@84.247.184.136 'docker pull lunyamwimages/boostedchatapi-dev:staging && docker stop boostedchat-api-dev || true && docker rm boostedchat-api-dev || true && docker run -d --name boostedchat-api-dev \
-                docker run -d --name boostedchat-api-dev \
+        docker run -d --name boostedchat-api-dev \
         -e CELERY_BROKER_URL=redis://localhost:6379 \
         -e CELERY_RESULT_BACKEND=redis://localhost:6379 \
         -e OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
