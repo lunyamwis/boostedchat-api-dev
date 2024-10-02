@@ -56,7 +56,7 @@ jobs:
         pip install -r requirements.txt
     # - name: Run Tests
     #   run: |
-    #     python manage.py test
+    #     python manage.py tes
 
     - name: Login To Docker Hub
       uses: docker/login-action@v3 # mr-smithers-excellent/docker-build-push@v4 # use existing coker action
