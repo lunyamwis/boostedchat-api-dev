@@ -510,11 +510,26 @@ def generate_response_automatic(query, thread_id):
                 thread=thread
             )
             print(result)
-            return 
+            return {
+                "generated_comment": gpt_resp,
+                "text": query,
+                "success": True,
+                "username": thread.account.igname,
+                "assigned_to": "Robot"
+            }
 
         except Exception as error:
-            print(error)
-            return 
+            return {
+                "error": str(error),
+                "success": False,
+                "username": thread.account.igname,
+                "assigned_to": "Robot"
+            }
 
     elif thread.account.assigned_to == 'Human':
-        return 
+        return {
+            "text": query,
+            "success": True,
+            "username": thread.account.igname,
+            "assigned_to": "Human"
+        }
