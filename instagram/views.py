@@ -1206,8 +1206,8 @@ class DMViewset(viewsets.ModelViewSet):
         thread = Thread.objects.filter(thread_id=kwargs.get('thread_id')).latest('created_at')
         req = request.data
         query = req.get("message")
-        result = generate_response_automatic.delay(query, thread.thread_id)
-        print("result from async call", result)
+        # result = generate_response_automatic.delay(query, thread.thread_id)
+        # print("result from async call", result)
         account = Account.objects.filter(id=thread.account.id).latest('created_at')
         print(account.id)
         thread = Thread.objects.filter(account=account).latest('created_at')
