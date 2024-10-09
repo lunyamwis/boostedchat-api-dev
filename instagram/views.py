@@ -34,7 +34,7 @@ from sales_rep.models import SalesRep
 
 from .utils import generate_time_slots
 
-from .tasks import send_first_compliment
+from .tasks import send_first_compliment,generate_response_automatic
 from .helpers.init_db import init_db
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime
 from .serializers import (
@@ -1206,7 +1206,8 @@ class DMViewset(viewsets.ModelViewSet):
         thread = Thread.objects.filter(thread_id=kwargs.get('thread_id')).latest('created_at')
         req = request.data
         query = req.get("message")
-
+        # result = generate_response_automatic.delay(query, thread.thread_id)
+        # print("result from async call", result)
         account = Account.objects.filter(id=thread.account.id).latest('created_at')
         print(account.id)
         thread = Thread.objects.filter(account=account).latest('created_at')
@@ -1286,17 +1287,17 @@ class DMViewset(viewsets.ModelViewSet):
             account = get_object_or_404(Account, id=thread.account.id)
             account.assigned_to = request.data.get("assigned_to") if request.data.get('assigned_to') else 'Human'
             account.save()
+            try:
+                subject = 'Hello Team'
+                message = f'Please login to the system @https://booksy.us.boostedchat.com/ and respond to the following thread {account.igname}'
+                from_email = 'lutherlunyamwi@gmail.com'
+                recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
+                send_mail(subject, message, from_email, recipient_list)
+            except Exception as error:
+                print(error)
         except Exception as error:
             print(error)
 
-        try:
-            subject = 'Hello Team'
-            message = f'Please login to the system @https://booksy.us.boostedchat.com/ and respond to the following thread {account.igname}'
-            from_email = 'lutherlunyamwi@gmail.com'
-            recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
-            send_mail(subject, message, from_email, recipient_list)
-        except Exception as error:
-            print(error)
 
         return Response(
             {
@@ -1399,6 +1400,12 @@ class DMViewset(viewsets.ModelViewSet):
             return Response({"has_responded":True}, status=status.HTTP_200_OK)
         else:
             return Response({"has_responded":False}, status=status.HTTP_200_OK)
+    
+
+    def webhook(self,request,*args,**kwargs):
+        data = request.data
+        print(data)
+        return Response({"message":"webhook received"})
         
 
 class MessageViewSet(viewsets.ModelViewSet):

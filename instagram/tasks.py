@@ -471,3 +471,65 @@ def send_report():
         send_mail(subject, message, from_email, recipient_list)
     except Exception as error:
         print(error)
+
+
+
+@shared_task
+def generate_response_automatic(query, thread_id):
+    thread = Thread.objects.filter(thread_id=thread_id).latest('created_at')
+    account = Account.objects.filter(id=thread.account.id).latest('created_at')
+    print(account.id)
+    thread = Thread.objects.filter(account=account).latest('created_at')
+
+    client_messages = query.split("#*eb4*#")
+    for client_message in client_messages:
+        Message.objects.create(
+            content=client_message,
+            sent_by="Client",
+            sent_on=timezone.now(),
+            thread=thread
+        )
+    thread.last_message_content = client_messages[len(client_messages)-1]
+    thread.unread_message_count = len(client_messages)
+    thread.last_message_at = timezone.now()
+    thread.save()
+
+    if thread.account.assigned_to == "Robot":
+        try:
+            gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
+
+            thread.last_message_content = gpt_resp
+            thread.last_message_at = timezone.now()
+            thread.save()
+
+            result = gpt_resp
+            Message.objects.create(
+                content=result,
+                sent_by="Robot",
+                sent_on=timezone.now(),
+                thread=thread
+            )
+            print(result)
+            return {
+                "generated_comment": gpt_resp,
+                "text": query,
+                "success": True,
+                "username": thread.account.igname,
+                "assigned_to": "Robot"
+            }
+
+        except Exception as error:
+            return {
+                "error": str(error),
+                "success": False,
+                "username": thread.account.igname,
+                "assigned_to": "Robot"
+            }
+
+    elif thread.account.assigned_to == 'Human':
+        return {
+            "text": query,
+            "success": True,
+            "username": thread.account.igname,
+            "assigned_to": "Human"
+        }
