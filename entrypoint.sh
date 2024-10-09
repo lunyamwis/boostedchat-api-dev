@@ -19,11 +19,11 @@ python manage.py loaddata initialization.yaml
 echo " "
 echo "<<<<<<<<<<<<<<<<<<<< START Celery >>>>>>>>>>>>>>>>>>>>>>>>"
 
-export CELERY_BROKER_URL=$CELERY_BROKER_URL_API
-export CELERY_RESULT_BACKEND=$CELERY_RESULT_BACKEND_API
+# export CELERY_BROKER_URL=$CELERY_BROKER_URL_API
+# export CELERY_RESULT_BACKEND=$CELERY_RESULT_BACKEND_API
 
-echo "CELERY_BROKER_URL=$CELERY_BROKER_URL"
-echo "CELERY_RESULT_BACKEND=$CELERY_RESULT_BACKEND"
+# echo "CELERY_BROKER_URL=$CELERY_BROKER_URL"
+# echo "CELERY_RESULT_BACKEND=$CELERY_RESULT_BACKEND"
 # # start Celery worker
 celery -A setup worker --loglevel=info &
 
@@ -33,5 +33,6 @@ celery -A setup beat --loglevel=info &
 sleep 5
 echo "<<<<<<<<<<<<<<<<<<<< START API >>>>>>>>>>>>>>>>>>>>>>>>"
 python manage.py runserver 0.0.0.0:8000
+# python manage.py runserver 8001
 # Start the API with gunicorn
 # gunicorn --bind 0.0.0.0:8000 setup.wsgi --reload --access-logfile '-' --workers=2

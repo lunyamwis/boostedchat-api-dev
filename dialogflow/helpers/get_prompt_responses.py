@@ -63,6 +63,7 @@ def get_gpt_response(account, message, thread_id=None):
 
     get_agent_payload = {
         "message":message,
+        "text":message,
         "conversations":conversations if conversations else "",
         "active_stage": account.status_param if account.status_param else ""
     }
@@ -109,14 +110,17 @@ def get_gpt_response(account, message, thread_id=None):
     
     print("agent_name:",agent_name,"agent_task:",agent_task)
 
+  
     # import pdb;pdb.set_trace()
     relevant_information = str(account.relevant_information) if account.relevant_information else ""
     payload = {
         "department":"Engagement Department",
         "agent_name": agent_name,
         "agent_task": agent_task,
+        "text":message if message else "",
         "Assigned":{
             "message":message if message else "",
+            "text":message if message else "",
             "sales_rep":account.salesrep_set.first().ig_username,
             "influencer_ig_name":account.salesrep_set.last().ig_username,
             "outsourced_info":outsourced_object.results,
@@ -132,6 +136,7 @@ def get_gpt_response(account, message, thread_id=None):
     # import pdb;pdb.set_trace()
     resp = requests.post(url, data=json.dumps(payload),headers = {'Content-Type': 'application/json'})
     response = resp.json()
+    # response = query_gpt(prompt=payload)
     print(resp.json())
     result = response.get('result')
     # Find the index of the opening quote after "text":
@@ -256,6 +261,7 @@ def get_gpt_response(account, message, thread_id=None):
     
     # print(result)
     # import pdb;pdb.set_trace()
+
     extracted_text = json.loads(result.replace('```json\n','').replace('```',''))['text']
     # extracted_text = extracted_text.replace('\n\n', ' ').replace('\n', ' ')
     print(extracted_text)
