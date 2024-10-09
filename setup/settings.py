@@ -66,7 +66,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://ed48-196-105-37-1.ngrok-free.app",
     "https://8000-lunyamwidev-boostedchat-4qp4oxj8hjx.ws-eu114.gitpod.io/",
     "https://03bc-2c0f-2a80-10e1-4210-817-bada-7f30-a73c.ngrok-free.app",
-    "https://9ccf-2c0f-2a80-10e3-6910-17d0-37c3-e0d3-185a.ngrok-free.app"
+    "https://9ccf-2c0f-2a80-10e3-6910-17d0-37c3-e0d3-185a.ngrok-free.app",
+    "http://api.staging.boostedchat.com"
     ]
 DIALOGFLOW_BASE_URL = (
     "https://us-central1-dialogflow.googleapis.com/v3beta1/projects/boostedchatapi/locations/us-central1/"
