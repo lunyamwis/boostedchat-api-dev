@@ -36,6 +36,11 @@ urlpatterns = [
         name='generate_response',
     ),
     path(
+        'celery-task-status/<str:task_id>/',
+        DMViewset.as_view({'get': 'celery_task_status'}),
+        name='celery_task_status',
+    ),
+    path(
         'sendFirstResponses/',
         DMViewset.as_view({'post': 'get_qualified_threads_and_respond'}),
         name='get_qualified_threads_and_respond',

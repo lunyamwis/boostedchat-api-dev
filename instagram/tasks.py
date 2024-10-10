@@ -497,7 +497,8 @@ def generate_response_automatic(query, thread_id):
     if thread.account.assigned_to == "Robot":
         try:
             gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
-
+            # gpt_resp = "No worries bro we got you"
+            
             thread.last_message_content = gpt_resp
             thread.last_message_at = timezone.now()
             thread.save()
@@ -515,7 +516,8 @@ def generate_response_automatic(query, thread_id):
                 "text": query,
                 "success": True,
                 "username": thread.account.igname,
-                "assigned_to": "Robot"
+                "assigned_to": "Robot",
+                "status":200
             }
 
         except Exception as error:
@@ -523,7 +525,8 @@ def generate_response_automatic(query, thread_id):
                 "error": str(error),
                 "success": False,
                 "username": thread.account.igname,
-                "assigned_to": "Robot"
+                "assigned_to": "Robot",
+                "status":500
             }
 
     elif thread.account.assigned_to == 'Human':
@@ -531,5 +534,6 @@ def generate_response_automatic(query, thread_id):
             "text": query,
             "success": True,
             "username": thread.account.igname,
-            "assigned_to": "Human"
+            "assigned_to": "Human",
+            "status":200
         }
