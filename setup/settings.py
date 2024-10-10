@@ -49,12 +49,14 @@ ALLOWED_HOSTS = [
     "api",
     "8000-lunyamwidev-boostedchat-4qp4oxj8hjx.ws-eu114.gitpod.io",
     "03bc-2c0f-2a80-10e1-4210-817-bada-7f30-a73c.ngrok-free.app",
-    "9ccf-2c0f-2a80-10e3-6910-17d0-37c3-e0d3-185a.ngrok-free.app"
+    "9ccf-2c0f-2a80-10e3-6910-17d0-37c3-e0d3-185a.ngrok-free.app",
+    "api.staging.boostedchat.com"
 ]
 CSRF_TRUSTED_ORIGINS = [
     f"https://api.{os.environ.get('DOMAIN1', '')}.boostedchat.com",
     f"https://api.{os.environ.get('DOMAIN2', '')}.boostedchat.com",      
     "https://api.boostedchat.com",
+    "https://api.staging.boostedchat.com",
     "https://api.booksy.us.boostedchat.com",
     "https://api.jamel.boostedchat.com",
     "https://a69c-105-60-202-188.ngrok-free.app",
