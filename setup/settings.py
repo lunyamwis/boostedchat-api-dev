@@ -57,6 +57,7 @@ CSRF_TRUSTED_ORIGINS = [
     f"https://api.{os.environ.get('DOMAIN1', '')}.boostedchat.com",
     f"https://api.{os.environ.get('DOMAIN2', '')}.boostedchat.com",      
     "https://api.boostedchat.com",
+    "https://api.staging.boostedchat.com",
     "https://api.booksy.us.boostedchat.com",
     "https://api.jamel.boostedchat.com",
     "https://a69c-105-60-202-188.ngrok-free.app",

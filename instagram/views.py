@@ -9,6 +9,7 @@ import requests
 import random
 from urllib.parse import urlparse
 from auditlog.models import LogEntry
+from celery.result import AsyncResult
 from datetime import datetime,timedelta
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
@@ -1206,80 +1207,26 @@ class DMViewset(viewsets.ModelViewSet):
         thread = Thread.objects.filter(thread_id=kwargs.get('thread_id')).latest('created_at')
         req = request.data
         query = req.get("message")
-        # result = generate_response_automatic.delay(query, thread.thread_id)
-        # print("result from async call", result)
-        account = Account.objects.filter(id=thread.account.id).latest('created_at')
-        print(account.id)
-        thread = Thread.objects.filter(account=account).latest('created_at')
+        print(query)
+        result = generate_response_automatic.delay(query, thread.thread_id)
+        # import pdb;pdb.set_trace()
+        print(result.id)
 
-        client_messages = query.split("#*eb4*#")
-        for client_message in client_messages:
-            Message.objects.create(
-                content=client_message,
-                sent_by="Client",
-                sent_on=timezone.now(),
-                thread=thread
-            )
-        thread.last_message_content = client_messages[len(client_messages)-1]
-        thread.unread_message_count = len(client_messages)
-        thread.last_message_at = timezone.now()
-        thread.save()
-
-        if thread.account.assigned_to == "Robot":
-            try:
-                gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
-
-                thread.last_message_content = gpt_resp
-                thread.last_message_at = timezone.now()
-                thread.save()
-
-                result = gpt_resp
-                Message.objects.create(
-                    content=result,
-                    sent_by="Robot",
-                    sent_on=timezone.now(),
-                    thread=thread
-                )
-
-                return Response(
-                    {
-                        "status": status.HTTP_200_OK,
-                        "generated_comment": "".join(map(str, result)),
-                        "text": request.data.get("message"),
-                        "success": True,
-                        "username": thread.account.igname,
-                        "assigned_to": "Robot"
-                    },
-                    status=status.HTTP_200_OK,
-                )
-
-            except Exception as error:
-                return Response(
-                    {
-                        "fulfillment_response": {
-                            "messages": [
-                                {
-                                    "text": {
-                                        "error": str(error),
-                                    },
-                                },
-                            ]
-                        }
-                    },
-                    status=status.HTTP_200_OK,
-                )
-
-        elif thread.account.assigned_to == 'Human':
-            return Response(
-                {
-                    "status": status.HTTP_200_OK,
-                    "text": request.data.get("message"),
-                    "success": True,
-                    "username": thread.account.igname,
-                    "assigned_to": "Human"
-
-                }
-            )
+        return Response({
+            "status": status.HTTP_200_OK,
+            "message": "Task started successfully",
+            "task_id": result.id
+        }, status=status.HTTP_200_OK)
+    
+    def celery_task_status(self, request, task_id,*args,**kwargs):
+        result = AsyncResult(task_id)
+        print(result)
+        
+        return Response({
+            'task_id': task_id,
+            'state': result.state,
+            'result': result.result if result.state == 'SUCCESS' else None,
+        })
 
     def assign_operator(self, request, *args, **kwargs):
         try:
