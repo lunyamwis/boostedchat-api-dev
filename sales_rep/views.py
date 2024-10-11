@@ -15,7 +15,7 @@ from data.helpers.random_data import get_random_compliment
 from instagram.helpers.llm import query_gpt
 from instagram.helpers.login import login_user
 from instagram.models import Account, StatusCheck
-from instagram.tasks import send_first_compliment
+from instagram.tasks import send_first_compliment,assign_salesrepresentative
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x,get_moving_average
 from .models import SalesRep, Influencer, LeadAssignmentHistory
@@ -77,60 +77,8 @@ class SalesRepManager(viewsets.ModelViewSet):
     def assign_salesrep(self, request):
         # import pdb;pdb.set_trace()
 
-        print(request.data)
-        yesterday = timezone.now().date() - timezone.timedelta(days=1)
-        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
-        accounts  = Account.objects.filter(Q(qualified=True) & Q(created_at__gte=yesterday_start)).exclude(status__name="sent_compliment")
-        for lead in accounts:
+        assign_salesrepresentative.delay()
         
-            # Get all sales reps
-            sales_reps = SalesRep.objects.filter(available=True)
-
-            # Calculate moving averages for all sales reps
-            sales_rep_moving_averages = {
-                sales_rep: get_moving_average(sales_rep) for sales_rep in sales_reps
-            }
-
-
-            # Find the sales rep with the minimum moving average
-            best_sales_rep = min(sales_rep_moving_averages, key=sales_rep_moving_averages.get)
-            best_sales_rep.instagram.add(lead)
-            # Assign the lead to the best sales rep
-            #lead.assigned_to = best_sales_rep
-            #lead.save()
-            best_sales_rep.save()
-            # Record the assignment in the history
-            LeadAssignmentHistory.objects.create(sales_rep=best_sales_rep, lead=lead)
-            endpoint = "https://mqtt.booksy.us.boostedchat.com"
-
-            srep_username = best_sales_rep.ig_username
-            if lead.thread_set.exists():
-                thread = lead.thread_set.latest('created_at')
-                response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
-                
-                # Check the status code of the response
-                if response.status_code == 200:
-                    print('Request approved')
-                else:
-                    print(f'Request failed with status code {response.status_code}')
-
-            # send first compliment
-            # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
-            # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
-            # # import pdb;pdb.set_trace()
-            # response = requests.post(send_compliment_endpoint)
-            # if response.status_code in [200,201]:
-            #     print("Successfully set outreach time for compliment and will send at appropriate time")
-
-            else:
-                logging.warning("not going through")
-        send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
-        # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
-        # import pdb;pdb.set_trace()
-        response = requests.post(send_compliment_endpoint)
-        if response.status_code in [200,201]:
-            print("Successfully set outreach time for compliment and will send at appropriate time")
-
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
 

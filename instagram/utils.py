@@ -23,7 +23,7 @@ def assign_salesrep(account):
 def get_account(username):
     account = None
     try:
-        first_account = Account.objects.filter(igname__icontains=''.join(username).split('-')[0]).first()
+        first_account = Account.objects.filter(igname__icontains=''.join(username).split('-')[0]).latest('created_at')
         last_account = Account.objects.filter(igname__icontains=''.join(username).split('-')[0]).last()
         if first_account.salesrep_set.exists():
             account = first_account
