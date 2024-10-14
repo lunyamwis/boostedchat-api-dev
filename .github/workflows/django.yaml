@@ -61,7 +61,7 @@ jobs:
     - name: Login To Docker Hub
       uses: docker/login-action@v3 # mr-smithers-excellent/docker-build-push@v4 # use existing coker action
       with:
-        context: .
+        # context: .
         # push: true
         # tags: lunyamwimages/boostedchat-api-dev:latest
         # registry: docker.io  
