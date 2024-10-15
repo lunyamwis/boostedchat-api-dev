@@ -37,7 +37,7 @@ from .utils import generate_time_slots
 
 from .tasks import send_first_compliment,generate_response_automatic
 from .helpers.init_db import init_db
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed
 from .serializers import (
     AccountSerializer,
     OutSourcedSerializer,
@@ -1350,8 +1350,33 @@ class DMViewset(viewsets.ModelViewSet):
     
 
     def webhook(self,request,*args,**kwargs):
-        data = request.data
-        print(data)
+        data = None
+        try:
+            data = request.data
+            print(data)
+        except Exception as err:
+            print(err)
+            try:
+                data = json.loads(request.body)
+                print(data)
+            except Exception as err:
+                print(err)
+                try:
+                    data = request.json()
+                except Exception as err:
+                    print(err)
+                    try:
+                        data = json.loads(request.body.decode('utf-8'))
+                    except  Exception as err:
+                        print(err)
+        
+        try:
+            closed = AccountsClosed()
+            closed.data = data
+            closed.save()
+        except Exception as err:
+            print(err,'was unable to save data')
+                    
         return Response({"message":"webhook received"})
         
 
