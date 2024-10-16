@@ -102,7 +102,16 @@ jobs:
   
     - name: Pull staging image and builde docker on staging server
       run: |
-       ssh ubuntu@84.247.184.136 'docker pull lunyamwimages/boostedchatapi-dev:staging && docker stop  boostedchat-site-api-1 || true && docker rm  boostedchat-site-api-1 || true && unset DOCKER_HOST && docker compose --env-file .env up --build -d api lunyamwimages/boostedchatapi-dev:staging'
+       ssh ubuntu@84.247.184.136 '
+          cd /home/ubuntu/booksy-boostedchat-deployment/boostedchat-site && \
+          docker pull lunyamwimages/boostedchatapi-dev:staging && \
+          if [ "$(docker ps -a -q -f name=boostedchat-site-api-1)" ]; then \
+            docker stop boostedchat-site-api-1 && docker rm boostedchat-site-api-1 && \
+            unset DOCKER_HOST && docker compose --env-file .env up --build -d api; \
+          else \
+            echo "No such container: boostedchat-site-api-1, starting api service" && docker compose --env-file .env up -d api; \
+          fi  
+        '
 
       env:
         SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }} 
