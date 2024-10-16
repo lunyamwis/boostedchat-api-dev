@@ -12,6 +12,12 @@ def get_status_number(val, pattern=r"\d+"):
     list_of_values = re.findall(pattern=pattern, string=val)
     return int(list_of_values[0])
 
+def extract_text(json_string):
+    # Regular expression to find the "text" field
+    match = re.search(r'"text":"(.*?)"', json_string)
+    if match:
+        return match.group(1).replace('\\"', '"')  # Replace escaped quotes if needed
+    return None
 
 def get_if_confirmed_problem(val, pattern=r"`([^`]+)`"):
     list_of_values = re.findall(pattern=pattern, string=val)
@@ -261,8 +267,14 @@ def get_gpt_response(account, message, thread_id=None):
     
     # print(result)
     # import pdb;pdb.set_trace()
-
-    extracted_text = json.loads(result.replace('```json\n','').replace('```',''))['text']
+    extracted_text = None
+    try:  
+        extracted_text = json.loads(result.replace('```json\n','').replace('```',''))['text']
+    except Exception as err:
+        try:
+            extracted_text = extract_text(result)
+        except Exception as err:
+            print("Error in extracting text: ",err) 
     # extracted_text = extracted_text.replace('\n\n', ' ').replace('\n', ' ')
     print(extracted_text)
 

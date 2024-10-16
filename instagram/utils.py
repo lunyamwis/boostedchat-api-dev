@@ -23,15 +23,13 @@ def assign_salesrep(account):
 def get_account(username):
     account = None
     try:
-        first_account = Account.objects.filter(igname__icontains=''.join(username).split('-')[0]).first()
-        last_account = Account.objects.filter(igname__icontains=''.join(username).split('-')[0]).last()
-        if first_account.salesrep_set.exists():
-            account = first_account
-        elif last_account.salesrep_set.exists():
-            account = last_account
+        accounts = Account.objects.filter(igname__icontains=''.join(username).split('-')[0]).exclude(status__name='sent_compliment') 
+        account = accounts.latest('created_at')
+        if account.salesrep_set.exists():
+            account = account
         else:
-            assign_salesrep(last_account)
-            account = last_account
+            assign_salesrep(account)
+            
 
     except Exception as error:
         print(error)

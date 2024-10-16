@@ -2,7 +2,7 @@
 
 from django.contrib import admin
 
-from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime
+from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed
 
 admin.site.register(Photo)
 admin.site.register(Video)
@@ -53,4 +53,13 @@ class OutSourcedAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
         form = super(OutSourcedAdmin, self).get_form(request, obj, **kwargs)
+        return form
+
+
+
+@admin.register(AccountsClosed)
+class AccountsClosedAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(AccountsClosedAdmin, self).get_form(request, obj, **kwargs)
         return form

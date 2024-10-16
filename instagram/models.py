@@ -130,3 +130,10 @@ def initialize_account(sender, instance, created, **kwargs):
 class OutreachTime(BaseModel):
     time_slot = models.DateTimeField()
     account_to_be_assigned = models.ForeignKey(Account,on_delete=models.CASCADE,null=True,blank=True)
+
+
+class AccountsClosed(BaseModel):
+    data = models.TextField(null=True,blank=True)
+
+    def __str__(self) -> str:
+        return self.data if self.data else self.id
