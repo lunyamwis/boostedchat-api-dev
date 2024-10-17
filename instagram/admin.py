@@ -21,7 +21,7 @@ def get_cut_info_action(modeladmin, request, queryset):
         print(the_cut_username)
         info = get_the_cut_info(the_cut_username)
         # Do something with the info, for example, update a field
-        obj.relevant_information = {**json.loads(obj.relevant_information), **info}
+        obj.referral = json.dumps(info)
         obj.save()
 
     # Redirect to the admin page after the action is done
