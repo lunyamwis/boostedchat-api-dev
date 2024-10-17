@@ -357,11 +357,12 @@ def send_first_compliment(username, message, repeat=True):
     
 
     # like and comment
-    is_like_and_comment = like_and_comment(media_id=media_id, media_comment=results.get("media_comment", ""),
-                     salesrep=salesrep, account=account)
-    if is_like_and_comment:
-        time.sleep(60) # we break for 1 minute then send message
-        print("successfully liked and commented")
+    # is_like_and_comment = like_and_comment(media_id=media_id, media_comment=results.get("media_comment", ""),
+    #                  salesrep=salesrep, account=account)
+    # if is_like_and_comment:
+    #     time.sleep(60) # we break for 1 minute then send message
+    #     print("successfully liked and commented")
+    
 
     print(f"data=============={data}")
     print(f"data=============={json.dumps(data)}")
@@ -418,6 +419,15 @@ def send_first_compliment(username, message, repeat=True):
             except Exception as error:
                 print(error)
                 print("message not saved")
+            
+            try:
+                subject = 'Hello Team'
+                message = f'Outreach for {account.igname} has been sent'
+                from_email = 'lutherlunyamwi@gmail.com'
+                recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com',"tech-notifications-aaaalfvmpt4blxn4bjxku3hag4@boostedchat.slack.com"]
+                send_mail(subject, message, from_email, recipient_list)
+            except Exception as error:
+                print(error)
 
         else:
             # get last account in queue
