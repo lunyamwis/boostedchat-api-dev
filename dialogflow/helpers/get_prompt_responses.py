@@ -149,7 +149,7 @@ def get_gpt_response(account, message, thread_id=None):
     try:
         prepended_result = None
         try:
-            prepended_result = json.loads(result.replace('```json\n','').replace('```','').replace("\n",""))
+            prepended_result = result
         except Exception as err:
             print("Trying json repair method 2: ",err)
             try:
@@ -280,7 +280,7 @@ def get_gpt_response(account, message, thread_id=None):
     # import pdb;pdb.set_trace()
     extracted_text = None
     try:  
-        extracted_text = json.loads(result.replace('```json\n','').replace('```',''))['text']
+        extracted_text = result.get('text')
     except Exception as err:
         try:
             extracted_text = extract_text(result)
