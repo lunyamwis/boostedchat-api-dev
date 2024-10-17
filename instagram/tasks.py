@@ -323,13 +323,13 @@ def send_first_compliment(username, message, repeat=True):
     try:
         ig_account_exists = user_exists_in_IG(account, salesrep)
         if not ig_account_exists: # log in will need to be handled differently from the others
-            delete_first_compliment_task(account)
+            # delete_first_compliment_task(account)
             err_str = f"{username} does not exist"
             outreachErrorLogger(account, salesrep, err_str, 404, "ERROR", "Lead", True)  # WARNING will break execution and reschedule another
   
     except Exception as e:
         print(f"An error occurred: {e}")  # probably an auth error
-        return
+        # return
     # check also if available(1)
 
     # for development: throw this error:
