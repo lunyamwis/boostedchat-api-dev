@@ -275,6 +275,14 @@ def get_gpt_response(account, message, thread_id=None):
             extracted_text = extract_text(result)
         except Exception as err:
             print("Error in extracting text: ",err) 
+            try:
+                extract_text = result.split('"text": "')[1].split('",')[0]
+            except Exception as err:
+                print("Error in extracting text: ",err)
+                try:
+                    extracted_text = "Just a minute"
+                except Exception as err:
+                    print("Error in extracting text: ",err)
     # extracted_text = extracted_text.replace('\n\n', ' ').replace('\n', ' ')
     print(extracted_text)
 
