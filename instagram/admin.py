@@ -19,7 +19,7 @@ def get_cut_info_action(modeladmin, request, queryset):
         print(outsourced.results.get("external_url"))
         the_cut_username = outsourced.results.get("external_url").split('/')[-1]
         print(the_cut_username)
-        info = get_the_cut_info(obj.thecut_username)
+        info = get_the_cut_info(the_cut_username)
         # Do something with the info, for example, update a field
         obj.relevant_information = {**json.loads(obj.relevant_information), **info}
         obj.save()
