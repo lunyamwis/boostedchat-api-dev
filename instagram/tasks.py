@@ -368,7 +368,15 @@ def send_first_compliment(username, message, repeat=True):
     print(f"data=============={json.dumps(data)}")
     def send(numTries = 0):
         numTries += 1
-        response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", data=json.dumps(data))
+        try:
+            response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", data=json.dumps(data),headers={"Content-Type": "application/json"})
+            print("coming in as data")
+        except Exception as error:
+            try:
+                response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", json=json.dumps(data), headers={"Content-Type": "application/json"})
+                print("coming in as json")
+            except Exception as error:
+                print(error)
         print(response.status_code)
         if response.status_code == 200:
             sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
@@ -449,9 +457,9 @@ def send_first_compliment(username, message, repeat=True):
             print(f"Request failed with status code: {response.status_code}")
             print(f"Response message: {response.text}")
             # sav
-            repeatLocal = handleMqTTErrors(account, salesrep, response.status_code, response.text, numTries, repeat)
-            if repeatLocal and numTries <= 1:
-                send(numTries)
+            # repeatLocal = handleMqTTErrors(account, salesrep, response.status_code, response.text, numTries, repeat)
+            # if repeatLocal and numTries <= 1:
+                # send(numTries)
                 # pass
     send()
 
