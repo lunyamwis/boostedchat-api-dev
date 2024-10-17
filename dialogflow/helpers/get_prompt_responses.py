@@ -191,7 +191,7 @@ def get_gpt_response(account, message, thread_id=None):
         try:
             human_takeover = prepended_result['human_takeover']
             print("human_takeover: ",human_takeover)
-            if bool(human_takeover):
+            if bool(int(human_takeover)):
                 account.assigned_to = "Human"
                 account.save()
             else:
