@@ -162,8 +162,13 @@ def get_gpt_response(account, message, thread_id=None):
 
             active_stage_res = prepended_result['active_stage']
             print('********************',active_stage_res,'****************')
-            account.status_param = active_stage_res
-            account.save()
+            if active_stage_res == "Handover":
+                account.status_param = "Handover"
+                account.assigned_to = "Human"
+                account.save()
+            else:
+                account.status_param = active_stage_res
+                account.save()
         except Exception as err:
             print("Active stage issue *****: ",err)
 
