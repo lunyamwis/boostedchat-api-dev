@@ -34,6 +34,7 @@ requests
 selenium
 sentry-sdk[django]
 scrapy
+SQLAlchemy
 sqlparse
 coverage
 robotframework
