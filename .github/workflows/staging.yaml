@@ -7,7 +7,7 @@ on:
 env:
   REGISTRY: docker.io
   IMAGE_NAME: lunyamwimages/boostedchatapi-dev:staging
-  # CELERY_BROKER_URL: redis://redis:6379
+  # CELERY_BROKER_URL: redis://redis:6379 
   # CELERY_RESULT_BACKEND: redis://redis:6379
   # OPENAI_API_KEY: ${{SECRETS.OPENAI_API_KEY}} 
   # EMAIL_HOST_USER: ${{SECRETS.EMAIL_HOST_USER}}
