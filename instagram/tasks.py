@@ -308,28 +308,28 @@ def send_first_compliment(username, message, repeat=True):
     if not isMQTTUP():
         outreachErrorLogger(account, salesrep, "MQTT service unavailable. Not handled", 503, "ERROR", "MQTT", False) # Nothinig to be done. No action on our part can bring it up
     # check if sales_rep is logged_in
-    try:
-        logged_in = sales_rep_is_logged_in(account, salesrep)
-        if not logged_in: # log in will need to be handled differently from the others
-            err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not logged in"
-            outreachErrorLogger(account, salesrep, err_str, 403, "WARNING", "Sales Rep IG", False)  # WARNING will not break execution
-            if not logout_and_login(account, salesrep): # Nothing to be done. We cannot try logging in constantly
-                return # nothing to do. Wait for the account to be logged back in manually.
+    # try:
+    #     logged_in = sales_rep_is_logged_in(account, salesrep)
+    #     if not logged_in: # log in will need to be handled differently from the others
+    #         err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not logged in"
+    #         outreachErrorLogger(account, salesrep, err_str, 403, "WARNING", "Sales Rep IG", False)  # WARNING will not break execution
+    #         if not logout_and_login(account, salesrep): # Nothing to be done. We cannot try logging in constantly
+    #             return # nothing to do. Wait for the account to be logged back in manually.
   
-    except Exception as e:
-        print(f"An error occurred: {e}") 
-        return
+    # except Exception as e:
+    #     print(f"An error occurred: {e}") 
+    #     return
 
-    try:
-        ig_account_exists = user_exists_in_IG(account, salesrep)
-        if not ig_account_exists: # log in will need to be handled differently from the others
-            # delete_first_compliment_task(account)
-            err_str = f"{username} does not exist"
-            outreachErrorLogger(account, salesrep, err_str, 404, "ERROR", "Lead", True)  # WARNING will break execution and reschedule another
+    # try:
+    #     ig_account_exists = user_exists_in_IG(account, salesrep)
+    #     if not ig_account_exists: # log in will need to be handled differently from the others
+    #         # delete_first_compliment_task(account)
+    #         err_str = f"{username} does not exist"
+    #         outreachErrorLogger(account, salesrep, err_str, 404, "ERROR", "Lead", True)  # WARNING will break execution and reschedule another
   
-    except Exception as e:
-        print(f"An error occurred: {e}")  # probably an auth error
-        # return
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")  # probably an auth error
+    #     # return
     # check also if available(1)
 
     # for development: throw this error:
