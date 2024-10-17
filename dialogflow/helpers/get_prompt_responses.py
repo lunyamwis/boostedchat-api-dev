@@ -162,13 +162,8 @@ def get_gpt_response(account, message, thread_id=None):
 
             active_stage_res = prepended_result['active_stage']
             print('********************',active_stage_res,'****************')
-            if active_stage_res == "Handover":
-                account.status_param = "Handover"
-                account.assigned_to = "Human"
-                account.save()
-            else:
-                account.status_param = active_stage_res
-                account.save()
+            account.status_param = active_stage_res
+            account.save()
         except Exception as err:
             print("Active stage issue *****: ",err)
 
@@ -191,7 +186,18 @@ def get_gpt_response(account, message, thread_id=None):
             account.solution_presented = bool(int(solution_presented_res))
             account.save()
         except Exception as err:
-            print("Solution not presented: ",err)    
+            print("Solution not presented: ",err) 
+
+        try:
+            human_takeover = prepended_result['human_takeover']
+            print("human_takeover: ",human_takeover)
+            if bool(human_takeover):
+                account.assigned_to = "Human"
+                account.save()
+            else:
+                print(f"Human takeover not set well {human_takeover}")
+        except Exception as err:
+            print("Human takeover not set: ",err)   
         # index = result.find('"question_asked":')
         # if index != -1:
         #     # Extract the value of 'solution_presented'
