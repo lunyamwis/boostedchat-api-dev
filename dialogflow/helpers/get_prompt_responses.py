@@ -289,7 +289,7 @@ def get_gpt_response(account, message, thread_id=None):
     # import pdb;pdb.set_trace()
     extracted_text = None
     try:  
-        extracted_text = result.get('text')
+        extracted_text = result.get('text').replace("\n", "")
     except Exception as err:
         try:
             extracted_text = extract_text(result)
