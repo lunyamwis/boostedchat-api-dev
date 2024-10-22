@@ -62,7 +62,7 @@ class OutSourced(BaseModel):
     account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self) -> str:
-        return self.id
+        return f"{self.account.igname}==>{self.id}" if self.account else self.id
     
 # auditlog.register(Account)
 

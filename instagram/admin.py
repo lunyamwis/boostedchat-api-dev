@@ -71,6 +71,7 @@ class MessageAdmin(admin.ModelAdmin):
 
 @admin.register(OutSourced)
 class OutSourcedAdmin(admin.ModelAdmin):
+    search_fields = ['account__igname__icontains',]
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
         form = super(OutSourcedAdmin, self).get_form(request, obj, **kwargs)
