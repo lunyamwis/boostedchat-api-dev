@@ -519,14 +519,19 @@ def generate_response_automatic(query, thread_id):
 
     if thread.account.assigned_to == "Robot":
         try:
-            gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
-            # gpt_resp = "No worries bro we got you"
+            gpt_resp = None
+            last_message = thread.message_set.order_by('-sent_on').first()
+            if last_message.content and last_message.sent_by == "Robot":
+                gpt_resp = "already_responded"
+            else:
+                gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
             
             thread.last_message_content = gpt_resp
             thread.last_message_at = timezone.now()
             thread.save()
 
             result = gpt_resp
+            
             Message.objects.create(
                 content=result,
                 sent_by="Robot",
@@ -557,6 +562,7 @@ def generate_response_automatic(query, thread_id):
             "text": query,
             "success": True,
             "username": thread.account.igname,
+            "generated_comment": "assigned_human",
             "assigned_to": "Human",
             "status":200
         }
