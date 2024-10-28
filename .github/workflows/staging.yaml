@@ -2,7 +2,7 @@ name: Deploy to staging
 
 on:
   push:
-    branches: [ actions-test ]
+    branches: [ actions-test, dev ]
 
 env:
   REGISTRY: docker.io
