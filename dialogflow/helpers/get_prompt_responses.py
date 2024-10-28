@@ -5,6 +5,7 @@ import requests
 from instagram.helpers.llm import query_gpt
 from urllib.parse import urlparse
 from dialogflow.helpers.conversations import get_conversation_so_far
+from django.core.mail import send_mail
 from instagram.models import OutSourced
 
 
@@ -149,7 +150,7 @@ def get_gpt_response(account, message, thread_id=None):
     try:
         prepended_result = None
         try:
-            prepended_result = json.loads(result.replace('```json\n','').replace('```','').replace("\n",""))
+            prepended_result = result
         except Exception as err:
             print("Trying json repair method 2: ",err)
             try:
@@ -186,7 +187,26 @@ def get_gpt_response(account, message, thread_id=None):
             account.solution_presented = bool(int(solution_presented_res))
             account.save()
         except Exception as err:
-            print("Solution not presented: ",err)    
+            print("Solution not presented: ",err) 
+
+        try:
+            human_takeover = prepended_result['human_takeover']
+            print("human_takeover: ",human_takeover)
+            if bool(int(human_takeover)):
+                account.assigned_to = "Human"
+                account.save()
+                try:
+                    subject = 'Hello Team'
+                    message = f'Hello please address the account {account.igname} it has been handed over to you'
+                    from_email = 'lutherlunyamwi@gmail.com'
+                    recipient_list = ['eyadhussein99@gmail.com','lutherlunyamwi@gmail.com','tomek@boostedchat.com',"tech-notifications-aaaalfvmpt4blxn4bjxku3hag4@boostedchat.slack.com"]
+                    send_mail(subject, message, from_email, recipient_list)
+                except Exception as error:
+                    print(error)
+            else:
+                print(f"Human takeover not set well {human_takeover}")
+        except Exception as err:
+            print("Human takeover not set: ",err)   
         # index = result.find('"question_asked":')
         # if index != -1:
         #     # Extract the value of 'solution_presented'
@@ -269,12 +289,20 @@ def get_gpt_response(account, message, thread_id=None):
     # import pdb;pdb.set_trace()
     extracted_text = None
     try:  
-        extracted_text = json.loads(result.replace('```json\n','').replace('```',''))['text']
+        extracted_text = result.get('text').replace("\n", "")
     except Exception as err:
         try:
             extracted_text = extract_text(result)
         except Exception as err:
             print("Error in extracting text: ",err) 
+            try:
+                extract_text = result.split('"text": "')[1].split('",')[0]
+            except Exception as err:
+                print("Error in extracting text: ",err)
+                try:
+                    extracted_text = "Just a minute"
+                except Exception as err:
+                    print("Error in extracting text: ",err)
     # extracted_text = extracted_text.replace('\n\n', ' ').replace('\n', ' ')
     print(extracted_text)
 

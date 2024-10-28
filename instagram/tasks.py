@@ -308,28 +308,28 @@ def send_first_compliment(username, message, repeat=True):
     if not isMQTTUP():
         outreachErrorLogger(account, salesrep, "MQTT service unavailable. Not handled", 503, "ERROR", "MQTT", False) # Nothinig to be done. No action on our part can bring it up
     # check if sales_rep is logged_in
-    try:
-        logged_in = sales_rep_is_logged_in(account, salesrep)
-        if not logged_in: # log in will need to be handled differently from the others
-            err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not logged in"
-            outreachErrorLogger(account, salesrep, err_str, 403, "WARNING", "Sales Rep IG", False)  # WARNING will not break execution
-            if not logout_and_login(account, salesrep): # Nothing to be done. We cannot try logging in constantly
-                return # nothing to do. Wait for the account to be logged back in manually.
+    # try:
+    #     logged_in = sales_rep_is_logged_in(account, salesrep)
+    #     if not logged_in: # log in will need to be handled differently from the others
+    #         err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not logged in"
+    #         outreachErrorLogger(account, salesrep, err_str, 403, "WARNING", "Sales Rep IG", False)  # WARNING will not break execution
+    #         if not logout_and_login(account, salesrep): # Nothing to be done. We cannot try logging in constantly
+    #             return # nothing to do. Wait for the account to be logged back in manually.
   
-    except Exception as e:
-        print(f"An error occurred: {e}") 
-        return
+    # except Exception as e:
+    #     print(f"An error occurred: {e}") 
+    #     return
 
-    try:
-        ig_account_exists = user_exists_in_IG(account, salesrep)
-        if not ig_account_exists: # log in will need to be handled differently from the others
-            delete_first_compliment_task(account)
-            err_str = f"{username} does not exist"
-            outreachErrorLogger(account, salesrep, err_str, 404, "ERROR", "Lead", True)  # WARNING will break execution and reschedule another
+    # try:
+    #     ig_account_exists = user_exists_in_IG(account, salesrep)
+    #     if not ig_account_exists: # log in will need to be handled differently from the others
+    #         # delete_first_compliment_task(account)
+    #         err_str = f"{username} does not exist"
+    #         outreachErrorLogger(account, salesrep, err_str, 404, "ERROR", "Lead", True)  # WARNING will break execution and reschedule another
   
-    except Exception as e:
-        print(f"An error occurred: {e}")  # probably an auth error
-        return
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")  # probably an auth error
+    #     # return
     # check also if available(1)
 
     # for development: throw this error:
@@ -357,17 +357,26 @@ def send_first_compliment(username, message, repeat=True):
     
 
     # like and comment
-    is_like_and_comment = like_and_comment(media_id=media_id, media_comment=results.get("media_comment", ""),
-                     salesrep=salesrep, account=account)
-    if is_like_and_comment:
-        time.sleep(60) # we break for 1 minute then send message
-        print("successfully liked and commented")
+    # is_like_and_comment = like_and_comment(media_id=media_id, media_comment=results.get("media_comment", ""),
+    #                  salesrep=salesrep, account=account)
+    # if is_like_and_comment:
+    #     time.sleep(60) # we break for 1 minute then send message
+    #     print("successfully liked and commented")
+    
 
     print(f"data=============={data}")
     print(f"data=============={json.dumps(data)}")
     def send(numTries = 0):
         numTries += 1
-        response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", data=json.dumps(data))
+        try:
+            response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", data=json.dumps(data),headers={"Content-Type": "application/json"})
+            print("coming in as data")
+        except Exception as error:
+            try:
+                response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", json=json.dumps(data), headers={"Content-Type": "application/json"})
+                print("coming in as json")
+            except Exception as error:
+                print(error)
         print(response.status_code)
         if response.status_code == 200:
             sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
@@ -418,6 +427,15 @@ def send_first_compliment(username, message, repeat=True):
             except Exception as error:
                 print(error)
                 print("message not saved")
+            
+            try:
+                subject = 'Hello Team'
+                message = f'Outreach for {account.igname} has been sent'
+                from_email = 'lutherlunyamwi@gmail.com'
+                recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com',"tech-notifications-aaaalfvmpt4blxn4bjxku3hag4@boostedchat.slack.com"]
+                send_mail(subject, message, from_email, recipient_list)
+            except Exception as error:
+                print(error)
 
         else:
             # get last account in queue
@@ -439,9 +457,9 @@ def send_first_compliment(username, message, repeat=True):
             print(f"Request failed with status code: {response.status_code}")
             print(f"Response message: {response.text}")
             # sav
-            repeatLocal = handleMqTTErrors(account, salesrep, response.status_code, response.text, numTries, repeat)
-            if repeatLocal and numTries <= 1:
-                send(numTries)
+            # repeatLocal = handleMqTTErrors(account, salesrep, response.status_code, response.text, numTries, repeat)
+            # if repeatLocal and numTries <= 1:
+                # send(numTries)
                 # pass
     send()
 
@@ -465,7 +483,8 @@ def send_report():
                 "sent_at":message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
                 "content":message.content,
                 "assigned": thread.account.assigned_to,
-                "username": thread.account.igname
+                "username": thread.account.igname,
+                "active_stage": thread.account.status_param
             })
     try:
         subject = 'Hello Team'
@@ -500,14 +519,19 @@ def generate_response_automatic(query, thread_id):
 
     if thread.account.assigned_to == "Robot":
         try:
-            gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
-            # gpt_resp = "No worries bro we got you"
+            gpt_resp = None
+            last_message = thread.message_set.order_by('-sent_on').first()
+            if last_message.content and last_message.sent_by == "Robot":
+                gpt_resp = "already_responded"
+            else:
+                gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
             
             thread.last_message_content = gpt_resp
             thread.last_message_at = timezone.now()
             thread.save()
 
             result = gpt_resp
+            
             Message.objects.create(
                 content=result,
                 sent_by="Robot",
@@ -538,6 +562,7 @@ def generate_response_automatic(query, thread_id):
             "text": query,
             "success": True,
             "username": thread.account.igname,
+            "generated_comment": "assigned_human",
             "assigned_to": "Human",
             "status":200
         }
