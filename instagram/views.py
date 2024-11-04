@@ -23,6 +23,9 @@ from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
 from django_celery_beat.models import PeriodicTask
+from django.db.models import F,Value
+from django.db.models.functions import Coalesce
+from django.utils.dateparse import parse_datetime
 
 
 from base.helpers.push_id import PushID
@@ -303,10 +306,16 @@ class AccountViewSet(viewsets.ModelViewSet):
         return Response({"message": "Account reset successfully"})
 
     def account_by_ig_thread_id(self, request, *args, **kwargs):
-        thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
-        account = Account.objects.get(pk=thread.account.id)
-        serializer = GetSingleAccountSerializer(account)
-        return Response(serializer.data)
+        # There could be more than one thread with the same thread id
+        # thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id')) 
+        thread = Thread.objects.filter(thread_id=kwargs.get('ig_thread_id')).first() 
+        if thread.account:
+            accounts = Account.objects.filter(id=thread.account.id)
+            account = accounts.latest('created_at')
+            serializer = GetSingleAccountSerializer(account)
+            return Response(serializer.data)
+        else:
+            return Response({"error":"Account does not have thread attached"})
     
     def retrieve_salesrep(self, request, *args, **kwargs):
         username = kwargs.get('username')
@@ -862,11 +871,61 @@ class DMViewset(viewsets.ModelViewSet):
         stage_filter = request.GET.get("stage")
         salesrep_filter = request.GET.get("sales_rep")
         search_query = request.GET.get("q")
+        start_date = request.GET.get("start_date")
+        end_date = request.GET.get("end_date")
         paginator = self.pagination_class()
-
-        queryset = Thread.objects.select_related('account').order_by("-last_message_at")
+       
+        if start_date:
+            start_date = start_date.strip('"')
+        if end_date:
+            end_date = end_date.strip('"')
+    
+        start_date_parsed = parse_datetime(start_date ) if start_date else None
+        end_date_parsed = parse_datetime(end_date) if end_date else None
+        
+       
+        print("8888888888888888888")
+        print(start_date)
+        print(start_date_parsed)
+        queryset = Thread.objects.select_related('account').filter(account__salesrep__isnull=False).annotate(last_message_at_ordering=Coalesce('last_message_at', Value(datetime.min))).order_by(F('last_message_at_ordering').desc())
         message_data = []
         messages = None
+          # Apply date range filter if both start_date and end_date are provided
+        # if start_date and end_date:
+        #     try:
+        #         # Parse the dates and filter the queryset
+        #         start_date_parsed = parse_date(start_date)
+        #         end_date_parsed = parse_date(end_date)
+        #         if start_date_parsed and end_date_parsed:
+        #             queryset = queryset.filter(
+        #                 last_message_at__gte=start_date_parsed,
+        #                 last_message_at__lte=end_date_parsed
+        #                 )
+        #     except ValueError:
+        #         pass  
+         # Use start_date as both start and end if only start_date is provided
+        if start_date_parsed:
+            if end_date_parsed:
+                # Both dates are present
+                queryset = queryset.filter(
+                    last_message_at__gte=start_date_parsed,
+                    last_message_at__lte=end_date_parsed
+                )
+            else:
+                # Only start_date is present; use it as both
+                print("kkkkkkkkkkkkkkkkkkkkkkk")
+                print(start_date)
+                print(start_date_parsed)
+                queryset = queryset.filter(
+                    last_message_at__date=start_date_parsed.date() 
+                )
+        elif end_date_parsed:
+            # If only end_date is present, you can decide how to handle it
+            queryset = queryset.filter(last_message_at__date=end_date_parsed.date())
+
+
+        # Show only threads that have sales reps & order by last_message_at    
+       
 
         if stage_filter is not None:
             queryset = queryset.filter(account__index__in=json.loads(stage_filter))
@@ -1326,13 +1385,17 @@ class DMViewset(viewsets.ModelViewSet):
     
 
     def messages_by_ig_thread_id(self, request, *args, **kwargs):
-        thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
+        # There come more than one threads with the same id
+        # thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
+        thread = Thread.objects.filter(thread_id=kwargs.get('ig_thread_id')).first() 
         messages = Message.objects.filter(thread=thread).order_by('sent_on')
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 
     def thread_by_ig_thread_id(self, request, *args, **kwargs):
-        thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
+        # There come more than one threads with the same id
+        # thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
+        thread = Thread.objects.filter(thread_id=kwargs.get('ig_thread_id')).first() 
         serializer = SingleThreadSerializer(thread)
 
         return Response(serializer.data)
