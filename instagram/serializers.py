@@ -2,8 +2,7 @@ from rest_framework import serializers
 
 from .models import Account, OutSourced, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, StatusCheck, OutSourced
 from django_celery_beat.models import PeriodicTask
-
-
+# from rest_framework.utils.encoders import JSONEncoder
 class OutSourcedSerializer(serializers.ModelSerializer):
     class Meta:
         model = OutSourced

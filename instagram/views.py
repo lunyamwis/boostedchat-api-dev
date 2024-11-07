@@ -1050,10 +1050,12 @@ class DMViewset(viewsets.ModelViewSet):
     def save_client_message(self, request, pk=None):
         thread = self.get_object()
 
+        # check if the message is already saved
         last_message = Message.objects.filter(Q(thread__thread_id=thread.thread_id)
                                               & Q(sent_by='Client')).order_by('-sent_on').first()
         if request.data.get("text") != last_message.content:
             try:
+                # Save client message from here
                 Message.objects.update_or_create(
                     content=request.data.get("text"),
                     sent_by="Client",

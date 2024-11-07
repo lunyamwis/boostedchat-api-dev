@@ -97,6 +97,10 @@ class Message(BaseModel):
     sent_by = models.CharField(max_length=255, null=True, blank=True)
     sent_on = models.DateTimeField()
     thread = models.ForeignKey(Thread, on_delete=models.CASCADE, null=True, blank=True)
+    # New fields
+    # content_type = models.CharField(max_length=255, null=True, blank=True)
+    # content_link = models.CharField(max_length=255, null=True, blank=True)
+    # content_data = models.JSONField(null=True, blank=True)  # Use JSONField for storing JSON data 
 
 
 class Video(BaseModel):

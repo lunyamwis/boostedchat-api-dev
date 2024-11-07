@@ -369,10 +369,12 @@ def send_first_compliment(username, message, repeat=True):
     def send(numTries = 0):
         numTries += 1
         try:
+            # TODO: authenticate this mqtt request
             response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", data=json.dumps(data),headers={"Content-Type": "application/json"})
             print("coming in as data")
         except Exception as error:
             try:
+                # TODO: authenticate this mqtt request
                 response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", json=json.dumps(data), headers={"Content-Type": "application/json"})
                 print("coming in as json")
             except Exception as error:
