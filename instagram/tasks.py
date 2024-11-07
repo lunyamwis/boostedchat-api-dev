@@ -275,6 +275,8 @@ def send_first_compliment(username, message, repeat=True):
     print(username)
     thread_obj = None
     account = get_account(username)
+    account.status_param = 'Prequalified'
+    account.save()
 
     if account is None:
         err_str = f"{username} account does not exist"
