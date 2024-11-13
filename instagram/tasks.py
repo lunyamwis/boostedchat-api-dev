@@ -507,7 +507,8 @@ def generate_response_automatic(query, thread_id):
     thread = Thread.objects.filter(account=account).latest('created_at')
 
     client_messages = query.split("#*eb4*#")
-    if Message.objects.filter(thread=thread,content__in=client_messages).exists():
+    existing_messages = Message.objects.filter(thread=thread, content__in=client_messages)
+    if existing_messages.count() == len(client_messages):
         for client_message in client_messages:
             Message.objects.create(
                 content=client_message,
