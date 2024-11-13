@@ -5,6 +5,7 @@ import requests
 from instagram.helpers.llm import query_gpt
 from urllib.parse import urlparse
 from dialogflow.helpers.conversations import get_conversation_so_far
+from django.core.mail import send_mail
 from instagram.models import OutSourced
 
 
@@ -12,6 +13,12 @@ def get_status_number(val, pattern=r"\d+"):
     list_of_values = re.findall(pattern=pattern, string=val)
     return int(list_of_values[0])
 
+def extract_text(json_string):
+    # Regular expression to find the "text" field
+    match = re.search(r'"text":"(.*?)"', json_string)
+    if match:
+        return match.group(1).replace('\\"', '"')  # Replace escaped quotes if needed
+    return None
 
 def get_if_confirmed_problem(val, pattern=r"`([^`]+)`"):
     list_of_values = re.findall(pattern=pattern, string=val)
@@ -53,19 +60,251 @@ def get_gpt_response(account, message, thread_id=None):
     except Exception as error:
         print(error)
 
+    url = os.getenv("SCRIPTING_URL") + '/getAgent/'
+    conversations = None
+    if message:
+        conversations = get_conversation_so_far(account.thread_set.latest('created_at').thread_id)
+    # active_stage = None
+    # if account.status_param:
+    #     active_stage = account.status_param
+
+    get_agent_payload = {
+        "message":message,
+        "text":message,
+        "conversations":conversations if conversations else "",
+        "active_stage": account.status_param if account.status_param else ""
+    }
+    print(get_agent_payload)
+    agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
+    agent_json_response = agent_response.json()
+    print(agent_json_response)
+    # print(agent_json_response)
+    # confirmed_problems = [
+    #     "Need for new clients or increased clientele and market visibility",
+    #     "Missed opportunities in diversifying revenue streams",
+    #     "Inefficient payment processing",
+    #     "Missed opportunity to promote your high-potential IG account by posting regularly with social media post creator tools",
+    #     "Missed opportunity to enable bookings from platforms (Google, Instagram, Facebook, Booksy which is the biggest beauty marketplace, their Website) where clients discover and book beauty services",
+    #     "Not assigning the right priority to engaging the returning, loyal clients",
+    #     "Missed opportunity to reengage clients and fill up slower days with time-sensitive promotions",
+    #     "Lack of ability to invite back to the chair the clients who stopped booking to build long-term success on returning clients",
+    #     "Reviews are not visible across Google, Facebook, IG, and Booksy which is the major beauty marketplace",
+    #     "Unclear and high client acquisition costs with Google Ads, Instagram Ads, and others that don't show total marketing cost per new client",
+    #     "Missed opportunity to convert current and future IG followers to clients in the chair",
+    #     "Need for new clients or increased clientele and market visibility ",
+    #     "No-shows and cancellations ruining the bottom line",
+    # ]
+    
+    agent_name = agent_json_response.get("agent_name")
+    agent_task = agent_json_response.get("agent_task")
+    if not message:
+        agent_name = "Engagement Persona Influencer Audit Rapport Building Agent"
+        agent_task = "ED_PersonaInfluencerAuditRapportBuildlingA_BuildMessageT"
+
+    
+
+    # if account.question_asked and not account.confirmed_problems or account.confirmed_problems == "test" and not account.solution_presented:
+    #     agent_name = "Engagement Persona Influencer Audit Needs Assessment Agent"
+    #     agent_task = "ED_PersonaInfluencerAuditNeedsAssessmentA_BuildMessageT"
+    # elif account.question_asked and account.confirmed_problems and account.confirmed_problems != "test" and not account.solution_presented:
+    #     agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
+    #     agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
+    # elif account.question_asked and account.confirmed_problems and account.confirmed_problems != "test" and account.solution_presented:
+    #     agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
+    #     agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
+                        
+
+    
+    print("agent_name:",agent_name,"agent_task:",agent_task)
+
+  
+    # import pdb;pdb.set_trace()
+    relevant_information = str(account.relevant_information) if account.relevant_information else ""
     payload = {
         "department":"Engagement Department",
+        "agent_name": agent_name,
+        "agent_task": agent_task,
+        "text":message if message else "",
         "Assigned":{
-            "message":message,
-            "sales_rep":account.salesrep_set.first(),
-            "influencer_ig_name":account.salesrep_set.last(),
-            "outsourced_info":outsourced,
-            "relevant_information":outsourced_object.results
+            "message":message if message else "",
+            "text":message if message else "",
+            "sales_rep":account.salesrep_set.first().ig_username,
+            "influencer_ig_name":account.salesrep_set.last().ig_username,
+            "outsourced_info":outsourced_object.results,
+            "conversation_history": conversations if conversations else "",
+            "relevant_information":account.confirmed_problems + relevant_information if account.confirmed_problems else ""
         }
     }
-
+    print(payload)
+    print(message)
+    print(url)
     url = os.getenv("SCRIPTING_URL") + '/agentSetup/'
-    resp = requests.post(url, data=payload)
+    print(url)
+    # import pdb;pdb.set_trace()
+    resp = requests.post(url, data=json.dumps(payload),headers = {'Content-Type': 'application/json'})
     response = resp.json()
-    result = response.get("output")
-    return result
+    # response = query_gpt(prompt=payload)
+    print(resp.json())
+    result = response.get('result')
+    # Find the index of the opening quote after "text":
+    try:
+        prepended_result = None
+        try:
+            prepended_result = result
+        except Exception as err:
+            print("Trying json repair method 2: ",err)
+            try:
+                prepended_result_  = result.replace('```json\n','').replace('```','').replace("\n","")
+                to_be_replaced = prepended_result_[prepended_result_.find("conversation_history")-4:len(prepended_result_)-1]
+                prepended_result = json.loads(prepended_result_.replace(to_be_replaced,""))
+            except Exception as err:
+                print("Both trials have failed to repair the json: ",err)
+        try:
+
+            active_stage_res = prepended_result['active_stage']
+            print('********************',active_stage_res,'****************')
+            account.status_param = active_stage_res
+            account.save()
+        except Exception as err:
+            print("Active stage issue *****: ",err)
+
+        try:
+            question_asked_res = prepended_result['question_asked']
+            account.question_asked = bool(int(question_asked_res))
+            account.save()
+        except Exception as err:
+            print("Question not asked: ",err)
+        
+        try:
+            confirmed_problems_res = prepended_result['confirmed_problems']
+            account.confirmed_problems = confirmed_problems_res
+            account.save()
+        except Exception as err:
+            print("Problems not confirmed: ",err)
+        
+        try:
+            solution_presented_res = prepended_result['solution_presented']
+            account.solution_presented = bool(int(solution_presented_res))
+            account.save()
+        except Exception as err:
+            print("Solution not presented: ",err) 
+
+        try:
+            human_takeover = prepended_result['human_takeover']
+            print("human_takeover: ",human_takeover)
+            if bool(int(human_takeover)):
+                account.assigned_to = "Human"
+                account.save()
+                try:
+                    subject = 'Hello Team'
+                    message = f'Hello please address the account {account.igname} it has been handed over to you'
+                    from_email = 'lutherlunyamwi@gmail.com'
+                    recipient_list = ['eyadhussein99@gmail.com','lutherlunyamwi@gmail.com','tomek@boostedchat.com',"tech-notifications-aaaalfvmpt4blxn4bjxku3hag4@boostedchat.slack.com"]
+                    send_mail(subject, message, from_email, recipient_list)
+                except Exception as error:
+                    print(error)
+            else:
+                print(f"Human takeover not set well {human_takeover}")
+        except Exception as err:
+            print("Human takeover not set: ",err)   
+        # index = result.find('"question_asked":')
+        # if index != -1:
+        #     # Extract the value of 'solution_presented'
+        #     question_asked = result[index + 19:].split(',')[0].strip()
+        #     # Find the first digit in the text
+        #     match = re.search(r'\d', question_asked)
+
+        #     # If a digit is found
+        #     if match:
+        #         # Extract the digit
+        #         first_digit = match.group(0)
+        #         if int(first_digit) == 1:
+        #             print(f"The first digit found in the text is: {first_digit}")
+        #             # agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
+        #             # agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
+                    
+        #             account.question_asked = True
+        #             account.save()
+        #     else:
+        #         print("No digit found in the text.")
+
+        # try:
+        #     confirmed_problems_str = result.split('"confirmed_problems": [')[1].split(']')[0]
+        # except Exception as error:
+        #     try:
+        #         confirmed_problems_str = result.split('"confirmed_problems":')[1].split(']')[0]
+        #     except Exception as error:
+        #         print (error)            
+        # confirmed_problems = [problem.strip('"') for problem in confirmed_problems_str.split(',')]
+
+        # # Iterate over the confirmed problems
+        # for problem in confirmed_problems:
+        #     # Check if the problem exists in the text
+        #     if problem.lower() in result.lower():
+        #         print(f"Confirmed problem found: {problem}")
+        #         # agent_name = "Engagement Persona Influencer Audit Solution Presentation Agent"
+        #         # agent_task = "ED_PersonaInfluencerAuditSolutionPresentationA_BuildMessageT"
+                
+        #         account.confirmed_problems = problem.lower().strip().replace("\"","")
+        #         account.save()
+        #         index = result.find('"solution_presented":')
+        #         if index != -1:
+        #             # Extract the value of 'solution_presented'
+        #             solution_presented = result[index + 19:].split(',')[0].strip()
+        #             # Find the first digit in the text
+        #             match = re.search(r'\d', solution_presented)
+
+        #             # If a digit is found
+        #             if match:
+        #                 # Extract the digit
+        #                 first_digit = match.group(0)
+        #                 if int(first_digit) == 1:
+        #                     print(f"The first digit found in the text is: {first_digit}")
+        #                     # agent_name = "Engagement Persona Influencer Audit Closing the Sale Agent"
+        #                     # agent_task = "ED_PersonaInfluencerAuditClosingTheDealA_BuildMessageT"
+                            
+        #                     account.solution_presented = True
+        #                     account.save()
+        #             else:
+        #                 print("No digit found in the text.")
+        #             #print(f"The value of 'solution_presented' is: {solution_presented}")
+        #         else:
+        #             print("'solution_presented' not found in the text.")
+        #     else:
+        #         print(f"No match found for: {problem}")
+    except Exception as err:
+        print("Improper json: ",err)
+
+    print(result)
+
+    # start_index = result.find('"text": "') + len('"text": "')
+    
+    # # Find the index of the closing quote before the end of the text
+    # end_index = result.rfind('"', start_index)
+    
+    # # Extract the text
+    # extracted_text = result[start_index:end_index]
+    
+    # print(result)
+    # import pdb;pdb.set_trace()
+    extracted_text = None
+    try:  
+        extracted_text = result.get('text').replace("\n", "")
+    except Exception as err:
+        try:
+            extracted_text = extract_text(result)
+        except Exception as err:
+            print("Error in extracting text: ",err) 
+            try:
+                extract_text = result.split('"text": "')[1].split('",')[0]
+            except Exception as err:
+                print("Error in extracting text: ",err)
+                try:
+                    extracted_text = "Just a minute"
+                except Exception as err:
+                    print("Error in extracting text: ",err)
+    # extracted_text = extracted_text.replace('\n\n', ' ').replace('\n', ' ')
+    print(extracted_text)
+
+
+    return extracted_text

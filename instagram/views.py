@@ -1,6 +1,7 @@
 # Create your views here.
 import csv
 import io
+import os
 import logging
 import uuid
 import json
@@ -8,7 +9,8 @@ import requests
 import random
 from urllib.parse import urlparse
 from auditlog.models import LogEntry
-from datetime import datetime
+from celery.result import AsyncResult
+from datetime import datetime,timedelta
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -31,8 +33,11 @@ from dialogflow.helpers.intents import detect_intent
 from instagram.helpers.login import login_user
 from sales_rep.models import SalesRep
 
+from .utils import generate_time_slots
+
+from .tasks import send_first_compliment,generate_response_automatic
 from .helpers.init_db import init_db
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed
 from .serializers import (
     AccountSerializer,
     OutSourcedSerializer,
@@ -144,21 +149,37 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     @action(detail=False,methods=['post'],url_path='qualify-account')
     def qualify_account(self, request, pk=None):
-        accounts = Account.objects.filter(igname = request.data.get('username'))
+        account = Account.objects.filter(igname = request.data.get('username')).latest('created_at')
         accounts_qualified = []
-        if accounts.exists():
-            for account in accounts:
-                if account.outsourced_set.exists():
-                    account.qualified = request.data.get('qualify_flag')
-                    account.save()
-                    accounts_qualified.append(
-                        {
-                            "qualified":account.qualified,
-                            "account_id":account.id
-                        }
-                    )
-        
+        if account.outsourced_set.exists():
+            account.qualified = request.data.get('qualify_flag')
+            account.relevant_information = request.data.get("relevant_information")
+            account.scraped = True
+            account.save()
+            accounts_qualified.append(
+                {
+                    "qualified":account.qualified,
+                    "account_id":account.id
+                }
+            )
+    
         return Response(accounts_qualified, status=status.HTTP_200_OK)
+    
+    @action(detail=False,methods=['post'],url_path='manually-trigger')
+    def manually_trigger(self, request, pk=None):
+        account = Account.objects.filter(igname = request.data.get('username')).latest('created_at')
+        accounts_triggered = []
+        if account.outsourced_set.exists():
+            account.is_manually_triggered = True
+            account.save()
+            accounts_triggered.append(
+                {
+                    "manually_triggered":account.is_manually_triggered,
+                    "account_id":account.id
+                }
+            )
+    
+        return Response(accounts_triggered, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["get"], url_path="potential-buy")
     def potential_buy(self, request, pk=None):
@@ -1057,101 +1078,173 @@ class DMViewset(viewsets.ModelViewSet):
                     "success": True
                 }
             )
+    
+    def generate_outreach_times(self, request, *args,**kwargs):
+        start_time = request.data.get("start_time")
+        end_time = requests.data.get("end_time")
+        slots = request.data.get("slots")
+        time_slots = generate_time_slots(start_time, end_time, slots)
+        # make it dynamic
+        for time_slot in time_slots:
+            try:
+                OutreachTime.objects.update_or_create(time_slot)
+            except Exception as err:
+                print(err)
+            print(time_slot)
+        return Response({"message":"time slots successfully generated"})
+
+        
+    def check_account_exists(self,request,*args,**kwargs):
+        account = Account.objects.filter(igname = request.data.get('username'))
+        if account.exists():
+            return Response({"exists":True})
+        else:
+            return Response({"exists":False})
+        
+    def check_thread_exists(self,request,*args,**kwargs):
+        account = Account.objects.filter(igname = request.data.get('username')).latest('created_at')
+        if account.thread_set.exists():
+            return Response({"exists":True})
+        else:
+            return Response({"exists":False})
+
+    def get_qualified_threads_and_respond(self, request, *args, **kwargs):
+        
+        # Get the start of yesterday's date
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+
+        # Filter accounts that are qualified and created from yesterday onwards
+        accounts = Account.objects.filter(
+            Q(qualified=True) & Q(created_at__gte=yesterday_start)
+        )
+
+        account_messages_sent = []
+        
+        if accounts.exists():
+            for account in accounts:
+                # if account.salesrep_set.exists(): # if they are assigned a salesrep
+                    threads = Thread.objects.filter(account=account)  
+                    if threads.exists():
+                        for thread in threads:  
+                            client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
+                            robot_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Robot")).order_by("-sent_on")
+                            if client_messages.count() > 0 and robot_messages.count() == 0:
+                                print("inbound sales")
+                                # import pdb;pdb.set_trace()
+                                time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
+                                try:
+                                    schedule = None
+                                    for time_slot in time_slots:
+                                        # import pdb;pdb.set_trace()
+                                        if time_slot.account_to_be_assigned:
+                                            pass
+                                        else:
+                                            time_slot.account_to_be_assigned = account
+                                            time_slot.save()
+                                            schedule = CrontabSchedule.objects.create(
+                                                minute=time_slot.time_slot.minute,
+                                                hour=time_slot.time_slot.hour,
+                                                day_of_week="*",
+                                                day_of_month=time_slot.time_slot.day,
+                                                month_of_year=time_slot.time_slot.month,
+                                            )
+                                            break
+                                    try:
+                                        PeriodicTask.objects.update_or_create(
+                                            name=f"SendFirstCompliment-{account.igname}",
+                                            crontab=schedule,
+                                            task="instagram.tasks.send_first_compliment",
+                                            args=json.dumps([[account.igname],thread.last_message_content])
+                                        )
+                                        
+                                    except Exception as error:
+                                        logging.warning(error)
+
+                                    # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
+                                except Exception as err:
+                                    print(err)
+                    else:
+                        print("outbound sales")
+                        # import pdb;pdb.set_trace()
+                        time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
+                        try:
+                            schedule = None
+                            for time_slot in time_slots:
+                                # import pdb;pdb.set_trace()
+                                if time_slot.account_to_be_assigned:
+                                    pass
+                                else:
+                                    time_slot.account_to_be_assigned = account
+                                    time_slot.save()
+                                    schedule = CrontabSchedule.objects.create(
+                                        minute=time_slot.time_slot.minute,
+                                        hour=time_slot.time_slot.hour,
+                                        day_of_week="*",
+                                        day_of_month=time_slot.time_slot.day,
+                                        month_of_year=time_slot.time_slot.month,
+                                    )
+                                    break
+                            try:
+                                PeriodicTask.objects.update_or_create(
+                                    name=f"SendFirstCompliment-{account.igname}",
+                                    crontab=schedule,
+                                    task="instagram.tasks.send_first_compliment",
+                                    args=json.dumps([[account.igname],""])
+                                )
+                                
+                            except Exception as error:
+                                logging.warning(error)
+
+                            # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
+                        except Exception as err:
+                            print(err)
+            return Response(account_messages_sent,status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'accounts do not exist'})
 
     def generate_response(self, request, *args, **kwargs):
-        thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
+        thread = Thread.objects.filter(thread_id=kwargs.get('thread_id')).latest('created_at')
         req = request.data
         query = req.get("message")
+        print(query)
+        result = generate_response_automatic.delay(query, thread.thread_id)
+        # import pdb;pdb.set_trace()
+        print(result.id)
 
-        account = Account.objects.get(id=thread.account.id)
-        thread = Thread.objects.filter(account=account).last()
-
-        client_messages = query.split("#*eb4*#")
-        for client_message in client_messages:
-            Message.objects.create(
-                content=client_message,
-                sent_by="Client",
-                sent_on=timezone.now(),
-                thread=thread
-            )
-        thread.last_message_content = client_messages[len(client_messages)-1]
-        thread.unread_message_count = len(client_messages)
-        thread.last_message_at = timezone.now()
-        thread.save()
-
-        if thread.account.assigned_to == "Robot":
-            try:
-                gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
-
-                thread.last_message_content = gpt_resp
-                thread.last_message_at = timezone.now()
-                thread.save()
-
-                result = gpt_resp
-                Message.objects.create(
-                    content=result,
-                    sent_by="Robot",
-                    sent_on=timezone.now(),
-                    thread=thread
-                )
-
-                return Response(
-                    {
-                        "status": status.HTTP_200_OK,
-                        "generated_comment": "".join(map(str, result)),
-                        "text": request.data.get("message"),
-                        "success": True,
-                        "username": thread.account.igname,
-                        "assigned_to": "Robot"
-                    },
-                    status=status.HTTP_200_OK,
-                )
-
-            except Exception as error:
-                return Response(
-                    {
-                        "fulfillment_response": {
-                            "messages": [
-                                {
-                                    "text": {
-                                        "error": str(error),
-                                    },
-                                },
-                            ]
-                        }
-                    },
-                    status=status.HTTP_200_OK,
-                )
-
-        elif thread.account.assigned_to == 'Human':
-            return Response(
-                {
-                    "status": status.HTTP_200_OK,
-                    "text": request.data.get("message"),
-                    "success": True,
-                    "username": thread.account.igname,
-                    "assigned_to": "Human"
-
-                }
-            )
+        return Response({
+            "status": status.HTTP_200_OK,
+            "message": "Task started successfully",
+            "task_id": result.id
+        }, status=status.HTTP_200_OK)
+    
+    def celery_task_status(self, request, task_id,*args,**kwargs):
+        result = AsyncResult(task_id)
+        print(result)
+        
+        return Response({
+            'task_id': task_id,
+            'state': result.state,
+            'result': result.result if result.state == 'SUCCESS' else None,
+        })
 
     def assign_operator(self, request, *args, **kwargs):
         try:
-            thread = Thread.objects.get(thread_id=kwargs.get('thread_id'))
+            thread = Thread.objects.filter(account__igname=kwargs.get('username')).latest('created_at')
             account = get_object_or_404(Account, id=thread.account.id)
             account.assigned_to = request.data.get("assigned_to") if request.data.get('assigned_to') else 'Human'
             account.save()
+            try:
+                subject = 'Hello Team'
+                message = f'Please login to the system @https://booksy.us.boostedchat.com/ and respond to the following thread {account.igname}'
+                from_email = 'lutherlunyamwi@gmail.com'
+                recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
+                send_mail(subject, message, from_email, recipient_list)
+            except Exception as error:
+                print(error)
         except Exception as error:
             print(error)
 
-        try:
-            subject = 'Hello Team'
-            message = f'Please login to the system @https://booksy.us.boostedchat.com/ and respond to the following thread {account.igname}'
-            from_email = 'lutherlunyamwi@gmail.com'
-            recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
-            send_mail(subject, message, from_email, recipient_list)
-        except Exception as error:
-            print(error)
 
         return Response(
             {
@@ -1254,6 +1347,37 @@ class DMViewset(viewsets.ModelViewSet):
             return Response({"has_responded":True}, status=status.HTTP_200_OK)
         else:
             return Response({"has_responded":False}, status=status.HTTP_200_OK)
+    
+
+    def webhook(self,request,*args,**kwargs):
+        data = None
+        try:
+            data = request.data
+            print(data)
+        except Exception as err:
+            print(err)
+            try:
+                data = json.loads(request.body)
+                print(data)
+            except Exception as err:
+                print(err)
+                try:
+                    data = request.json()
+                except Exception as err:
+                    print(err)
+                    try:
+                        data = json.loads(request.body.decode('utf-8'))
+                    except  Exception as err:
+                        print(err)
+        
+        try:
+            closed = AccountsClosed()
+            closed.data = data
+            closed.save()
+        except Exception as err:
+            print(err,'was unable to save data')
+                    
+        return Response({"message":"webhook received"})
         
 
 class MessageViewSet(viewsets.ModelViewSet):

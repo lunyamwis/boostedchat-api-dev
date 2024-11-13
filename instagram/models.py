@@ -40,15 +40,20 @@ class Account(BaseModel):
     script_version = models.CharField(max_length=255,null=True,blank=True)
     status_param = models.CharField(max_length=255, null=True, unique=False, blank=True)
     confirmed_problems = models.TextField(null=True, blank=True, default="test")
+    solution_presented = models.BooleanField(default=False)
+    question_asked = models.BooleanField(default=False)
     rejected_problems = models.TextField(null=True, blank=True, default="test")
     linked_to = models.CharField(max_length=255, null=True, blank=True, default="no_one")
-    history = AuditlogHistoryField(pk_indexable=False)
+    # history = AuditlogHistoryField(pk_indexable=False)
     dormant_profile_created = models.BooleanField(default=True, null=True, blank=True)
     qualified = models.BooleanField(default=False)
+    scraped = models.BooleanField(default=False)
+    relevant_information = models.JSONField(null=True,blank=True)
+    is_manually_triggered = models.BooleanField(default=False)
     index = models.IntegerField(default=1)
-
+    
     def __str__(self) -> str:
-        return self.igname
+        return self.igname if self.igname else self.id
 
 
 class OutSourced(BaseModel):
@@ -57,9 +62,9 @@ class OutSourced(BaseModel):
     account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self) -> str:
-        return self.id
+        return f"{self.account.igname}==>{self.id}" if self.account else self.id
     
-auditlog.register(Account)
+# auditlog.register(Account)
 
 
 class HashTag(BaseModel):
@@ -119,3 +124,16 @@ def initialize_account(sender, instance, created, **kwargs):
         account.outsourced = instance
         account.save()
         print(f"initialized outsourced account - {instance}")
+
+
+
+class OutreachTime(BaseModel):
+    time_slot = models.DateTimeField()
+    account_to_be_assigned = models.ForeignKey(Account,on_delete=models.CASCADE,null=True,blank=True)
+
+
+class AccountsClosed(BaseModel):
+    data = models.TextField(null=True,blank=True)
+
+    def __str__(self) -> str:
+        return self.data if self.data else self.id

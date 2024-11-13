@@ -175,3 +175,4 @@ dialogflow_token.json
 tmp/
 todo.md
 tmp.py
+.lprof

@@ -7,4 +7,10 @@ router = DefaultRouter()
 router.register(r"rep", SalesRepManager, basename="rep")
 
 
-urlpatterns = [path("", include(router.urls))]
+urlpatterns = [
+    path("", include(router.urls)),
+    path("assign-salesrep/",SalesRepManager.as_view({'post': 'assign_salesrep'}),
+        name='assign_salesrep'),
+    path("assign-influencer/",SalesRepManager.as_view({'post': 'assign_influencer'}),
+        name='assign_influencer')
+]

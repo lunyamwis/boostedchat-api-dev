@@ -37,6 +37,7 @@ ALLOWED_HOSTS = [
     "34.74.147.25",
     "34.74.147.250",
     "34.75.173.2",
+    "84.247.184.136",
     "a69c-105-60-202-188.ngrok-free.app",
     "3e6a-62-8-92-218.ngrok-free.app",
     "203e-62-8-92-218.ngrok-free.app",
@@ -49,12 +50,14 @@ ALLOWED_HOSTS = [
     "api",
     "8000-lunyamwidev-boostedchat-4qp4oxj8hjx.ws-eu114.gitpod.io",
     "03bc-2c0f-2a80-10e1-4210-817-bada-7f30-a73c.ngrok-free.app",
-    "9ccf-2c0f-2a80-10e3-6910-17d0-37c3-e0d3-185a.ngrok-free.app"
+    "9ccf-2c0f-2a80-10e3-6910-17d0-37c3-e0d3-185a.ngrok-free.app",
+    "api.staging.boostedchat.com"
 ]
 CSRF_TRUSTED_ORIGINS = [
     f"https://api.{os.environ.get('DOMAIN1', '')}.boostedchat.com",
     f"https://api.{os.environ.get('DOMAIN2', '')}.boostedchat.com",      
     "https://api.boostedchat.com",
+    "https://api.staging.boostedchat.com",
     "https://api.booksy.us.boostedchat.com",
     "https://api.jamel.boostedchat.com",
     "https://a69c-105-60-202-188.ngrok-free.app",
@@ -64,7 +67,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://ed48-196-105-37-1.ngrok-free.app",
     "https://8000-lunyamwidev-boostedchat-4qp4oxj8hjx.ws-eu114.gitpod.io/",
     "https://03bc-2c0f-2a80-10e1-4210-817-bada-7f30-a73c.ngrok-free.app",
-    "https://9ccf-2c0f-2a80-10e3-6910-17d0-37c3-e0d3-185a.ngrok-free.app"
+    "https://9ccf-2c0f-2a80-10e3-6910-17d0-37c3-e0d3-185a.ngrok-free.app",
+    "http://api.staging.boostedchat.com"
     ]
 DIALOGFLOW_BASE_URL = (
     "https://us-central1-dialogflow.googleapis.com/v3beta1/projects/boostedchatapi/locations/us-central1/"
@@ -73,6 +77,7 @@ OPENAI_BASE_URL = "https://api.openai.com/v1"
 # Application definition
 
 MQTT_BASE_URL = os.environ.get('MQTT_URL', "http://mqtt:3000")
+print(MQTT_BASE_URL)
 SCRAPPER_BASE_URL = os.environ.get('SCRAPPER_URL', "http://web:8003")
 API_BASE_URL = os.environ.get('API_BASE_URL', os.environ.get('API_URL', "http://api:8000/api/v1"))
 INSTALLED_APPS = [

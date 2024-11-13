@@ -11,12 +11,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+            'id',
             'first_name',
             'last_name',
             'email',
             'password',
             'role',
         )
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
     def create(self, validated_data):
         auth_user = User.objects.create_user(**validated_data)

@@ -36,9 +36,34 @@ urlpatterns = [
         name='generate_response',
     ),
     path(
-        'fallback/<str:thread_id>/assign-operator/',
+        'celery-task-status/<str:task_id>/',
+        DMViewset.as_view({'get': 'celery_task_status'}),
+        name='celery_task_status',
+    ),
+    path(
+        'sendFirstResponses/',
+        DMViewset.as_view({'post': 'get_qualified_threads_and_respond'}),
+        name='get_qualified_threads_and_respond',
+    ),
+    path(
+        'checkAccountExists/',
+        DMViewset.as_view({'post': 'check_account_exists'}),
+        name='check_account_exists',
+    ),
+    path(
+        'checkThreadExists/',
+        DMViewset.as_view({'post': 'check_thread_exists'}),
+        name='check_thread_exists',
+    ),
+    path(
+        'fallback/<str:username>/assign-operator/',
         DMViewset.as_view({'post': 'assign_operator'}),
         name='assign_operator',
+    ),
+    path(
+        'webhook/',
+        DMViewset.as_view({'post': 'webhook'}),
+        name='webhook',
     ),
     path(
         'dm/messages-by-ig-thread/<str:ig_thread_id>/',
