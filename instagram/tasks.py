@@ -507,81 +507,93 @@ def generate_response_automatic(query, thread_id):
     thread = Thread.objects.filter(account=account).latest('created_at')
 
     client_messages = query.split("#*eb4*#")
-    existing_messages = Message.objects.filter(thread=thread, content__in=client_messages)
-    if existing_messages.count() == len(client_messages):
-        for client_message in client_messages:
-            if not Message.objects.filter(content=client_message, sent_by="Client", thread=thread).exists():
-                Message.objects.create(
-                    content=client_message,
-                    sent_by="Client",
-                    sent_on=timezone.now(),
-                    thread=thread
-                )
+    # existing_messages = Message.objects.filter(thread=thread, content__in=client_messages)
+    # if existing_messages.count() == len(client_messages):
+    for client_message in client_messages:
+        if not Message.objects.filter(content=client_message, sent_by="Client", thread=thread).exists():
+            Message.objects.create(
+                content=client_message,
+                sent_by="Client",
+                sent_on=timezone.now(),
+                thread=thread
+            )
+        
+    if thread.last_message_content == client_messages[len(client_messages)-1]:
+        return {
+            "text": query,
+            "success": True,
+            "username": thread.account.igname,
+            "generated_comment": "already_responded",
+            "assigned_to": "Robot",
+            "status":200
+        }    
+    thread.last_message_content = client_messages[len(client_messages)-1]
+    thread.unread_message_count = len(client_messages)
+    thread.last_message_at = timezone.now()
+    thread.save()
+
+    if thread.account.assigned_to == "Robot":
+        try:
+            gpt_resp = None
+            last_message = thread.message_set.order_by('-sent_on').first()
             
-        thread.last_message_content = client_messages[len(client_messages)-1]
-        thread.unread_message_count = len(client_messages)
-        thread.last_message_at = timezone.now()
-        thread.save()
+            
 
-        if thread.account.assigned_to == "Robot":
-            try:
-                gpt_resp = None
-                last_message = thread.message_set.order_by('-sent_on').first()
-                
-                if last_message.content and last_message.sent_by == "Robot":
-                    gpt_resp = "already_responded"
-                else:
-                    gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
-                
-                thread.last_message_content = gpt_resp
-                thread.last_message_at = timezone.now()
-                thread.save()
 
-                result = gpt_resp
-                
-                Message.objects.create(
-                    content=result,
-                    sent_by="Robot",
-                    sent_on=timezone.now(),
-                    thread=thread
-                )
-                print(result)
-                return {
-                    "generated_comment": gpt_resp,
-                    "text": query,
-                    "success": True,
-                    "username": thread.account.igname,
-                    "assigned_to": "Robot",
-                    "status":200
-                }
+            if last_message.content and last_message.sent_by == "Robot":
+                gpt_resp = "already_responded"
+            else:
+                gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
+            
+            thread.last_message_content = gpt_resp
+            thread.last_message_at = timezone.now()
+            thread.save()
 
-            except Exception as error:
-                return {
-                    "error": str(error),
-                    "success": False,
-                    "username": thread.account.igname,
-                    "assigned_to": "Robot",
-                    "status":500
-                }
-
-        elif thread.account.assigned_to == 'Human':
+            result = gpt_resp
+            
+            Message.objects.create(
+                content=result,
+                sent_by="Robot",
+                sent_on=timezone.now(),
+                thread=thread
+            )
+            print(result)
             return {
+                "generated_comment": gpt_resp,
                 "text": query,
                 "success": True,
                 "username": thread.account.igname,
-                "generated_comment": "assigned_human",
-                "assigned_to": "Human",
-                "status":200
-            }
-    else:
-            return {
-                "text": query,
-                "success": True,
-                "username": thread.account.igname,
-                "generated_comment": "already_responded",
                 "assigned_to": "Robot",
                 "status":200
             }
+
+        except Exception as error:
+            return {
+                "error": str(error),
+                "success": False,
+                "username": thread.account.igname,
+                "assigned_to": "Robot",
+                "status":500
+            }
+
+    elif thread.account.assigned_to == 'Human':
+        return {
+            "text": query,
+            "success": True,
+            "username": thread.account.igname,
+            "generated_comment": "assigned_human",
+            "assigned_to": "Human",
+            "status":200
+        }
+    # else:
+    #         return {
+    #             "text": query,
+    #             "success": True,
+    #             "username": thread.account.igname,
+    #             "generated_comment": "already_responded",
+    #             "assigned_to": "Robot",
+    #             "status":200
+    #         }
 
 
 def assign_salesrepresentative():
