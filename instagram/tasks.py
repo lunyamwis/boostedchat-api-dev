@@ -510,12 +510,14 @@ def generate_response_automatic(query, thread_id):
     existing_messages = Message.objects.filter(thread=thread, content__in=client_messages)
     if existing_messages.count() == len(client_messages):
         for client_message in client_messages:
-            Message.objects.create(
-                content=client_message,
-                sent_by="Client",
-                sent_on=timezone.now(),
-                thread=thread
-            )
+            if not Message.objects.filter(content=client_message, sent_by="Client", thread=thread).exists():
+                Message.objects.create(
+                    content=client_message,
+                    sent_by="Client",
+                    sent_on=timezone.now(),
+                    thread=thread
+                )
+            
         thread.last_message_content = client_messages[len(client_messages)-1]
         thread.unread_message_count = len(client_messages)
         thread.last_message_at = timezone.now()
