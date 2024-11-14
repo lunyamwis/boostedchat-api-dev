@@ -23,7 +23,7 @@ from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
 from django_celery_beat.models import PeriodicTask
-from django.db.models import F,Value
+from django.db.models import F,Value, Subquery, OuterRef
 from django.db.models.functions import Coalesce
 from django.utils.dateparse import parse_datetime
 
@@ -98,10 +98,40 @@ class AccountViewSet(viewsets.ModelViewSet):
         return self.serializer_class
 
     def list(self, request, *args, **kwargs):
-
+        print("------------77777777777777---------------")
         accounts = []
         paginator = self.pagination_class()
-        result_page = paginator.paginate_queryset(self.queryset, request)
+        # queryset = Account.objects.filter(salesrep__isnull=False).annotate(last_message_at=F('thread__last_message_at')).order_by('-last_message_at')
+        # queryset = Thread.objects.select_related('account').filter(account__salesrep__isnull=False).annotate(last_message_at_ordering=Coalesce('last_message_at', Value(datetime.min))).order_by(F('last_message_at_ordering').desc())
+            # Annotate both last_message_at from Thread and the most recent message sent_on
+        queryset = Account.objects.filter(salesrep__isnull=False).annotate(
+            last_message_at=F('thread__last_message_at'),
+            # Get the latest sent_on from Message model related to the Thread
+            last_message_sent_at= Subquery(
+                    Message.objects.filter(thread=OuterRef('thread'))
+                    .order_by('-sent_on')
+                    .values('sent_on')[:1]
+                ),
+             # Get the sent_by field of the latest message
+            last_message_sent_by=Subquery(
+                Message.objects.filter(thread=OuterRef('thread'))
+                .order_by('-sent_on')
+                .values('sent_by')[:1]
+            )
+            ).annotate(
+                # Coalesce to get the latest of either last_message_at or last_message_sent_at
+                latest_message_at=Coalesce('last_message_sent_at', 'last_message_at', Value(datetime.min))
+        ).order_by('-latest_message_at')  # Sort by the latest message, whichever comes first
+
+        page = request.query_params.get('page', 1)
+        
+        if page == '0':
+            result_page = queryset  # No pagination, return all results
+        else:
+            result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
+
+        # result_page = paginator.paginate_queryset(queryset, request)
+        # print(result_page.)
         for account in result_page:
             periodic_task = None
             try:
@@ -116,16 +146,33 @@ class AccountViewSet(viewsets.ModelViewSet):
                 "full_name": account.full_name or None,
                 "igname": account.igname,
                 "status": account.status.name if account.status else None,
-                "outreach": periodic_task.crontab.human_readable if periodic_task else ""
+                "outreach": periodic_task.crontab.human_readable if periodic_task else "",
+                "last_message_at": account.last_message_at,
+                "last_message_sent_at": account.last_message_sent_at,
+                "last_message_sent_by": account.last_message_sent_by,
+                "stage": "Null" if account.status_param is None else ("Blank" if account.status_param == "" else account.status_param)
+                
 
             }
             accounts.append(account_)
-        response_data = {
-            'count': paginator.page.paginator.count,
-            'next': paginator.get_next_link(),
-            'previous': paginator.get_previous_link(),
-            'results': accounts,
-        }
+        # response_data = {
+        #     'count': paginator.page.paginator.count,
+        #     'next': paginator.get_next_link(),
+        #     'previous': paginator.get_previous_link(),
+        #     'results': accounts,
+        # }
+        if page == '0':
+            response_data = {
+                'count': len(accounts),
+                'results': accounts,
+            }
+        else:
+            response_data = {
+                'count': paginator.page.paginator.count,
+                'next': paginator.get_next_link(),
+                'previous': paginator.get_previous_link(),
+                'results': accounts,
+            }
         return Response(response_data,status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk=None):
@@ -134,6 +181,15 @@ class AccountViewSet(viewsets.ModelViewSet):
         serializer = GetSingleAccountSerializer(user)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['get'], url_path="active-stages")
+    def active_stages(self, request):
+        print("ttttttttttttttttttttttttttttttttttttttt")
+        # Retrieve all unique status_param values
+        unique_status_params = Account.objects.values_list('status_param', flat=True).distinct()
+        
+        # Return as an array
+        return Response(list(unique_status_params), status=status.HTTP_200_OK)
+    
     @action(detail=True,methods=["post"],url_path="add-outsourced")
     def add_outsourced(self,request,pk=None):
         account = self.get_object()
