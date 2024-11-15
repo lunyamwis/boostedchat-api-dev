@@ -602,7 +602,17 @@ def assign_salesrepresentative():
     yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
     accounts  = Account.objects.filter(Q(qualified=True) & Q(created_at__gte=yesterday_start)).exclude(status__name="sent_compliment")
     for lead in accounts:
-    
+        try:
+            oso = OutSourced.objects.get(account__id=lead.id)
+            lead.relevant_information = oso.results
+            lead.save()
+            if isinstance(oso.results, dict):
+                oso.results = json.loads(oso.results)
+                oso.save()
+        except OutSourced.DoesNotExist:
+            print("OutSourced does not exist")
+        
+        
         # Get all sales reps
         sales_reps = SalesRep.objects.filter(available=True)
 
