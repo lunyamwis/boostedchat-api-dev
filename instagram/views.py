@@ -98,12 +98,10 @@ class AccountViewSet(viewsets.ModelViewSet):
         return self.serializer_class
 
     def list(self, request, *args, **kwargs):
-        print("------------77777777777777---------------")
         accounts = []
         paginator = self.pagination_class()
-        # queryset = Account.objects.filter(salesrep__isnull=False).annotate(last_message_at=F('thread__last_message_at')).order_by('-last_message_at')
-        # queryset = Thread.objects.select_related('account').filter(account__salesrep__isnull=False).annotate(last_message_at_ordering=Coalesce('last_message_at', Value(datetime.min))).order_by(F('last_message_at_ordering').desc())
-            # Annotate both last_message_at from Thread and the most recent message sent_on
+        status_param = request.GET.get('status_param')
+        
         queryset = Account.objects.filter(salesrep__isnull=False).annotate(
             last_message_at=F('thread__last_message_at'),
             # Get the latest sent_on from Message model related to the Thread
@@ -123,15 +121,16 @@ class AccountViewSet(viewsets.ModelViewSet):
                 latest_message_at=Coalesce('last_message_sent_at', 'last_message_at', Value(datetime.min))
         ).order_by('-latest_message_at')  # Sort by the latest message, whichever comes first
 
-        page = request.query_params.get('page', 1)
-        
-        if page == '0':
-            result_page = queryset  # No pagination, return all results
-        else:
-            result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
+        if status_param:
+            if status_param.lower() == "null":
+                queryset = queryset.filter(status_param__isnull=True)
+            elif status_param.lower() == "blank":
+                queryset = queryset.filter(status_param="")
+            else:
+                queryset = queryset.filter(status_param=status_param)
+            
+        result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
 
-        # result_page = paginator.paginate_queryset(queryset, request)
-        # print(result_page.)
         for account in result_page:
             periodic_task = None
             try:
@@ -155,24 +154,13 @@ class AccountViewSet(viewsets.ModelViewSet):
 
             }
             accounts.append(account_)
-        # response_data = {
-        #     'count': paginator.page.paginator.count,
-        #     'next': paginator.get_next_link(),
-        #     'previous': paginator.get_previous_link(),
-        #     'results': accounts,
-        # }
-        if page == '0':
-            response_data = {
-                'count': len(accounts),
-                'results': accounts,
-            }
-        else:
-            response_data = {
-                'count': paginator.page.paginator.count,
-                'next': paginator.get_next_link(),
-                'previous': paginator.get_previous_link(),
-                'results': accounts,
-            }
+
+        response_data = {
+            'count': paginator.page.paginator.count,
+            'next': paginator.get_next_link(),
+            'previous': paginator.get_previous_link(),
+            'results': accounts,
+        }
         return Response(response_data,status=status.HTTP_200_OK)
 
     def retrieve(self, request, pk=None):
@@ -183,7 +171,6 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path="active-stages")
     def active_stages(self, request):
-        print("ttttttttttttttttttttttttttttttttttttttt")
         # Retrieve all unique status_param values
         unique_status_params = Account.objects.values_list('status_param', flat=True).distinct()
         
