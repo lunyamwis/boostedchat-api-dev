@@ -51,6 +51,40 @@ def save_gpt_response(result, payload):
     return response.status_code
 
 
+def clean_text(text):
+    """
+    Cleans up the input text by removing unwanted characters and formatting issues,
+    including escape characters.
+    
+    Args:
+        raw_text (str): The raw text to clean.
+        
+    Returns:
+        str: The cleaned text.
+    """
+    # Remove escape characters
+    text = text.replace("\\", "")
+
+    # Remove non-ASCII characters
+    text = re.sub(r'[^\x00-\x7F]+', '', text)
+
+    # Remove all instances of the substring "text"
+    text = re.sub(r'text', '', text)  # Remove all occurrences of "text"
+
+    text = re.sub(r'ex', ' ', text)
+
+    text = re.sub(r'xt', ' ', text)
+    # Remove excessive repetitions of specific substrings like 'ext', 'nxt', etc.
+    text = re.sub(r'\b(ext|nxt)(?:\1){1,}\b', '', text)  # Replace repeated 'ext' or 'nxt' with an empty string
+
+    # Remove excessive repeated characters within a word (e.g., "extextextex" -> "ext")
+    text = re.sub(r'(\w)\1{2,}', r'\1', text)  # Replace 3 or more consecutive identical letters with one
+
+    # Normalize whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    return text
+
 def get_gpt_response(account, message, thread_id=None):
    
     outsourced = None
@@ -307,4 +341,4 @@ def get_gpt_response(account, message, thread_id=None):
     print(extracted_text)
 
 
-    return extracted_text
+    return clean_text(extracted_text)
