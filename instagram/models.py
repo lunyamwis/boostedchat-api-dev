@@ -101,6 +101,7 @@ class Message(BaseModel):
     content_type = models.CharField(max_length=255, null=True, blank=True)
     content_link = models.CharField(max_length=255, null=True, blank=True)
     content_data = models.JSONField(null=True, blank=True)  # Use JSONField for storing JSON data 
+    message_id = models.CharField(max_length=50, null=True, blank=True)
 
 
 class Video(BaseModel):
