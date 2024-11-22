@@ -10,7 +10,7 @@ import random
 from urllib.parse import urlparse
 from auditlog.models import LogEntry
 from celery.result import AsyncResult
-from datetime import datetime,timedelta
+from datetime import datetime, timezone as timezone2
 from instagrapi.exceptions import UserNotFound
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -1182,6 +1182,89 @@ class DMViewset(viewsets.ModelViewSet):
                     "success": True
                 }
             )
+  
+    @action(detail=False, methods=["post"], url_path="sync-messages")
+    def sync_messages(self, request, *args, **kwargs):
+        # Get data from request
+        thread_id = request.data.get("threadId")
+        messages = request.data.get('messages')
+
+        if not thread_id or not messages:
+            return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Find the thread
+            thread = Thread.objects.get(thread_id=thread_id)
+            print("Thread FOUND!")
+        except Thread.DoesNotExist:
+            print("Thread NOT FOUND!")
+            return Response({"error": "Thread not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+        # Iterate through the messages
+            for message in messages:
+                user_id = message.get("userId")
+                content = message.get("content")
+                message_id = message.get("messageId")
+                timestamp = message.get("timestamp")
+
+                # Convert microseconds to seconds
+                timestamp_seconds = int(timestamp) / 1_000_000
+
+                # Create a datetime object from the timestamp
+                formatted_time = datetime.fromtimestamp(timestamp_seconds, tz=timezone2.utc)
+                # datetime.fromtimestamp(timestamp_seconds, tz=timezone.utc)
+
+
+                # Skip if any critical information is missing
+                if not user_id or not content or not message_id or not timestamp:
+                    print(f"Skipping message with incomplete data: {message}")
+                    continue
+
+                # Check if the message already exists
+                if user_id == 'client':
+                    existing_message = Message.objects.filter(sent_by="Client", thread=thread, content=content).first()
+                    if existing_message:
+                        # we can update the message id
+                        print(f"Message already exists: {message_id}")
+                        existing_message.message_id = message_id
+                        existing_message.save()
+                        continue
+
+                    # Create the message
+                    Message.objects.create(
+                        thread=thread,
+                        sent_by="Client",
+                        # user_id=user_id,
+                        content=content,
+                        message_id=message_id,
+                        sent_on=formatted_time
+                    )
+                    
+                    print(f"Client Message created: {message_id}")
+                else:
+                    existing_message = Message.objects.filter(sent_by="Robot", thread=thread, content=content).first()
+                    if existing_message:
+                        # we can update the message id
+                        print(f"Message already exists: {message_id}")
+                        existing_message.message_id = message_id
+                        existing_message.save()
+                        continue
+
+                    # Create the message
+                    Message.objects.create(
+                        thread=thread,
+                        sent_by="Robot",
+                        # user_id=user_id,
+                        content=content,
+                        message_id=message_id,
+                        sent_on=formatted_time
+                    )
+                    
+                    print(f"Influener Message created: {message_id}")
+            return Response({"success": True}, status=status.HTTP_201_CREATED)
+        except Exception as e:  
+            return Response({"success": False, "message": e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def generate_outreach_times(self, request, *args,**kwargs):
         start_time = request.data.get("start_time")
