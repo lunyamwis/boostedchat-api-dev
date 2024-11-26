@@ -1,0 +1,8 @@
+# dockerapp/urls.py
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('restart-container/', views.RestartContainerView.as_view(), name='restart-container'),  # Removed <str:container_name>
+]

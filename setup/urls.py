@@ -30,5 +30,6 @@ urlpatterns = [
     path("v1/logs/", include("audittrails.urls")),
     path("v1/dialogflow/", include("dialogflow.urls")),
     path('v1/outreaches/', include('outreaches.urls')),  # Include app-specific URLs
+    path("v1/serviceManager/", include("serviceManager.urls")),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
