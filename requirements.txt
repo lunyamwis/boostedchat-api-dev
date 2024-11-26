@@ -1,6 +1,7 @@
 asgiref
 beautifulsoup4
 celery
+docker
 emoji
 numpy
 Django
