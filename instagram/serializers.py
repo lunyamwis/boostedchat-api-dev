@@ -179,6 +179,18 @@ class ThreadSerializer(serializers.ModelSerializer):
             print(error)
         return data
 
+class ThreadMessageSerializer(serializers.ModelSerializer):
+    messages = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Thread
+        fields = '__all__'
+
+    def get_messages(self, obj):
+        # Fetch and sort messages related to the thread by `sent_on` in descending order
+        messages = obj.message_set.order_by('-sent_on')
+        return MessageSerializer(messages, many=True).data
+
 class SingleThreadSerializer(serializers.ModelSerializer):
 
     class Meta:
