@@ -52,6 +52,7 @@ from .serializers import (
     SingleThreadSerializer,
     StorySerializer,
     ThreadSerializer,
+    ThreadMessageSerializer,
     UploadSerializer,
     VideoSerializer,
     MessageSerializer,
@@ -176,6 +177,29 @@ class AccountViewSet(viewsets.ModelViewSet):
         
         # Return as an array
         return Response(list(unique_status_params), status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['get'])
+    def threads_with_messages(self, request, pk=None):
+        """
+        Retrieve all threads related to a specific account along with their messages,
+        sorted by sent_on in descending order within each thread.
+        """
+        print('55555555555555555555555555555555555')
+        try:
+            account = self.get_object()  # Get the account based on the pk
+            threads = Thread.objects.filter(account=account).order_by('-last_message_at')  # Optionally order threads
+
+            # Serialize the threads with nested messages
+            serialized_data = ThreadMessageSerializer(threads, many=True).data
+
+            return Response({
+                'id': account.id,
+                'igname': account.igname,
+                'threads': serialized_data
+            })
+
+        except Account.DoesNotExist:
+            return Response({"error": "Account not found"}, status=404)
     
     @action(detail=True,methods=["post"],url_path="add-outsourced")
     def add_outsourced(self,request,pk=None):
