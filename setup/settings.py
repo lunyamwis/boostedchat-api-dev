@@ -113,7 +113,8 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.facebook",
     "allauth.socialaccount.providers.twitter",
     "outreaches",
-    "exceptions"
+    "exceptions",
+    "serviceManager"
 ]
 
 MIDDLEWARE = [
