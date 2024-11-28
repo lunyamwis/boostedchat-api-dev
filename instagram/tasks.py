@@ -602,13 +602,18 @@ def assign_salesrepresentative():
     yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
     accounts  = Account.objects.filter(Q(qualified=True) & Q(created_at__gte=yesterday_start)).exclude(status__name="sent_compliment")
     for lead in accounts:
+        # first check is the outsourced and relevant information
         try:
             oso = OutSourced.objects.get(account__id=lead.id)
+            try:
+                if isinstance(oso.results,str):
+                    oso.results = json.loads(json.dumps(oso.results))
+                    oso.save()
+            except Exception as err:
+                print(err)
             lead.relevant_information = oso.results
             lead.save()
-            if isinstance(oso.results, dict):
-                oso.results = json.loads(oso.results)
-                oso.save()
+            
         except OutSourced.DoesNotExist:
             print("OutSourced does not exist")
         
