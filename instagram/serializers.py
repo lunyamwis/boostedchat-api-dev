@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from .models import Account, OutSourced, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, StatusCheck, OutSourced
 from django_celery_beat.models import PeriodicTask
+import ast
 # from rest_framework.utils.encoders import JSONEncoder
 class OutSourcedSerializer(serializers.ModelSerializer):
     class Meta:
@@ -76,7 +77,8 @@ class GetSingleAccountSerializer(serializers.ModelSerializer):
             print(error)
 
         try:
-            data['outsourced'] = OutSourced.objects.get(account__id=data['id']).results
+            outsourced_string = OutSourced.objects.get(account__id=data['id']).results
+            data['outsourced'] = ast.literal_eval(outsourced_string)
         except Exception as error:
             print(error)
         try:
