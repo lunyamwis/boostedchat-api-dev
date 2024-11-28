@@ -19,11 +19,11 @@ python manage.py loaddata initialization.yaml
 echo " "
 echo "<<<<<<<<<<<<<<<<<<<< START Celery >>>>>>>>>>>>>>>>>>>>>>>>"
 
-# export CELERY_BROKER_URL=$CELERY_BROKER_URL_API
-# export CELERY_RESULT_BACKEND=$CELERY_RESULT_BACKEND_API
+export CELERY_BROKER_URL=$CELERY_BROKER_URL_API
+export CELERY_RESULT_BACKEND=$CELERY_RESULT_BACKEND_API
 
-# echo "CELERY_BROKER_URL=$CELERY_BROKER_URL"
-# echo "CELERY_RESULT_BACKEND=$CELERY_RESULT_BACKEND"
+echo "CELERY_BROKER_URL=$CELERY_BROKER_URL"
+echo "CELERY_RESULT_BACKEND=$CELERY_RESULT_BACKEND"
 # # start Celery worker
 celery -A setup worker --loglevel=info &
 
