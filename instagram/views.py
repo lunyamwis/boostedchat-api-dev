@@ -192,14 +192,6 @@ class AccountViewSet(viewsets.ModelViewSet):
             # Serialize the threads with nested messages
             serialized_data = ThreadMessageSerializer(threads, many=True).data
             account_serializer = GetSingleAccountSerializer(account).data
-        
-            # if thread.account:
-            #     accounts = Account.objects.filter(id=thread.account.id)
-            #     account = accounts.latest('created_at')
-            #     serializer = GetSingleAccountSerializer(account)
-            #     return Response(serializer.data)
-            # else:
-            #     return Response({"error":"Account does not have thread attached"})
 
             return Response({
                 'id': account.id,
