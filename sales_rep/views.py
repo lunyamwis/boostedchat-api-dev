@@ -77,7 +77,7 @@ class SalesRepManager(viewsets.ModelViewSet):
     def assign_salesrep(self, request):
         # import pdb;pdb.set_trace()
 
-        assign_salesrepresentative.delay()
+        assign_salesrepresentative()
         
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 

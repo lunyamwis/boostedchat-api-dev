@@ -19,6 +19,7 @@ from dialogflow.helpers.get_prompt_responses import get_gpt_response
 from .helpers.format_username import format_full_name
 from outreaches.utils import process_reschedule_single_task, ig_thread_exists, not_in_interval ## move
 from .utils import get_account, tasks_by_sales_rep
+from .constants import STYLISTS_WORDS
 from outreaches.models import OutreachErrorLog
 # from tabulate import tabulate # for print_logs
 from urllib.parse import urlparse
@@ -602,15 +603,31 @@ def assign_salesrepresentative():
     
     yesterday = timezone.now().date() - timezone.timedelta(days=1)
     yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
-    accounts  = Account.objects.filter(Q(qualified=True) & Q(created_at__gte=yesterday_start)).exclude(status__name="sent_compliment")
+    
+    word_filters = Q()
+    for word in STYLISTS_WORDS:
+        word_filters |= Q(igname__icontains=word)  # Replace 'description' with the actual field name
+
+    # Combine the filters
+    accounts = Account.objects.filter(
+        Q(created_at__gte=yesterday_start) & word_filters
+    ).exclude(status__name="sent_compliment")
+
+    
     for lead in accounts:
+        # first check is the outsourced and relevant information
         try:
             oso = OutSourced.objects.get(account__id=lead.id)
+            try:
+                if isinstance(oso.results,str):
+                    oso.results = json.loads(json.dumps(oso.results))
+                    oso.save()
+            except Exception as err:
+                print(err)
             lead.relevant_information = oso.results
+            lead.qualified = True
             lead.save()
-            if isinstance(oso.results, dict):
-                oso.results = json.loads(oso.results)
-                oso.save()
+            
         except OutSourced.DoesNotExist:
             print("OutSourced does not exist")
         
