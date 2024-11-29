@@ -61,6 +61,7 @@ from .serializers import (
     GetSingleAccountSerializer,
     ScheduleOutreachSerializer
 )
+from django.db.models import Count, Case, When, IntegerField
 
 
 class PaginationClass(PageNumberPagination):
@@ -98,10 +99,26 @@ class AccountViewSet(viewsets.ModelViewSet):
             return ScheduleOutreachSerializer
         return self.serializer_class
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, pk=None):
+        print(request)
         accounts = []
         paginator = self.pagination_class()
         status_param = request.GET.get('status_param')
+        # status_param = request.GET.get('stage')
+        search_query = request.GET.get("q")
+        start_date = request.GET.get("start_date")
+        end_date = request.GET.get("end_date")
+        
+        if start_date:
+            start_date = start_date.strip('"')
+        if end_date:
+            end_date = end_date.strip('"')
+            
+        # start_date_parsed = parse_datetime(start_date ) if start_date else None
+        start_date_parsed = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None
+        # end_date_parsed = parse_datetime(end_date) if end_date else None
+        end_date_parsed = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None
+        
         
         queryset = Account.objects.filter(salesrep__isnull=False).annotate(
             last_message_at=F('thread__last_message_at'),
@@ -121,17 +138,45 @@ class AccountViewSet(viewsets.ModelViewSet):
                 # Coalesce to get the latest of either last_message_at or last_message_sent_at
                 latest_message_at=Coalesce('last_message_sent_at', 'last_message_at', Value(datetime.min))
         ).order_by('-latest_message_at')  # Sort by the latest message, whichever comes first
-
+   
+        
+        if start_date_parsed:
+            print("gOT START DATE")
+            if end_date_parsed:
+                print("gOT end DATE")
+                # Both dates are present
+                #  messages = queryset.filter(last_message_at__gte=datetime(2024, 10, 7).date(), last_message_at__lte=datetime(2024, 11, 7).date())
+                queryset = queryset.filter(
+                    last_message_at__gte=start_date_parsed,
+                    last_message_at__lte=end_date_parsed
+                )
+                # messages = queryset.filter(last_message_at__gte=datetime(2024, 10, 7).date(), last_message_at__lte=datetime(2024, 11, 7).date())
+            else:
+                # Only start_date is present; use it as both
+                print(start_date)
+                print(start_date_parsed)
+                queryset = queryset.filter(
+                    last_message_at__date=start_date_parsed.date() 
+                )
+        elif end_date_parsed:
+            print(end_date_parsed)
+            # If only end_date is present, you can decide how to handle it
+            # queryset = queryset.filter(last_message_at__date=end_date_parsed.date())
+        
         if status_param:
             if status_param.lower() == "null":
+                # print("STATUS PARAM null")
                 queryset = queryset.filter(status_param__isnull=True)
             elif status_param.lower() == "blank":
+                # print("STATUS PARAM blank", status_param)
                 queryset = queryset.filter(status_param="")
             else:
-                queryset = queryset.filter(status_param=status_param)
+                queryset = queryset.filter(status_param=status_param.strip())
+                # print(queryset.first.status_param)
+                # print("After filter",queryset.count())
             
         result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
-
+        
         for account in result_page:
             periodic_task = None
             try:
@@ -177,6 +222,46 @@ class AccountViewSet(viewsets.ModelViewSet):
         
         # Return as an array
         return Response(list(unique_status_params), status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path="active-stage-stats")
+    def active_stage_stats(self, request):
+        # Retrieve all unique status_param values along with the count of accounts at each stage
+        stages_with_counts = Account.objects.values('status_param') \
+            .annotate(total_accounts=Count('status_param')) \
+            .annotate(
+                custom_order=Case(
+                    When(status_param='Prequalified', then=0),
+                    When(status_param='Sales Qualified', then=1),
+                    When(status_param='Committed', then=2),
+                    output_field=IntegerField()
+                )
+            )\
+            .order_by('custom_order')
+            
+            # Fetch the counts for the specific transitions between stages based on the assumption
+        prequalified_to_sales_qualified_count = Account.objects.filter(status_param='Sales Qualified').count()
+        sales_qualified_to_committed_count = Account.objects.filter(status_param='Committed').count()
+
+        # Calculate the total number of accounts in each stage
+        prequalified_count = Account.objects.filter(status_param='Prequalified').count()
+        sales_qualified_count = Account.objects.filter(status_param='Sales Qualified').count()
+
+         # Calculate the percentages
+        percentage_prequalified_to_sales_qualified = (prequalified_to_sales_qualified_count / prequalified_count * 100) if prequalified_count > 0 else 0
+        percentage_sales_qualified_to_committed = (sales_qualified_to_committed_count / sales_qualified_count * 100) if sales_qualified_count > 0 else 0
+
+        # Add the transition counts and percentages to the corresponding stages
+        for stage in stages_with_counts:
+            if stage['status_param'] == 'Committed':
+                stage['sales_qualified_to_committed_count'] = sales_qualified_to_committed_count
+                stage['percentage_sales_qualified_to_committed'] = percentage_sales_qualified_to_committed
+            elif stage['status_param'] == 'Sales Qualified':
+                stage['prequalified_to_sales_qualified_count'] = prequalified_to_sales_qualified_count
+                stage['percentage_prequalified_to_sales_qualified'] = percentage_prequalified_to_sales_qualified
+
+    
+        # Return the results as a list of dictionaries
+        return Response(stages_with_counts, status=status.HTTP_200_OK)
     
     @action(detail=True, methods=['get'])
     def threads_with_messages(self, request, pk=None):
@@ -184,7 +269,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         Retrieve all threads related to a specific account along with their messages,
         sorted by sent_on in descending order within each thread.
         """
-        print('55555555555555555555555555555555555')
+
         try:
             account = self.get_object()  # Get the account based on the pk
             threads = Thread.objects.filter(account=account).order_by('-last_message_at')  # Optionally order threads
