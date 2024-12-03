@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.utils import timezone
 
-from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
+from instagram.models import Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount
 from sales_rep.models import SalesRep
 from dialogflow.helpers.get_prompt_responses import get_gpt_response
 
@@ -602,14 +602,21 @@ def assign_salesrepresentative():
     yesterday = timezone.now().date() - timezone.timedelta(days=1)
     yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
     
+
+    # Get the list of usernames from the UnwantedAccount table
+    unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+
+    # Create the word filters
     word_filters = Q()
     for word in STYLISTS_WORDS:
         word_filters |= Q(igname__icontains=word)  # Replace 'description' with the actual field name
 
-    # Combine the filters
+    # Combine the filters and exclude unwanted accounts
     accounts = Account.objects.filter(
         Q(created_at__gte=yesterday_start) & word_filters
-    ).exclude(status__name="sent_compliment")
+    ).exclude(
+        Q(status__name="sent_compliment") | Q(igname__in=unwanted_usernames)
+    )
 
     
     for lead in accounts:

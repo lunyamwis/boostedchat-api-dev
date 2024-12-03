@@ -2,7 +2,7 @@
 import json
 from django.contrib import admin
 
-from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed
+from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount
 
 admin.site.register(Photo)
 admin.site.register(Video)
@@ -84,4 +84,13 @@ class AccountsClosedAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
         form = super(AccountsClosedAdmin, self).get_form(request, obj, **kwargs)
+        return form
+
+
+
+@admin.register(UnwantedAccount)
+class UnwantedAccountAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(UnwantedAccountAdmin, self).get_form(request, obj, **kwargs)
         return form

@@ -27,6 +27,12 @@ class StatusCheck(BaseModel):
         return self.id
 
 
+class UnwantedAccount(BaseModel):
+    username = models.CharField(max_length=255, null=True, blank=True, unique=True)
+
+    def __str__(self) -> str:
+        return self.username if self.username else self.id
+
 class Account(BaseModel):
     igname = models.CharField(max_length=255, null=True, unique=False, blank=True)
     assigned_to = models.TextField(default="Robot")
