@@ -44,7 +44,7 @@ class ResetConversationsView(APIView):
 
             # Command to execute inside the container
             command = (
-                "python manage.py shell -c "
+                "python3 manage.py shell -c "
                 "'from instagram.models import Account; "
                 "account = Account.objects.get(igname=\"psychologistswithoutborders\"); "
                 "thread = account.thread_set.latest(\"created_at\"); "
