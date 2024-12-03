@@ -33,7 +33,7 @@ class RestartContainerView(APIView):
 
 class ResetConversationsView(APIView):
     def post(self, request):
-        container_id = 'boostedchat-site-mqtt-1'  # Assuming this is a fixed container name
+        container_id = 'boostedchat-site-api-1'  # Assuming this is a fixed container name
 
         try:
             # Create a Docker client
@@ -44,7 +44,7 @@ class ResetConversationsView(APIView):
 
             # Command to execute inside the container
             command = (
-                "python3 manage.py shell -c "
+                "python manage.py shell -c "
                 "'from instagram.models import Account; "
                 "account = Account.objects.get(igname=\"psychologistswithoutborders\"); "
                 "thread = account.thread_set.latest(\"created_at\"); "
