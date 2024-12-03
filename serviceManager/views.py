@@ -43,16 +43,16 @@ class ResetConversationsView(APIView):
             container = client.containers.get(container_id)
 
             # Command to execute inside the container
-            commands = [
-                "python manage.py shell -c \""
-                "from instagram.models import Account; "
-                "account = Account.objects.get(igname='psychologistswithoutborders'); "
-                "thread = account.thread_set.latest('created_at'); "
-                "thread.message_set.clear();\""
-            ]
+            command = (
+                "python manage.py shell -c "
+                "'from instagram.models import Account; "
+                "account = Account.objects.get(igname=\"psychologistswithoutborders\"); "
+                "thread = account.thread_set.latest(\"created_at\"); "
+                "thread.message_set.clear()'"
+            )
 
             # Execute the command in the container
-            exec_log = container.exec_run(commands, stderr=True, stdout=True)
+            exec_log = container.exec_run(command, stderr=True, stdout=True)
 
             if exec_log.exit_code == 0:
                 return Response({"message": "Conversations reset successfully."}, status=status.HTTP_200_OK)
