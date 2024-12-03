@@ -30,3 +30,36 @@ class RestartContainerView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ResetConversationsView(APIView):
+    def post(self, request):
+        container_id = 'boostedchat-site-mqtt-1'  # Assuming this is a fixed container name
+
+        try:
+            # Create a Docker client
+            client = docker.from_env()
+
+            # Get the specified container
+            container = client.containers.get(container_id)
+
+            # Command to execute inside the container
+            commands = [
+                "python manage.py shell -c \""
+                "from instagram.models import Account; "
+                "account = Account.objects.get(igname='psychologistswithoutborders'); "
+                "thread = account.thread_set.latest('created_at'); "
+                "thread.message_set.clear();\""
+            ]
+
+            # Execute the command in the container
+            exec_log = container.exec_run(commands, stderr=True, stdout=True)
+
+            if exec_log.exit_code == 0:
+                return Response({"message": "Conversations reset successfully."}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": exec_log.output.decode('utf-8')}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except docker.errors.NotFound:
+            return Response({"error": "Container not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
