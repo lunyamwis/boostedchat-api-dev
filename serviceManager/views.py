@@ -48,14 +48,19 @@ class ResetConversationsView(APIView):
                 "'from instagram.models import Account; "
                 "account = Account.objects.get(igname=\"psychologistswithoutborders\"); "
                 "thread = account.thread_set.latest(\"created_at\"); "
-                "thread.message_set.clear()'"
+                "thread.message_set.count()'"
             )
+            
+#             python manage.py shell -c 'from instagram.models import Account; 
+# account = Account.objects.get(igname="psychologistswithoutborders"); 
+# thread = account.thread_set.latest("created_at");
+# thread.message_set.count()'
 
             # Execute the command in the container
             exec_log = container.exec_run(command, stderr=True, stdout=True)
 
             if exec_log.exit_code == 0:
-                return Response({"message": "Conversations reset successfully."}, status=status.HTTP_200_OK)
+                return Response({"message": f"Conversations reset successfully. {exec_log.output.decode('utf-8')}"}, status=status.HTTP_200_OK)
             else:
                 return Response({"error": exec_log.output.decode('utf-8')}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
