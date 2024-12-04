@@ -187,6 +187,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             account_ = {
                 "id": account.id,
                 "assigned_to": account.assigned_to,
+                "notes": account.notes,
                 "confirmed_problems": account.confirmed_problems,
                 "full_name": account.full_name or None,
                 "igname": account.igname,
@@ -222,6 +223,30 @@ class AccountViewSet(viewsets.ModelViewSet):
         return Response({"success": True, "message": "Conversations successfully reset"}, status=status.HTTP_200_OK)
         
     
+    @action(detail=True, methods=['post'], url_path="add-notes")
+    def add_notes(self, request, **kwargs):
+        account = self.get_object()
+        
+        try:
+            notes = request.data.get('notes')  # Extract 'notes' from the request data
+
+            if not notes:
+                return Response(
+                    {"error": "Notes field is required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+            account.notes = notes
+
+            account.save()
+
+        except Exception as error:
+            return Response({"error": error}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response(
+            {"message": "Notes added successfully.", "notes": account.notes},
+            status=status.HTTP_200_OK
+        )    
 
     def retrieve(self, request, pk=None):
         queryset = Account.objects.all()
