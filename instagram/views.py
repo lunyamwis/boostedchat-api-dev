@@ -225,7 +225,18 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path="active-stage-stats")
     def active_stage_stats(self, request):
-        # Retrieve all unique status_param values along with the count of accounts at each stage
+        # We'll add this filers as soon as we know when they moved from one stage to the next
+        # start_date = request.GET.get("start_date")
+        # end_date = request.GET.get("end_date")
+        
+        # if start_date:
+        #     start_date = start_date.strip('"')
+        # if end_date:
+        #     end_date = end_date.strip('"')
+        
+        # start_date_parsed = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None
+        # end_date_parsed = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None
+        
         stages_with_counts = Account.objects.values('status_param') \
             .annotate(total_accounts=Count('status_param')) \
             .annotate(
