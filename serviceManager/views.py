@@ -48,7 +48,7 @@ class ResetConversationsView(APIView):
                 "'from instagram.models import Account; "
                 "account = Account.objects.get(igname=\"psychologistswithoutborders\"); "
                 "thread = account.thread_set.latest(\"created_at\"); "
-                "thread.message_set.count()'"
+                "thread.message_set.clear()'"
             )
             
 #             python manage.py shell -c 'from instagram.models import Account; 
