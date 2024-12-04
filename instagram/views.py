@@ -208,6 +208,20 @@ class AccountViewSet(viewsets.ModelViewSet):
             'results': accounts,
         }
         return Response(response_data,status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'], url_path="clear-convo")
+    def clear_convo(self, request, **kwargs):
+        account = self.get_object()
+        
+        try:
+            thread = account.thread_set.latest('created_at')
+            thread.message_set.clear()
+        except Exception as error:
+            return Response({"error": error}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response({"success": True, "message": "Conversations successfully reset"}, status=status.HTTP_200_OK)
+        
+    
 
     def retrieve(self, request, pk=None):
         queryset = Account.objects.all()
