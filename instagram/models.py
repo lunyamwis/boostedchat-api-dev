@@ -28,7 +28,7 @@ class StatusCheck(BaseModel):
 
 
 class UnwantedAccount(BaseModel):
-    username = models.CharField(max_length=255, null=True, blank=True, unique=True)
+    username = models.CharField(max_length=255, null=True, blank=True, unique=False)
 
     def __str__(self) -> str:
         return self.username if self.username else self.id
