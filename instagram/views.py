@@ -1350,7 +1350,8 @@ class DMViewset(viewsets.ModelViewSet):
         # Get data from request
         thread_id = request.data.get("threadId")
         messages = request.data.get('messages')
-
+        igname = request.data.get('igname')
+        
         if not thread_id or not messages:
             return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1359,8 +1360,21 @@ class DMViewset(viewsets.ModelViewSet):
             thread = Thread.objects.get(thread_id=thread_id)
             print("Thread FOUND!")
         except Thread.DoesNotExist:
-            print("Thread NOT FOUND!")
-            return Response({"error": "Thread not found"}, status=status.HTTP_404_NOT_FOUND)
+            # check if any message here includes the influecer
+            # if so create the thread and save the messages 
+            # if not skip this guy
+            print("Thread NOT FOUND! creating ONE")
+            # account = Account.objects.get(igname=igname)
+            account = Account.objects.filter(igname=igname).first()
+            if account:
+                print("LEAD EXISTS CREATING A NEW THREAD!")
+                thread = Thread()
+                thread.thread_id = thread_id
+                thread.account = account
+                thread.save()
+                print("Thread CREATED A NEW THREAD!")
+            else:
+                return Response({"error": "LEAD DOES NOT EXIST"}, status=status.HTTP_404_NOT_FOUND)
 
         try:
         # Iterate through the messages
@@ -1369,7 +1383,9 @@ class DMViewset(viewsets.ModelViewSet):
                 content = message.get("content")
                 message_id = message.get("messageId")
                 timestamp = message.get("timestamp")
-
+                content_data = message.get("contentData")
+                content_type = message.get("itemType")
+                
                 # Convert microseconds to seconds
                 timestamp_seconds = int(timestamp) / 1_000_000
 
@@ -1388,8 +1404,10 @@ class DMViewset(viewsets.ModelViewSet):
                     existing_message = Message.objects.filter(sent_by="Client", thread=thread, content=content).first()
                     if existing_message:
                         # we can update the message id
-                        print(f"Message already exists: {message_id}")
+                        print(f"Message already exists: {message_id}", content_data)
                         existing_message.message_id = message_id
+                        existing_message.content_data = content_data
+                        existing_message.content_type = content_type
                         existing_message.save()
                         continue
 
@@ -1400,7 +1418,9 @@ class DMViewset(viewsets.ModelViewSet):
                         # user_id=user_id,
                         content=content,
                         message_id=message_id,
-                        sent_on=formatted_time
+                        sent_on=formatted_time,
+                        content_type = content_type,
+                        content_data = content_data,
                     )
                     
                     print(f"Client Message created: {message_id}")
@@ -1410,6 +1430,8 @@ class DMViewset(viewsets.ModelViewSet):
                         # we can update the message id
                         print(f"Message already exists: {message_id}")
                         existing_message.message_id = message_id
+                        content_type = content_type,
+                        content_data = content_data,
                         existing_message.save()
                         continue
 
@@ -1420,7 +1442,9 @@ class DMViewset(viewsets.ModelViewSet):
                         # user_id=user_id,
                         content=content,
                         message_id=message_id,
-                        sent_on=formatted_time
+                        sent_on=formatted_time,
+                        content_type=content_type,
+                        content_data=content_data
                     )
                     
                     print(f"Influener Message created: {message_id}")
