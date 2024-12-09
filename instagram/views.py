@@ -1551,6 +1551,46 @@ class DMViewset(viewsets.ModelViewSet):
         else:
             return Response({'message': 'accounts do not exist'})
 
+    def generate_followup_response(self, request, *args, **kwargs):
+        date_threshold = timezone.now() - timezone.timedelta(days=30)
+        last_message_subquery = (
+            Message.objects
+            .filter(thread=OuterRef('thread'))
+            .order_by('-sent_on')
+        )
+        users_without_responses = (
+            Account.objects
+            .filter(
+                qualified=True,
+                status__name='sent_compliment',
+                created_at__gte=date_threshold  # Filter for accounts created in the last 30 days
+            )
+            .annotate(client_message_count=Count(
+                'thread__message',
+                filter=Q(thread__message__sent_by='Client')
+            ))
+            .annotate(last_message_sent_by_robot=Subquery(
+                last_message_subquery.values('sent_by')[:1]  # Get the 'sent_by' field of the last message
+            ))
+            .filter(
+                Q(client_message_count__gt=0) |  # Include users with client messages
+                Q(last_message_sent_by_robot='Robot')  # Or where the last message was sent by Robot
+            )
+            .values_list('igname', flat=True)
+        )
+        for username in users_without_responses:
+            account = Account.objects.filter(igname=username).latest('created_at')
+            thread = account.thread_set.latest('created_at')
+            generate_response_endpoint = f"https://api.booksy.us.boostedchat.com/v1/instagram/dflow/{thread.thread_id}/generate-response/"
+            try:
+                response = requests.post(generate_response_endpoint)
+                if response.status_code in [200,201]:
+                    print("Successfully set outreach time for compliment and will send at appropriate time")
+            except Exception as err:
+                print(err)
+
+        return Response({"message": "Followup responses generated successfully"}, status=status.HTTP_200_OK)
+    
     def generate_response(self, request, *args, **kwargs):
         thread = Thread.objects.filter(thread_id=kwargs.get('thread_id')).latest('created_at')
         req = request.data
@@ -1691,13 +1731,37 @@ class DMViewset(viewsets.ModelViewSet):
 
 
     def has_client_responded(self, request, *args, **kwargs):
-        username = request.data.get('username')
-        thread = Thread.objects.filter(account__igname=username).last()
-        client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
-        
-        if client_messages.exists():
+        date_threshold = timezone.now() - timezone.timedelta(days=30)
+        last_message_subquery = (
+            Message.objects
+            .filter(thread=OuterRef('thread'))
+            .order_by('-sent_on')
+        )
+        users_without_responses = (
+            Account.objects
+            .filter(
+                qualified=True,
+                status__name='sent_compliment',
+                created_at__gte=date_threshold  # Filter for accounts created in the last 30 days
+            )
+            .annotate(client_message_count=Count(
+                'thread__message',
+                filter=Q(thread__message__sent_by='Client')
+            ))
+            .annotate(last_message_sent_by_robot=Subquery(
+                last_message_subquery.values('sent_by')[:1]  # Get the 'sent_by' field of the last message
+            ))
+            .filter(
+                Q(client_message_count__gt=0) |  # Include users with client messages
+                Q(last_message_sent_by_robot='Robot')  # Or where the last message was sent by Robot
+            )
+            .values_list('igname', flat=True)
+        )
+
+
+        if len(users_without_responses) == 0:
             return Response({"has_responded":True}, status=status.HTTP_200_OK)
-        else:
+        elif len(users_without_responses) > 0:
             return Response({"has_responded":False}, status=status.HTTP_200_OK)
     
 
