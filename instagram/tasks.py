@@ -509,11 +509,11 @@ def generate_response_automatic(query, thread_id):
     print(account.id)
     thread = Thread.objects.filter(account=account).latest('created_at')
 
-    client_messages = query.split("#*eb4*#")
+    client_messages = query.split("#*eb4*#") if query else []
     # existing_messages = Message.objects.filter(thread=thread, content__in=client_messages)
     # if existing_messages.count() == len(client_messages):
     for client_message in client_messages:
-        if not Message.objects.filter(content=client_message, sent_by="Client", thread=thread).exists():
+        if client_message and not Message.objects.filter(content=client_message, sent_by="Client", thread=thread).exists():
             Message.objects.create(
                 content=client_message,
                 sent_by="Client",
@@ -521,15 +521,16 @@ def generate_response_automatic(query, thread_id):
                 thread=thread
             )
         
-    if thread.last_message_content == client_messages[len(client_messages)-1]:
-        return {
-            "text": query,
-            "success": True,
-            "username": thread.account.igname,
-            "generated_comment": "already_responded",
-            "assigned_to": "Robot",
-            "status":200
-        }    
+    if client_messages:
+        if thread.last_message_content == client_messages[len(client_messages)-1]:
+            return {
+                "text": query,
+                "success": True,
+                "username": thread.account.igname,
+                "generated_comment": "already_responded",
+                "assigned_to": "Robot",
+                "status":200
+            }    
     thread.last_message_content = client_messages[len(client_messages)-1]
     thread.unread_message_count = len(client_messages)
     thread.last_message_at = timezone.now()

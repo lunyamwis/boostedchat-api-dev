@@ -1583,7 +1583,8 @@ class DMViewset(viewsets.ModelViewSet):
             thread = account.thread_set.latest('created_at')
             generate_response_endpoint = f"https://api.booksy.us.boostedchat.com/v1/instagram/dflow/{thread.thread_id}/generate-response/"
             try:
-                response = requests.post(generate_response_endpoint)
+                data = {"message": ""}
+                response = requests.post(generate_response_endpoint, data=data)
                 if response.status_code in [200,201]:
                     print("Successfully set outreach time for compliment and will send at appropriate time")
             except Exception as err:
