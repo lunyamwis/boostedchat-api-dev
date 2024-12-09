@@ -1208,6 +1208,7 @@ class DMViewset(viewsets.ModelViewSet):
         thread = Thread.objects.create(**request.data,account=account)
         return Response({'id':thread.id}, status=status.HTTP_200_OK)
 
+
     @action(detail=False, methods=["post"], url_path="download-csv")
     def download_csv(self, request):
         date_format = "%Y-%m-%d %H:%M:%S"

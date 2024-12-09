@@ -68,18 +68,6 @@ def clean_text(text):
     # Remove non-ASCII characters
     text = re.sub(r'[^\x00-\x7F]+', '', text)
 
-    # Remove all instances of the substring "text"
-    text = re.sub(r'text', '', text)  # Remove all occurrences of "text"
-
-    text = re.sub(r'ex', ' ', text)
-
-    text = re.sub(r'xt', ' ', text)
-    # Remove excessive repetitions of specific substrings like 'ext', 'nxt', etc.
-    text = re.sub(r'\b(ext|nxt)(?:\1){1,}\b', '', text)  # Replace repeated 'ext' or 'nxt' with an empty string
-
-    # Remove excessive repeated characters within a word (e.g., "extextextex" -> "ext")
-    text = re.sub(r'(\w)\1{2,}', r'\1', text)  # Replace 3 or more consecutive identical letters with one
-
     # Normalize whitespace
     text = re.sub(r'\s+', ' ', text).strip()
 
