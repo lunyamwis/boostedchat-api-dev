@@ -531,10 +531,12 @@ def generate_response_automatic(query, thread_id):
                 "assigned_to": "Robot",
                 "status":200
             }    
-    thread.last_message_content = client_messages[len(client_messages)-1]
-    thread.unread_message_count = len(client_messages)
-    thread.last_message_at = timezone.now()
-    thread.save()
+        
+        
+        thread.last_message_content = client_messages[len(client_messages)-1]
+        thread.unread_message_count = len(client_messages)
+        thread.last_message_at = timezone.now()
+        thread.save()
 
     if thread.account.assigned_to == "Robot":
         try:
