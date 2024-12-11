@@ -157,13 +157,20 @@ def get_gpt_response(account, message, thread_id=None):
             "relevant_information":account.confirmed_problems + relevant_information if account.confirmed_problems else ""
         }
     }
+    
+    print("*******************************************payload")
     print(payload)
+    print("********************************************message")
     print(message)
+    print("**********************************************url")
     print(url)
     url = os.getenv("SCRIPTING_URL") + '/agentSetup/'
     print(url)
     # import pdb;pdb.set_trace()
     resp = requests.post(url, data=json.dumps(payload),headers = {'Content-Type': 'application/json'})
+    print("**********************************************JSON")
+    print(resp)
+    print(url)
     response = resp.json()
     # response = query_gpt(prompt=payload)
     print(resp.json())

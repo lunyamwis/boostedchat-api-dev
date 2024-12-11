@@ -353,6 +353,8 @@ def send_first_compliment(username, message, repeat=True):
     else:
         results = outsourced_data.last().results
     print(f"results================{results}")
+    print(f"results================MMM")
+    print(f"results================{message}")
     first_message = get_gpt_response(account,message)
 
     media_id = results.get("media_id", "")
