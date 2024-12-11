@@ -215,6 +215,9 @@ class AccountViewSet(viewsets.ModelViewSet):
         account = self.get_object()
         
         try:
+            # reset status
+            account.status = None
+            account.save()
             thread = account.thread_set.latest('created_at')
             thread.message_set.clear()
         except Exception as error:
