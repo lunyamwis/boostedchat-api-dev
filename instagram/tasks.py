@@ -522,15 +522,15 @@ def generate_response_automatic(query, thread_id):
             )
         
     if client_messages:
-        if thread.last_message_content == client_messages[len(client_messages)-1]:
-            return {
-                "text": query,
-                "success": True,
-                "username": thread.account.igname,
-                "generated_comment": "already_responded",
-                "assigned_to": "Robot",
-                "status":200
-            }    
+        # if thread.last_message_content == client_messages[len(client_messages)-1]:
+        #     return {
+        #         "text": query,
+        #         "success": True,
+        #         "username": thread.account.igname,
+        #         "generated_comment": "already_responded",
+        #         "assigned_to": "Robot",
+        #         "status":200
+        #     }    
         
         
         thread.last_message_content = client_messages[len(client_messages)-1]
@@ -546,10 +546,10 @@ def generate_response_automatic(query, thread_id):
             
 
 
-            if last_message.content and last_message.sent_by == "Robot":
-                gpt_resp = "already_responded"
-            else:
-                gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
+            # if last_message.content and last_message.sent_by == "Robot":
+            #     gpt_resp = "already_responded"
+            # else:
+            gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
             
             thread.last_message_content = gpt_resp
             thread.last_message_at = timezone.now()
