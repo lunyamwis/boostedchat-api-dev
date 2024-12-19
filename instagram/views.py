@@ -1653,6 +1653,7 @@ class DMViewset(viewsets.ModelViewSet):
                                         text_response = requests.post(settings.MQTT_BASE_URL + "/send-message", json=text_data)
                                         if text_response.status_code == 200:
                                             print(f"Message sent to {account.igname}")
+                                            time.sleep(100)  # Wait before sending the next message
                                         break  # Exit loop after successful message sending
                                     elif task_status == 'FAILURE':
                                         print(f"Task {task_id} failed.")
