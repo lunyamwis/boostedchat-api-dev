@@ -1614,9 +1614,16 @@ class DMViewset(viewsets.ModelViewSet):
             )
             .values_list('igname', flat=True)
         )
-        
-        random_users = random.sample(users_without_responses[:-10], min(3, len(users_without_responses[:-10])))
+        users_without_responses_list = list(users_without_responses)  # Convert queryset to list
+        num_users = len(users_without_responses_list)
+        random_users = None
 
+        # If there are fewer than 10 users, slice accordingly
+        if num_users > 10:
+            random_users = random.sample(users_without_responses_list[:num_users - 10], min(3, num_users - 10))
+        else:
+            random_users = random.sample(users_without_responses_list, min(3, num_users))
+        
         for username in random_users:
             account = Account.objects.filter(igname=username).latest('created_at')
             account.question_asked = True
