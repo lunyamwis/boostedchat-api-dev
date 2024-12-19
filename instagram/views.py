@@ -1617,7 +1617,22 @@ class DMViewset(viewsets.ModelViewSet):
                 response = requests.post(generate_response_endpoint, data=data)
                 time.sleep(120)
                 if response.status_code in [200,201]:
-                    print("Successfully set outreach time for compliment and will send at appropriate time")
+                    try:
+                        celery_url = f"https://api.booksy.us.boostedchat.com/v1/instagram/celery-task-status/{response.json().get('task_id')}/"
+                        celery_response = requests.get(celery_url)
+                        if celery_response.status_code == 200:
+                            message = celery_response.json().get('result').get('text')
+                            salesrep = SalesRep.objects.filter(available=True).latest('created_at')
+                            try:
+                                text_data = {"message": message, "username_to": account.igname, "username_from": salesrep.ig_username}
+                                text_response = requests.post(settings.MQTT_BASE_URL+"/send-message", data=json.dumps(text_data))
+                                if text_response.status_code == 200:
+                                    print(f"Message sent to {account.igname}")
+                            except Exception as err:
+                                print(err)
+                    except Exception as err:
+                        print(err)
+                    
             except Exception as err:
                 print(err)
 
@@ -1761,7 +1776,7 @@ class DMViewset(viewsets.ModelViewSet):
 
         return Response(serializer.data)
 
-
+    
     def has_client_responded(self, request, *args, **kwargs):
         date_threshold = timezone.now() - timezone.timedelta(days=30)
         last_message_subquery = (
