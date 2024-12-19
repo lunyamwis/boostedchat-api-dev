@@ -1615,7 +1615,7 @@ class DMViewset(viewsets.ModelViewSet):
             .values_list('igname', flat=True)
         )
         
-        random_users = random.sample(users_without_responses, min(3, len(users_without_responses)))
+        random_users = random.sample(users_without_responses[:-10], min(3, len(users_without_responses[:-10])))
 
         for username in random_users:
             account = Account.objects.filter(igname=username).latest('created_at')
