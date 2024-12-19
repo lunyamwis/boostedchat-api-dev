@@ -1585,6 +1585,11 @@ class DMViewset(viewsets.ModelViewSet):
             .filter(thread=OuterRef('thread'))
             .order_by('-sent_on')
         )
+        latest_accounts_subquery = (
+            Account.objects
+            .filter(igname=OuterRef('igname'))  # Match the igname of the outer query
+            .order_by('-created_at')  # Order by created_at descending
+        )
         users_without_responses = (
             Account.objects
             .filter(
@@ -1604,6 +1609,9 @@ class DMViewset(viewsets.ModelViewSet):
                 Q(client_message_count__gt=0) |  # Include users with client messages
                 Q(last_message_sent_by_robot='Robot')  # Or where the last message was sent by Robot
             )
+            .filter(
+                created_at=Subquery(latest_accounts_subquery.values('created_at')[:1])  # Ensure we only get the latest account per igname
+            )
             .values_list('igname', flat=True)
         )
 
@@ -1621,7 +1629,7 @@ class DMViewset(viewsets.ModelViewSet):
                     response = requests.post(generate_response_endpoint, json=data)  # Use json parameter for proper content-type
                     
                     if response.status_code in [200, 201]:
-                        task_id = response.json().get('task_id')
+                        task_id = response.json()['task_id']
                         if task_id:
                             # Polling for task completion
                             celery_url = f"https://api.booksy.us.boostedchat.com/v1/instagram/celery-task-status/{task_id}/"
@@ -1630,10 +1638,12 @@ class DMViewset(viewsets.ModelViewSet):
 
                                 if celery_response.status_code == 200:
                                     print(f"Async Response: {celery_response.json()}")
-                                    task_status = celery_response.json().get('state ')
+                                    
+                                    
+                                    task_status = celery_response.json()['state']
                                     print(f"Status: {task_status}")
                                     if task_status == 'SUCCESS':
-                                        message = celery_response.json().get('result').get('generated_comment')
+                                        message = celery_response.json()['result']['generated_comment']
                                         salesrep = SalesRep.objects.filter(available=True).latest('created_at')
                                         text_data = {
                                             "message": message,
@@ -1806,10 +1816,16 @@ class DMViewset(viewsets.ModelViewSet):
             .filter(thread=OuterRef('thread'))
             .order_by('-sent_on')
         )
+        latest_accounts_subquery = (
+            Account.objects
+            .filter(igname=OuterRef('igname'))  # Match the igname of the outer query
+            .order_by('-created_at')  # Order by created_at descending
+        )
         users_without_responses = (
             Account.objects
             .filter(
                 qualified=True,
+                question_asked=False,
                 status__name='sent_compliment',
                 created_at__gte=date_threshold  # Filter for accounts created in the last 30 days
             )
@@ -1824,9 +1840,11 @@ class DMViewset(viewsets.ModelViewSet):
                 Q(client_message_count__gt=0) |  # Include users with client messages
                 Q(last_message_sent_by_robot='Robot')  # Or where the last message was sent by Robot
             )
+            .filter(
+                created_at=Subquery(latest_accounts_subquery.values('created_at')[:1])  # Ensure we only get the latest account per igname
+            )
             .values_list('igname', flat=True)
         )
-
 
         if len(users_without_responses) == 0:
             return Response({"has_responded":True}, status=status.HTTP_200_OK)
