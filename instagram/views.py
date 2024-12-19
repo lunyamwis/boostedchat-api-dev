@@ -1626,7 +1626,7 @@ class DMViewset(viewsets.ModelViewSet):
                         while True:
                             celery_response = requests.get(celery_url)
                             if celery_response.status_code == 200:
-                                task_status = celery_response.json().get('status')
+                                task_status = celery_response.json().get('state ')
                                 print(task_status)
                                 if task_status == 'SUCCESS':
                                     message = celery_response.json().get('result').get('text')
