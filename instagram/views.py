@@ -1615,7 +1615,7 @@ class DMViewset(viewsets.ModelViewSet):
             .values_list('igname', flat=True)
         )
 
-        for username in users_without_responses[len(users_without_responses)-3:]:
+        for username in users_without_responses[:3]:
             account = Account.objects.filter(igname=username).latest('created_at')
             account.question_asked = True
             account.save()
