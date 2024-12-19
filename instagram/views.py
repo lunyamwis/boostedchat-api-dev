@@ -1611,45 +1611,51 @@ class DMViewset(viewsets.ModelViewSet):
             account = Account.objects.filter(igname=username).latest('created_at')
             account.question_asked = True
             account.save()
-            thread = account.thread_set.latest('created_at')
-            generate_response_endpoint = f"https://api.booksy.us.boostedchat.com/v1/instagram/dflow/{thread.thread_id}/generate-response/"
-            
-            try:
-                data = {"message": ""}
-                response = requests.post(generate_response_endpoint, json=data)  # Use json parameter for proper content-type
-                
-                if response.status_code in [200, 201]:
-                    task_id = response.json().get('task_id')
-                    if task_id:
-                        # Polling for task completion
-                        celery_url = f"https://api.booksy.us.boostedchat.com/v1/instagram/celery-task-status/{task_id}/"
-                        while True:
-                            celery_response = requests.get(celery_url)
-                            if celery_response.status_code == 200:
-                                task_status = celery_response.json().get('state ')
-                                print(task_status)
-                                if task_status == 'SUCCESS':
-                                    message = celery_response.json().get('result').get('generated_comment')
-                                    salesrep = SalesRep.objects.filter(available=True).latest('created_at')
-                                    text_data = {
-                                        "message": message,
-                                        "username_to": account.igname,
-                                        "username_from": salesrep.ig_username
-                                    }
-                                    text_response = requests.post(settings.MQTT_BASE_URL + "/send-message", json=text_data)
-                                    if text_response.status_code == 200:
-                                        print(f"Message sent to {account.igname}")
-                                    break  # Exit loop after successful message sending
-                                elif task_status == 'FAILURE':
-                                    print(f"Task {task_id} failed.")
-                                    break  # Exit loop on failure
-                            else:
-                                print(f"Failed to get task status: {celery_response.status_code}")
-                            
-                            time.sleep(10)  # Wait before polling again (adjust as necessary)
+            if account.thread_set.exists():
+                thread = account.thread_set.latest('created_at')
 
-            except Exception as err:
-                print(err)
+                generate_response_endpoint = f"https://api.booksy.us.boostedchat.com/v1/instagram/dflow/{thread.thread_id}/generate-response/"
+                
+                try:
+                    data = {"message": ""}
+                    response = requests.post(generate_response_endpoint, json=data)  # Use json parameter for proper content-type
+                    
+                    if response.status_code in [200, 201]:
+                        task_id = response.json().get('task_id')
+                        if task_id:
+                            # Polling for task completion
+                            celery_url = f"https://api.booksy.us.boostedchat.com/v1/instagram/celery-task-status/{task_id}/"
+                            while True:
+                                celery_response = requests.get(celery_url)
+
+                                if celery_response.status_code == 200:
+                                    print(celery_response.json())
+                                    task_status = celery_response.json().get('state ')
+                                    print(task_status)
+                                    if task_status == 'SUCCESS':
+                                        message = celery_response.json().get('result').get('generated_comment')
+                                        salesrep = SalesRep.objects.filter(available=True).latest('created_at')
+                                        text_data = {
+                                            "message": message,
+                                            "username_to": account.igname,
+                                            "username_from": salesrep.ig_username
+                                        }
+                                        text_response = requests.post(settings.MQTT_BASE_URL + "/send-message", json=text_data)
+                                        if text_response.status_code == 200:
+                                            print(f"Message sent to {account.igname}")
+                                        break  # Exit loop after successful message sending
+                                    elif task_status == 'FAILURE':
+                                        print(f"Task {task_id} failed.")
+                                        break  # Exit loop on failure
+                                else:
+                                    print(f"Failed to get task status: {celery_response.status_code}")
+                                
+                                time.sleep(10)  # Wait before polling again (adjust as necessary)
+
+                except Exception as err:
+                    print(err)
+            else:
+                print(f"No thread found for {username}")
 
         return Response({"message": "Followup responses generated successfully"}, status=status.HTTP_200_OK)
 
