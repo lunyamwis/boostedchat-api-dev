@@ -1629,7 +1629,7 @@ class DMViewset(viewsets.ModelViewSet):
                                 task_status = celery_response.json().get('state ')
                                 print(task_status)
                                 if task_status == 'SUCCESS':
-                                    message = celery_response.json().get('result').get('text')
+                                    message = celery_response.json().get('result').get('generated_comment')
                                     salesrep = SalesRep.objects.filter(available=True).latest('created_at')
                                     text_data = {
                                         "message": message,
