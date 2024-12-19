@@ -1587,6 +1587,7 @@ class DMViewset(viewsets.ModelViewSet):
             Account.objects
             .filter(
                 qualified=True,
+                question_asked=False,
                 status__name='sent_compliment',
                 created_at__gte=date_threshold  # Filter for accounts created in the last 30 days
             )
@@ -1603,13 +1604,17 @@ class DMViewset(viewsets.ModelViewSet):
             )
             .values_list('igname', flat=True)
         )
-        for username in users_without_responses:
+
+        for username in users_without_responses[len(users_without_responses)-3:]:
             account = Account.objects.filter(igname=username).latest('created_at')
+            account.question_asked = True
+            account.save()
             thread = account.thread_set.latest('created_at')
             generate_response_endpoint = f"https://api.booksy.us.boostedchat.com/v1/instagram/dflow/{thread.thread_id}/generate-response/"
             try:
                 data = {"message": ""}
                 response = requests.post(generate_response_endpoint, data=data)
+                time.sleep(120)
                 if response.status_code in [200,201]:
                     print("Successfully set outreach time for compliment and will send at appropriate time")
             except Exception as err:
