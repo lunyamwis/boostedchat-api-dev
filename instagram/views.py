@@ -1629,9 +1629,9 @@ class DMViewset(viewsets.ModelViewSet):
                                 celery_response = requests.get(celery_url)
 
                                 if celery_response.status_code == 200:
-                                    print(celery_response.json())
+                                    print(f"Async Response: {celery_response.json()}")
                                     task_status = celery_response.json().get('state ')
-                                    print(task_status)
+                                    print(f"Status: {task_status}")
                                     if task_status == 'SUCCESS':
                                         message = celery_response.json().get('result').get('generated_comment')
                                         salesrep = SalesRep.objects.filter(available=True).latest('created_at')
