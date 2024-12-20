@@ -589,7 +589,7 @@ def generate_response_automatic(query, thread_id):
             "text": query,
             "success": True,
             "username": thread.account.igname,
-            "generated_comment": "assigned_human",
+            "generated_comment": "",
             "assigned_to": "Human",
             "status":200
         }
