@@ -13,6 +13,7 @@ from auditlog.models import LogEntry
 from celery.result import AsyncResult
 from datetime import datetime, timezone as timezone2
 from instagrapi.exceptions import UserNotFound
+from rest_framework.views import APIView
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -1892,6 +1893,62 @@ class DMViewset(viewsets.ModelViewSet):
                     
         return Response({"message":"webhook received"})
         
+
+class Reschedule(APIView):
+    def post(self, request, *args, **kwargs):
+        #reassign time slots
+        times = OutreachTime.objects.filter(time_slot__gte=timezone.now()-timezone.timedelta(days=1))
+        for time in times:
+            time.account_to_be_assigned = None
+            time.save()
+        #reassign tasks
+
+        # Step 1: Fetch tasks
+        tasks = PeriodicTask.objects.filter(
+            Q(crontab__day_of_month__gte=timezone.now().day) &
+            Q(crontab__month_of_year=timezone.now().month) &
+            Q(enabled=True)
+        )
+
+        # Step 2: Initialize variables for scheduling
+        batch_size = 40
+        current_date = timezone.now()
+        current_day = current_date.day
+        current_month = current_date.month
+
+        # Step 3: Schedule tasks in batches
+        for i in range(0, len(tasks), batch_size):
+            # Get the current batch of tasks
+            batch = tasks[i:i + batch_size]
+            
+            # Calculate the scheduled day for this batch
+            scheduled_day = current_day + (i // batch_size)
+            
+            # Handle month overflow if necessary
+            if scheduled_day > 31:
+                scheduled_day -= 31
+                current_month += 1
+            
+            # If month exceeds December, reset to January and increment year if needed
+            if current_month > 12:
+                current_month = 1
+                # Increment year if necessary (not shown here, but you can track years as needed)
+
+            for task in batch:
+                sched = CrontabSchedule.objects.get(id=task.crontab.id)
+                
+                # Update the schedule with the new day and month
+                sched.day_of_month = str(scheduled_day)
+                sched.month_of_year = str(current_month)
+                
+                # Save the updated schedule
+                sched.save()
+
+        print("Tasks have been scheduled successfully.")
+    
+        return Response({"message":"Tasks have been scheduled successfully."})
+
+
 
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()

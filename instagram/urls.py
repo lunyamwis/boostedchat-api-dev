@@ -13,6 +13,7 @@ from .views import (
     VideoViewSet,
     OutSourcedViewSet,
     update_thread_details,
+    Reschedule,
 )
 
 router = DefaultRouter()
@@ -99,6 +100,9 @@ urlpatterns = [
         'update-thread-details/',
         update_thread_details
     )
-
+    path(
+        'reschedule/',
+        Reschedule.as_view(),
+    )
 ]
 
