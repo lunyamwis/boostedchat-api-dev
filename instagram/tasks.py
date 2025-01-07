@@ -709,7 +709,7 @@ def reschedule():
     # Step 1: Fetch tasks
     tasks = PeriodicTask.objects.filter(
         Q(crontab__day_of_month__gte=timezone.now().day) &
-        Q(crontab__month_of_year=timezone.now().month) &
+        Q(crontab__month_of_year__gte=timezone.now().month) &
         Q(enabled=True)
     )
 
