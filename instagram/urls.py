@@ -99,7 +99,7 @@ urlpatterns = [
     path(
         'update-thread-details/',
         update_thread_details
-    )
+    ),
     path(
         'reschedule/',
         Reschedule.as_view(),
