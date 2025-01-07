@@ -40,7 +40,7 @@ from sales_rep.models import SalesRep
 
 from .utils import generate_time_slots
 
-from .tasks import send_first_compliment,generate_response_automatic
+from .tasks import send_first_compliment,generate_response_automatic,reschedule
 from .helpers.init_db import init_db
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed
 from .serializers import (
@@ -1896,53 +1896,7 @@ class DMViewset(viewsets.ModelViewSet):
 
 class Reschedule(APIView):
     def post(self, request, *args, **kwargs):
-        #reassign time slots
-        times = OutreachTime.objects.filter(time_slot__gte=timezone.now()-timezone.timedelta(days=1))
-        for time in times:
-            time.account_to_be_assigned = None
-            time.save()
-        #reassign tasks
-
-        # Step 1: Fetch tasks
-        tasks = PeriodicTask.objects.filter(
-            Q(crontab__day_of_month__gte=timezone.now().day) &
-            Q(crontab__month_of_year=timezone.now().month) &
-            Q(enabled=True)
-        )
-
-        # Step 2: Initialize variables for scheduling
-        batch_size = 40
-        current_date = timezone.now()
-        current_day = current_date.day
-        current_month = current_date.month
-
-        # Step 3: Schedule tasks in batches
-        for i in range(0, len(tasks), batch_size):
-            # Get the current batch of tasks
-            batch = tasks[i:i + batch_size]
-            
-            # Calculate the scheduled day for this batch
-            scheduled_day = current_day + (i // batch_size)
-            
-            # Handle month overflow if necessary
-            if scheduled_day > 31:
-                scheduled_day -= 31
-                current_month += 1
-            
-            # If month exceeds December, reset to January and increment year if needed
-            if current_month > 12:
-                current_month = 1
-                # Increment year if necessary (not shown here, but you can track years as needed)
-
-            for task in batch:
-                sched = CrontabSchedule.objects.get(id=task.crontab.id)
-                
-                # Update the schedule with the new day and month
-                sched.day_of_month = str(scheduled_day)
-                sched.month_of_year = str(current_month)
-                
-                # Save the updated schedule
-                sched.save()
+        reschedule.delay()
 
         print("Tasks have been scheduled successfully.")
     

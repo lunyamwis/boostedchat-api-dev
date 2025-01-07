@@ -11,8 +11,8 @@ from django_celery_beat.models import PeriodicTask
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.utils import timezone
-
-from instagram.models import Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount
+from django_celery_beat.models import PeriodicTask, CrontabSchedule
+from instagram.models import Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount, OutreachTime
 from sales_rep.models import SalesRep
 from dialogflow.helpers.get_prompt_responses import get_gpt_response
 
@@ -504,6 +504,7 @@ def send_report():
 
 
 
+
 @shared_task
 def generate_response_automatic(query, thread_id):
     thread = Thread.objects.filter(thread_id=thread_id).latest('created_at')
@@ -694,3 +695,54 @@ def assign_salesrepresentative():
         print("Successfully set outreach time for compliment and will send at appropriate time")
 
     return {"message":"Successfully assigned salesrep","status": 200}
+
+
+@shared_task()
+def reschedule():
+    #reassign time slots
+    times = OutreachTime.objects.filter(time_slot__gte=timezone.now()-timezone.timedelta(days=1))
+    for time in times:
+        time.account_to_be_assigned = None
+        time.save()
+    #reassign tasks
+
+    # Step 1: Fetch tasks
+    tasks = PeriodicTask.objects.filter(
+        Q(crontab__day_of_month__gte=timezone.now().day) &
+        Q(crontab__month_of_year=timezone.now().month) &
+        Q(enabled=True)
+    )
+
+    # Step 2: Initialize variables for scheduling
+    batch_size = 40
+    current_date = timezone.now()
+    current_day = current_date.day
+    current_month = current_date.month
+
+    # Step 3: Schedule tasks in batches
+    for i in range(0, len(tasks), batch_size):
+        # Get the current batch of tasks
+        batch = tasks[i:i + batch_size]
+        
+        # Calculate the scheduled day for this batch
+        scheduled_day = current_day + (i // batch_size)
+        
+        # Handle month overflow if necessary
+        if scheduled_day > 31:
+            scheduled_day -= 31
+            current_month += 1
+        
+        # If month exceeds December, reset to January and increment year if needed
+        if current_month > 12:
+            current_month = 1
+            # Increment year if necessary (not shown here, but you can track years as needed)
+
+        for task in batch:
+            sched = CrontabSchedule.objects.get(id=task.crontab.id)
+            
+            # Update the schedule with the new day and month
+            sched.day_of_month = str(scheduled_day)
+            sched.month_of_year = str(current_month)
+            
+            # Save the updated schedule
+            sched.save()
