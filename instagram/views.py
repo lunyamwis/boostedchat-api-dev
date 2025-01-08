@@ -4,6 +4,7 @@ import io
 import os
 import logging
 import uuid
+import time
 import json
 import requests
 import random
@@ -12,6 +13,7 @@ from auditlog.models import LogEntry
 from celery.result import AsyncResult
 from datetime import datetime, timezone as timezone2
 from instagrapi.exceptions import UserNotFound
+from rest_framework.views import APIView
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -38,7 +40,7 @@ from sales_rep.models import SalesRep
 
 from .utils import generate_time_slots
 
-from .tasks import send_first_compliment,generate_response_automatic
+from .tasks import send_first_compliment,generate_response_automatic,reschedule
 from .helpers.init_db import init_db
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed
 from .serializers import (
@@ -1579,6 +1581,7 @@ class DMViewset(viewsets.ModelViewSet):
         else:
             return Response({'message': 'accounts do not exist'})
 
+
     def generate_followup_response(self, request, *args, **kwargs):
         date_threshold = timezone.now() - timezone.timedelta(days=30)
         last_message_subquery = (
@@ -1586,10 +1589,16 @@ class DMViewset(viewsets.ModelViewSet):
             .filter(thread=OuterRef('thread'))
             .order_by('-sent_on')
         )
+        latest_accounts_subquery = (
+            Account.objects
+            .filter(igname=OuterRef('igname'))  # Match the igname of the outer query
+            .order_by('-created_at')  # Order by created_at descending
+        )
         users_without_responses = (
             Account.objects
             .filter(
                 qualified=True,
+                question_asked=False,
                 status__name='sent_compliment',
                 created_at__gte=date_threshold  # Filter for accounts created in the last 30 days
             )
@@ -1604,21 +1613,76 @@ class DMViewset(viewsets.ModelViewSet):
                 Q(client_message_count__gt=0) |  # Include users with client messages
                 Q(last_message_sent_by_robot='Robot')  # Or where the last message was sent by Robot
             )
+            .filter(
+                created_at=Subquery(latest_accounts_subquery.values('created_at')[:1])  # Ensure we only get the latest account per igname
+            )
             .values_list('igname', flat=True)
         )
-        for username in users_without_responses:
+        users_without_responses_list = list(users_without_responses)  # Convert queryset to list
+        num_users = len(users_without_responses_list)
+        random_users = None
+
+        # If there are fewer than 10 users, slice accordingly
+        if num_users > 10:
+            random_users = random.sample(users_without_responses_list[:num_users - 10], min(3, num_users - 10))
+        else:
+            random_users = random.sample(users_without_responses_list, min(3, num_users))
+        
+        for username in random_users:
             account = Account.objects.filter(igname=username).latest('created_at')
-            thread = account.thread_set.latest('created_at')
-            generate_response_endpoint = f"https://api.booksy.us.boostedchat.com/v1/instagram/dflow/{thread.thread_id}/generate-response/"
-            try:
-                data = {"message": ""}
-                response = requests.post(generate_response_endpoint, data=data)
-                if response.status_code in [200,201]:
-                    print("Successfully set outreach time for compliment and will send at appropriate time")
-            except Exception as err:
-                print(err)
+            account.question_asked = True
+            account.save()
+            if account.thread_set.exists():
+                thread = account.thread_set.latest('created_at')
+
+                generate_response_endpoint = f"https://api.booksy.us.boostedchat.com/v1/instagram/dflow/{thread.thread_id}/generate-response/"
+                
+                try:
+                    data = {"message": ""}
+                    response = requests.post(generate_response_endpoint, json=data)  # Use json parameter for proper content-type
+                    
+                    if response.status_code in [200, 201]:
+                        task_id = response.json()['task_id']
+                        if task_id:
+                            # Polling for task completion
+                            celery_url = f"https://api.booksy.us.boostedchat.com/v1/instagram/celery-task-status/{task_id}/"
+                            while True:
+                                celery_response = requests.get(celery_url)
+
+                                if celery_response.status_code == 200:
+                                    print(f"Async Response: {celery_response.json()}")
+                                    
+                                    
+                                    task_status = celery_response.json()['state']
+                                    print(f"Status: {task_status}")
+                                    if task_status == 'SUCCESS':
+                                        message = celery_response.json()['result']['generated_comment']
+                                        salesrep = SalesRep.objects.filter(available=True).latest('created_at')
+                                        text_data = {
+                                            "message": message,
+                                            "username_to": account.igname,
+                                            "username_from": salesrep.ig_username
+                                        }
+                                        text_response = requests.post(settings.MQTT_BASE_URL + "/send-message", json=text_data)
+                                        if text_response.status_code == 200:
+                                            print(f"Message sent to {account.igname}")
+                                            time.sleep(100)  # Wait before sending the next message
+                                        break  # Exit loop after successful message sending
+                                    elif task_status == 'FAILURE':
+                                        print(f"Task {task_id} failed.")
+                                        break  # Exit loop on failure
+                                else:
+                                    print(f"Failed to get task status: {celery_response.status_code}")
+                                
+                                time.sleep(10)  # Wait before polling again (adjust as necessary)
+
+                except Exception as err:
+                    print(err)
+            else:
+                print(f"No thread found for {username}")
 
         return Response({"message": "Followup responses generated successfully"}, status=status.HTTP_200_OK)
+
     
     def generate_response(self, request, *args, **kwargs):
         thread = Thread.objects.filter(thread_id=kwargs.get('thread_id')).latest('created_at')
@@ -1758,7 +1822,7 @@ class DMViewset(viewsets.ModelViewSet):
 
         return Response(serializer.data)
 
-
+    
     def has_client_responded(self, request, *args, **kwargs):
         date_threshold = timezone.now() - timezone.timedelta(days=30)
         last_message_subquery = (
@@ -1766,10 +1830,16 @@ class DMViewset(viewsets.ModelViewSet):
             .filter(thread=OuterRef('thread'))
             .order_by('-sent_on')
         )
+        latest_accounts_subquery = (
+            Account.objects
+            .filter(igname=OuterRef('igname'))  # Match the igname of the outer query
+            .order_by('-created_at')  # Order by created_at descending
+        )
         users_without_responses = (
             Account.objects
             .filter(
                 qualified=True,
+                question_asked=False,
                 status__name='sent_compliment',
                 created_at__gte=date_threshold  # Filter for accounts created in the last 30 days
             )
@@ -1784,9 +1854,11 @@ class DMViewset(viewsets.ModelViewSet):
                 Q(client_message_count__gt=0) |  # Include users with client messages
                 Q(last_message_sent_by_robot='Robot')  # Or where the last message was sent by Robot
             )
+            .filter(
+                created_at=Subquery(latest_accounts_subquery.values('created_at')[:1])  # Ensure we only get the latest account per igname
+            )
             .values_list('igname', flat=True)
         )
-
 
         if len(users_without_responses) == 0:
             return Response({"has_responded":True}, status=status.HTTP_200_OK)
@@ -1824,6 +1896,16 @@ class DMViewset(viewsets.ModelViewSet):
                     
         return Response({"message":"webhook received"})
         
+
+class Reschedule(APIView):
+    def post(self, request, *args, **kwargs):
+        reschedule.delay()
+
+        print("Tasks have been scheduled successfully.")
+    
+        return Response({"message":"Tasks have been scheduled successfully."})
+
+
 
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()

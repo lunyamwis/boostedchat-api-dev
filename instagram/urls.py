@@ -13,6 +13,7 @@ from .views import (
     VideoViewSet,
     OutSourcedViewSet,
     update_thread_details,
+    Reschedule,
 )
 
 router = DefaultRouter()
@@ -77,7 +78,7 @@ urlpatterns = [
     ),
     path(
         'has-client-responded/',
-        DMViewset.as_view({'post': 'has_client_responded'}),
+        DMViewset.as_view({'get': 'has_client_responded'}),
         name='has_client_responded',
     ),
     path(
@@ -98,7 +99,10 @@ urlpatterns = [
     path(
         'update-thread-details/',
         update_thread_details
+    ),
+    path(
+        'reschedule/',
+        Reschedule.as_view(),
     )
-
 ]
 
