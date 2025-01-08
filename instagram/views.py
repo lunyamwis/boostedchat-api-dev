@@ -219,6 +219,8 @@ class AccountViewSet(viewsets.ModelViewSet):
         try:
             # reset status
             account.status = None
+            account.status_param = 'Prequalified'
+            account.assigned_to = 'Robot'
             account.save()
             thread = account.thread_set.latest('created_at')
             thread.message_set.clear()
@@ -584,6 +586,85 @@ class AccountViewSet(viewsets.ModelViewSet):
         else:
             return Response({"error": True})
 
+    @action(detail=False, methods=["get"], url_path="get-connected-accounts")
+    def get_connected_accounts(self, request, pk=None):
+        response = requests.get(settings.MQTT_BASE_URL+"/accounts/connected")
+        print(response.status_code)
+        
+        if response.status_code == 200:
+            print(json.loads(response.content))
+            print(response.json)
+            
+            return Response(
+                    {
+                        "status": status.HTTP_200_OK,
+                        "mqtt_running": True,
+                        "mqtt_connected": True,
+                        "connected_accounts": json.loads(response.content),
+                        "success": True,
+                    }
+                )
+        else:
+            return Response(
+                    {
+                        "status": response.status_code,
+                        "mqtt_running": False,
+                        "mqtt_connected": False,
+                        "connected_accounts": [],
+                        "success": True,
+                    }
+                )
+            
+    @action(detail=False, methods=["get"], url_path="get-loggedin-accounts")
+    def get_loggedin_accounts(self, request, pk=None):
+        response = requests.get(settings.MQTT_BASE_URL+"/accounts/loggedin")
+        
+        if response.status_code == 200:
+            
+            return Response(
+                    {
+                        "status": status.HTTP_200_OK,
+                        "mqtt_running": True,
+                        "mqtt_connected": True,
+                        "connected_accounts": json.loads(response.content),
+                        "success": True,
+                    }
+                )
+        else:
+            return Response(
+                    {
+                        "status": response.status_code,
+                        "mqtt_running": False,
+                        "mqtt_connected": False,
+                        "connected_accounts": [],
+                        "success": True,
+                    }
+                )
+            
+    @action(detail=False, methods=["get"], url_path="check-mqtt-health")
+    def get_mqtt_heath(self, request, pk=None):
+        response = requests.get(settings.MQTT_BASE_URL+"/health")
+        
+        if response.status_code == 200:
+             return Response(
+                    {
+                        "status": status.HTTP_200_OK,
+                        "mqtt_running": True,
+                        "mqtt_connected": True,
+                        "success": True,
+                    }
+                )
+        else:
+            return Response(
+                    {
+                        "status": response.status_code,
+                        "mqtt_running": False,
+                        "mqtt_connected": False,
+                        "success": True,
+                    }
+                )
+            
+            
 
 
 class HashTagViewSet(viewsets.ModelViewSet):
@@ -1383,7 +1464,7 @@ class DMViewset(viewsets.ModelViewSet):
 
         try:
         # Iterate through the messages
-            for message in messages:
+            for message in  messages:
                 user_id = message.get("userId")
                 content = message.get("content")
                 message_id = message.get("messageId")
