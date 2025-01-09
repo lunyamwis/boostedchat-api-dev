@@ -176,6 +176,8 @@ class AccountViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(status_param=status_param.strip())
                 # print(queryset.first.status_param)
                 # print("After filter",queryset.count())
+        if search_query:# is not None:
+            queryset = queryset.filter(igname__icontains=search_query)
             
         result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
         
