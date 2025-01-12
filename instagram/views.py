@@ -201,7 +201,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 "last_message_sent_at": account.last_message_sent_at,
                 "last_message_sent_by": account.last_message_sent_by,
                 "stage": "Null" if account.status_param is None else ("Blank" if account.status_param == "" else account.status_param),
-                "dddd": "kjh"
+
 
             }
             accounts.append(account_)
