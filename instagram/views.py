@@ -667,6 +667,31 @@ class AccountViewSet(viewsets.ModelViewSet):
                 )
             
             
+    @action(detail=False, methods=["get"], url_path="get-comments")
+    def get_mqtt_comments(self, request, pk=None):
+        status_param = request.GET.get('username')
+        media_id = request.GET.get('media_id')
+        data = {"username_from": 'denn_mokaya', "media_id": '1263679849772992148'}
+        response = requests.post(settings.MQTT_BASE_URL+"/fetchComments", data=json.dumps(data))
+        print("hdhdhdh")
+        if response.status_code == 200:
+             return Response(
+                    {
+                        "status": status.HTTP_200_OK,
+                        "data": json.loads(response.content),
+                        "success": True,
+                    }
+                )
+        else:
+            return Response(
+                    {
+                        "status": response.status_code,
+                        "data": [],
+                        "success": False,
+                    }
+                )
+            
+            
 
 
 class HashTagViewSet(viewsets.ModelViewSet):
