@@ -44,7 +44,7 @@ def get_sales_rep_for_account(username):
     account = get_account(username)
     if account:
         if account.salesrep_set.exists():
-            salesrep = account.salesrep_set.first()
+            salesrep = account.salesrep_set.latest('created_at')
         
     return salesrep
 
