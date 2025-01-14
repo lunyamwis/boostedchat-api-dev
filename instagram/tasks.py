@@ -707,14 +707,10 @@ def reschedule():
     #reassign tasks
 
     # Step 1: Fetch tasks
-    tasks = PeriodicTask.objects.filter(
-        Q(crontab__day_of_month__gte=timezone.now().day) &
-        Q(crontab__month_of_year=timezone.now().month) &
-        Q(enabled=True)
-    )
+    batch_size = 40  
+    tasks = PeriodicTask.objects.filter(enabled=True).order_by('-id')[:batch_size*2]
 
     # Step 2: Initialize variables for scheduling
-    batch_size = 40
     current_date = timezone.now()
     current_day = current_date.day
     current_month = current_date.month
