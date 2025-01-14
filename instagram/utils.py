@@ -36,12 +36,26 @@ def get_account(username):
         print(error)
     return account
 
+def get_account_for_salesrep(username):
+    account = None
+    try:
+        accounts = Account.objects.filter(igname__icontains=''.join(username).split('-')[0])
+        account = accounts.latest('created_at')
+        if account.salesrep_set.exists():
+            account = account
+        else:
+            assign_salesrep(account)
+            
+
+    except Exception as error:
+        print(error)
+    return account
 
 
 def get_sales_rep_for_account(username):
     salesrep = None
     username = username
-    account = get_account(username)
+    account = get_account_for_salesrep(username)
     if account:
         if account.salesrep_set.exists():
             salesrep = account.salesrep_set.latest('created_at')
