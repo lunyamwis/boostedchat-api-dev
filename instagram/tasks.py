@@ -622,7 +622,7 @@ def assign_salesrepresentative():
     unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
 
     # Get a list of existing usernames to exclude
-    existing_usernames = Account.objects.values_list('username', flat=True)
+    existing_usernames = Account.objects.values_list('igname', flat=True)
 
     # Create the word filters
     word_filters = Q()
