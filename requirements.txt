@@ -23,7 +23,7 @@ google-auth-oauthlib
 gunicorn
 instagrapi
 ipython
-lunyamwi
+lunyamwi==1.0.12
 mailchimp-marketing
 openpyxl
 pandas
