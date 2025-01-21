@@ -8,6 +8,7 @@ from dialogflow.helpers.conversations import get_conversation_so_far
 from django.core.mail import send_mail
 from instagram.models import OutSourced
 
+from lunyamwi import get_agent, setup_agent
 
 def get_status_number(val, pattern=r"\d+"):
     list_of_values = re.findall(pattern=pattern, string=val)
@@ -82,7 +83,6 @@ def get_gpt_response(account, message, thread_id=None):
     except Exception as error:
         print(error)
 
-    url = os.getenv("SCRIPTING_URL") + '/getAgent/'
     conversations = None
     if message:
         conversations = get_conversation_so_far(account.thread_set.latest('created_at').thread_id)
@@ -97,8 +97,7 @@ def get_gpt_response(account, message, thread_id=None):
         "active_stage": account.status_param if account.status_param else ""
     }
     print(get_agent_payload)
-    agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
-    agent_json_response = agent_response.json()
+    agent_json_response= get_agent(payload=get_agent_payload)
     print(agent_json_response)
     # print(agent_json_response)
     # confirmed_problems = [
@@ -162,18 +161,11 @@ def get_gpt_response(account, message, thread_id=None):
     print(payload)
     print("********************************************message")
     print(message)
-    print("**********************************************url")
-    print(url)
-    url = os.getenv("SCRIPTING_URL") + '/agentSetup/'
-    print(url)
     # import pdb;pdb.set_trace()
-    resp = requests.post(url, data=json.dumps(payload),headers = {'Content-Type': 'application/json'})
+    response = setup_agent(payload=payload)
     print("**********************************************JSON")
-    print(resp)
-    print(url)
-    response = resp.json()
     # response = query_gpt(prompt=payload)
-    print(resp.json())
+    print(response)
     result = response.get('result')
     # Find the index of the opening quote after "text":
     try:

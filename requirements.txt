@@ -23,6 +23,7 @@ google-auth-oauthlib
 gunicorn
 instagrapi
 ipython
+lunyamwi
 mailchimp-marketing
 openpyxl
 pandas
