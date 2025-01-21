@@ -70,15 +70,22 @@ def sales_rep_is_logged_in(account, salesrep):
     return False
 
 def sales_rep_is_available(account):
-    salesrep = account.salesrep_set.first()
-    return salesrep.available
+    salesrep = account.salesrep_set.filter()
+    if salesrep.exists():
+        return salesrep.latest('created_at').available
+    else:
+        srep = SalesRep.objects.get(ig_username="barbersince98")
+        srep.instagram.add(account)
+        return srep.available
 
 def account_has_sales_rep(account):
     salesrep = account.salesrep_set.first()
     if salesrep is not None:
         return salesrep.ig_username
     else:
-        return False
+        srep = SalesRep.objects.get(ig_username="barbersince98")
+        srep.instagram.add(account)
+        return srep.ig_username
 
 def reschedule_last_enabled(salesrep):
     tasks = tasks_by_sales_rep("instagram.tasks.send_first_compliment", salesrep, "enabled", -1, 1, True)
@@ -295,8 +302,8 @@ def send_first_compliment(username, message, repeat=True):
     if not check_value:
         err_str = f"{username} has no sales rep assigned"
         outreachErrorLogger(account, None, err_str, 404, "ERROR", "Sales Rep", True) # reshedule_next
-        # outreachErrorLogger(err_str)
-        # raise Exception(err_str)
+        outreachErrorLogger(err_str)
+        raise Exception(err_str)
 
     
     account_sales_rep_ig_name = check_value
