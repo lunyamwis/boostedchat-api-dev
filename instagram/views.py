@@ -103,12 +103,46 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def create(self, request):
         print(request.data)
-        serializer = CommentSerializer(data=request.data)
+        title = request.data.get('title')
+        message = request.data.get('message')
+        media_id = request.data.get('actionParams', {}).get('media_id')
+        target_comment_id = request.data.get('actionParams', {}).get('target_comment_id')
+        collapse_key = request.data.get('collapseKey')
+        optional_avatar_url = request.data.get('optionalAvatarUrl')
+        push_id = request.data.get('pushId')
+        push_category = request.data.get('pushCategory')
+        intended_recipient_user_id = request.data.get('intendedRecipientUserId')
+        source_user_id = request.data.get('sourceUserId')
+
+        # Get or create account based on title
+        try:
+            account, created = Account.objects.get_or_create(igname=title)
+        except Exception as error:
+            print(error)
+
+        # Create a new comment instance
+        comment = Comment(
+            account=account,
+            message=message,
+            media_id=media_id,
+            target_comment_id=target_comment_id,
+            collapseKey=collapse_key,
+            optionalAvatarUrl=optional_avatar_url,
+            pushId=push_id,
+            pushCategory=push_category,
+            intendedRecipientUserId=intended_recipient_user_id,
+            sourceUserId=source_user_id
+        )
+
+        # Save the comment instance
+        serializer = CommentSerializer(comment)
 
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
 class AccountViewSet(viewsets.ModelViewSet):
     """
