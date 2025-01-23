@@ -100,6 +100,15 @@ class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.filter(account__isnull=False)
     serializer_class = CommentSerializer
     pagination_class = PaginationClass
+
+    def create(self, request):
+        print(request.data)
+        serializer = CommentSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class AccountViewSet(viewsets.ModelViewSet):
     """
