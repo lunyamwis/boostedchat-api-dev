@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Account, OutSourced, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, StatusCheck, OutSourced
+from .models import Account, Like, OutSourced, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, StatusCheck, OutSourced
 from django_celery_beat.models import PeriodicTask
 import ast
 # from rest_framework.utils.encoders import JSONEncoder
@@ -205,4 +205,17 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = "__all__"
         extra_kwargs = {"id": {"required": False, "allow_null": True},
-                        "sent_on": {"required": False, "allow_null": True}}        
+                        "sent_on": {"required": False, "allow_null": True}}   
+        
+        
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = '__all__'
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}     
+
+class LikeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Like
+        fields = '__all__'
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}  
