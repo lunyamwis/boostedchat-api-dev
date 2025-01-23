@@ -90,11 +90,6 @@ class GetSingleAccountSerializer(serializers.ModelSerializer):
         return data
 
 
-class CommentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Comment
-        fields = ["id", "comment_id", "text"]
-        extra_kwargs = {"id": {"required": False, "allow_null": True}}
 
 
 class HashTagSerializer(serializers.ModelSerializer):

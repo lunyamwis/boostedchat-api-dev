@@ -4,6 +4,7 @@ from django.urls import path,include
 from .views import (
     AccountViewSet,
     CommentViewSet,
+    LikeViewSet,
     DMViewset,
     HashTagViewSet,
     MessageViewSet,
@@ -20,6 +21,7 @@ router = DefaultRouter()
 router.register(r"outsourced",OutSourcedViewSet,basename="outsourced")
 router.register(r"account", AccountViewSet, basename="account")
 router.register(r"comment", CommentViewSet, basename="comment")
+router.register(r"like",LikeViewSet,basename="like")
 router.register(r"hashtag", HashTagViewSet, basename="hashtag")
 router.register(r"photo", PhotoViewSet, basename="photo")
 router.register(r"video", VideoViewSet, basename="video")

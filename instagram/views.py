@@ -42,12 +42,11 @@ from .utils import generate_time_slots
 
 from .tasks import send_first_compliment,generate_response_automatic,reschedule
 from .helpers.init_db import init_db
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed,Like,Comment
 from .serializers import (
     AccountSerializer,
     OutSourcedSerializer,
     AddContentSerializer,
-    CommentSerializer,
     HashTagSerializer,
     PhotoSerializer,
     ReelSerializer,
@@ -61,7 +60,9 @@ from .serializers import (
     SendManualMessageSerializer,
     GetAccountSerializer,
     GetSingleAccountSerializer,
-    ScheduleOutreachSerializer
+    ScheduleOutreachSerializer,
+    LikeSerializer,
+    CommentSerializer,
 )
 from django.db.models import Count, Case, When, IntegerField
 
@@ -79,6 +80,25 @@ class OutSourcedViewSet(viewsets.ModelViewSet):
     queryset = OutSourced.objects.filter(account__isnull=False)
     serializer_class = OutSourcedSerializer
     # import pdb;pdb.set_trace()
+    pagination_class = PaginationClass
+
+
+class LikeViewSet(viewsets.ModelViewSet):
+    """
+    A viewset that provides the standard actions
+    """
+
+    queryset = Like.objects.filter(account__isnull=False)
+    serializer_class = LikeSerializer
+    pagination_class = PaginationClass
+
+class CommentViewSet(viewsets.ModelViewSet):
+    """
+    A viewset that provides the standard actions
+    """
+
+    queryset = Comment.objects.filter(account__isnull=False)
+    serializer_class = CommentSerializer
     pagination_class = PaginationClass
     
 class AccountViewSet(viewsets.ModelViewSet):
@@ -1053,13 +1073,6 @@ class ReelViewSet(viewsets.ModelViewSet):
             return Response({"status_code": 500})
 
 
-class CommentViewSet(viewsets.ModelViewSet):
-    """
-    A viewset that provides the standard actions
-    """
-
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
 
 
 class StoryViewSet(viewsets.ModelViewSet):
