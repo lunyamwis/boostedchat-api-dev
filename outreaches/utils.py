@@ -283,6 +283,7 @@ def round_to_nearest_hour(dt):
 def outreach_time():
     try:
         url = settings.SCRAPPER_BASE_URL + '/instagram/schedulers/'
+        print(url)
         # Send a GET request to the URL and fetch the JSON response
         response = requests.get(url)
         data = response.json()

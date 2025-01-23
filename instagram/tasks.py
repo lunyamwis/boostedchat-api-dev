@@ -70,15 +70,22 @@ def sales_rep_is_logged_in(account, salesrep):
     return False
 
 def sales_rep_is_available(account):
-    salesrep = account.salesrep_set.first()
-    return salesrep.available
+    salesrep = account.salesrep_set.filter()
+    if salesrep.exists():
+        return salesrep.latest('created_at').available
+    else:
+        srep = SalesRep.objects.get(ig_username="barbersince98")
+        srep.instagram.add(account)
+        return srep.available
 
 def account_has_sales_rep(account):
     salesrep = account.salesrep_set.first()
     if salesrep is not None:
         return salesrep.ig_username
     else:
-        return False
+        srep = SalesRep.objects.get(ig_username="barbersince98")
+        srep.instagram.add(account)
+        return srep.ig_username
 
 def reschedule_last_enabled(salesrep):
     tasks = tasks_by_sales_rep("instagram.tasks.send_first_compliment", salesrep, "enabled", -1, 1, True)
@@ -295,8 +302,8 @@ def send_first_compliment(username, message, repeat=True):
     if not check_value:
         err_str = f"{username} has no sales rep assigned"
         outreachErrorLogger(account, None, err_str, 404, "ERROR", "Sales Rep", True) # reshedule_next
-        # outreachErrorLogger(err_str)
-        # raise Exception(err_str)
+        outreachErrorLogger(err_str)
+        raise Exception(err_str)
 
     
     account_sales_rep_ig_name = check_value
@@ -614,6 +621,9 @@ def assign_salesrepresentative():
     # Get the list of usernames from the UnwantedAccount table
     unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
 
+    # Get a list of existing usernames to exclude
+    existing_usernames = Account.objects.values_list('igname', flat=True)
+
     # Create the word filters
     word_filters = Q()
     for word in STYLISTS_WORDS:
@@ -623,7 +633,7 @@ def assign_salesrepresentative():
     accounts = Account.objects.filter(
         Q(created_at__gte=yesterday_start) & word_filters
     ).exclude(
-        Q(status__name="sent_compliment") | Q(igname__in=unwanted_usernames)
+        Q(status__name="sent_compliment") | Q(igname__in=unwanted_usernames) | Q(igname__in=existing_usernames)
     )
 
     
@@ -707,14 +717,10 @@ def reschedule():
     #reassign tasks
 
     # Step 1: Fetch tasks
-    tasks = PeriodicTask.objects.filter(
-        Q(crontab__day_of_month__gte=timezone.now().day) &
-        Q(crontab__month_of_year=timezone.now().month) &
-        Q(enabled=True)
-    )
+    batch_size = 40  
+    tasks = PeriodicTask.objects.filter(enabled=True).order_by('-id')[:batch_size*2]
 
     # Step 2: Initialize variables for scheduling
-    batch_size = 40
     current_date = timezone.now()
     current_day = current_date.day
     current_month = current_date.month
