@@ -121,21 +121,22 @@ class CommentViewSet(viewsets.ModelViewSet):
             print(error)
 
         # Create a new comment instance
-        comment = Comment(
-            account=account,
-            message=message,
-            media_id=media_id,
-            target_comment_id=target_comment_id,
-            collapseKey=collapse_key,
-            optionalAvatarUrl=optional_avatar_url,
-            pushId=push_id,
-            pushCategory=push_category,
-            intendedRecipientUserId=intended_recipient_user_id,
-            sourceUserId=source_user_id
-        )
+        comment_data = {
+            'account': account.id,  # Use account ID for ForeignKey
+            'message': message,
+            'media_id': media_id,
+            'target_comment_id': target_comment_id,
+            'collapseKey': collapse_key,
+            'optionalAvatarUrl': optional_avatar_url,
+            'pushId': push_id,
+            'pushCategory': push_category,
+            'intendedRecipientUserId': intended_recipient_user_id,
+            'sourceUserId': source_user_id
+        }
 
-        # Save the comment instance
-        serializer = CommentSerializer(comment)
+        # Initialize the serializer with the prepared data
+        serializer = CommentSerializer(data=comment_data)
+
 
         if serializer.is_valid():
             serializer.save()
