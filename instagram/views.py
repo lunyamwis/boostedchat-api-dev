@@ -91,6 +91,46 @@ class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.filter(account__isnull=False)
     serializer_class = LikeSerializer
     pagination_class = PaginationClass
+    
+    def create(self, request):   
+        title = request.data.get('title')
+        message = request.data.get('message')
+        media_id =  request.data.get('media_id')
+        collapse_key = request.data.get('collapse_key')
+        optional_avatar_url = request.data.get('optional_avatar_url') 
+        push_id =  request.data.get('push_id')
+        push_category = request.data.get('push_category')
+        intended_recipient_user_id = request.data.get('intended_recipient_user_id')
+        source_user_id =  request.data.get('source_user_id')
+        
+        # Get or create account based on title
+        try:
+            account, created = Account.objects.get_or_create(igname=title)
+        except Exception as error:
+            print(error)
+
+        # Create a new comment instance
+        like_data = {
+            'account': account.id,  # Use account ID for ForeignKey
+            'message': message,
+            'media_id': media_id,
+            'collapseKey': collapse_key,
+            'optionalAvatarUrl': optional_avatar_url,
+            'pushId': push_id,
+            'pushCategory': push_category,
+            'intendedRecipientUserId': intended_recipient_user_id,
+            'sourceUserId': source_user_id
+        }
+
+        # Initialize the serializer with the prepared data
+        serializer = LikeSerializer(data=like_data)
+
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CommentViewSet(viewsets.ModelViewSet):
     """
@@ -102,17 +142,16 @@ class CommentViewSet(viewsets.ModelViewSet):
     pagination_class = PaginationClass
 
     def create(self, request):
-        print(request.data)
         title = request.data.get('title')
         message = request.data.get('message')
-        media_id = request.data.get('actionParams', {}).get('media_id')
-        target_comment_id = request.data.get('actionParams', {}).get('target_comment_id')
-        collapse_key = request.data.get('collapseKey')
-        optional_avatar_url = request.data.get('optionalAvatarUrl')
-        push_id = request.data.get('pushId')
-        push_category = request.data.get('pushCategory')
-        intended_recipient_user_id = request.data.get('intendedRecipientUserId')
-        source_user_id = request.data.get('sourceUserId')
+        media_id = request.data.get('media_id')
+        target_comment_id = request.data.get('target_comment_id')
+        collapse_key = request.data.get('collapse_key')
+        optional_avatar_url = request.data.get('optional_avatar_url')
+        push_id = request.data.get('push_id')
+        push_category = request.data.get('push_category')
+        intended_recipient_user_id = request.data.get('intended_recipient_user_id')
+        source_user_id = request.data.get('source_user_id')
 
         # Get or create account based on title
         try:
@@ -125,6 +164,7 @@ class CommentViewSet(viewsets.ModelViewSet):
             'account': account.id,  # Use account ID for ForeignKey
             'message': message,
             'media_id': media_id,
+            'comment_id': target_comment_id,
             'target_comment_id': target_comment_id,
             'collapseKey': collapse_key,
             'optionalAvatarUrl': optional_avatar_url,
