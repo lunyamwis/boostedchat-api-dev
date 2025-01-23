@@ -121,11 +121,32 @@ class Reel(BaseModel):
     reel_id = models.CharField(max_length=50)
     link = models.URLField()
     name = models.CharField(max_length=255)
-
-
+    
 class Comment(BaseModel):
     comment_id = models.CharField(max_length=50)
-    text = models.TextField()
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
+    message = models.TextField(null=True, blank=True)
+    media_id =  models.CharField(max_length=255, null=True, blank=True)
+    target_comment_id =  models.CharField(max_length=255, null=True, blank=True)
+    collapseKey =  models.CharField(max_length=50, null=True, blank=True)
+    optionalAvatarUrl = models.URLField(null=True, blank=True)
+    pushId =  models.CharField(max_length=255, null=True, blank=True)
+    pushCategory = models.CharField(max_length=255, null=True, blank=True)
+    intendedRecipientUserId = models.CharField(max_length=50, null=True, blank=True)
+    sourceUserId=  models.CharField(max_length=50, null=True, blank=True)
+    
+class Like(BaseModel):
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
+    message = models.TextField(null=True, blank=True)
+    media_id =  models.CharField(max_length=255, null=True, blank=True)
+    collapseKey = models.CharField(max_length=50, null=True, blank=True)
+    optionalAvatarUrl = models.URLField( null=True, blank=True)
+    pushId =  models.CharField(max_length=50, null=True, blank=True)
+    pushCategory = models.CharField(max_length=255, null=True, blank=True)
+    intendedRecipientUserId = models.CharField(max_length=50, null=True, blank=True)
+    sourceUserId = models.CharField(max_length=50, null=True, blank=True)
+    
+    
 
 
 @receiver(post_save, sender=OutSourcedInfo)
