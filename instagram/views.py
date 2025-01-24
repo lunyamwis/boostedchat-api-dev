@@ -42,7 +42,7 @@ from .utils import generate_time_slots
 
 from .tasks import send_first_compliment,generate_response_automatic,reschedule
 from .helpers.init_db import init_db
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed,Like,Comment
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed,Like,Comment,UnwantedAccount
 from .serializers import (
     AccountSerializer,
     OutSourcedSerializer,
@@ -1696,11 +1696,12 @@ class DMViewset(viewsets.ModelViewSet):
         # Get the start of yesterday's date
         yesterday = timezone.now().date() - timezone.timedelta(days=1)
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+        unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
 
-        # Filter accounts that are qualified and created from yesterday onwards
+        # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
         accounts = Account.objects.filter(
             Q(qualified=True) & Q(created_at__gte=yesterday_start)
-        )
+        ).exclude(igname__in=unwanted_usernames)
 
         account_messages_sent = []
         
