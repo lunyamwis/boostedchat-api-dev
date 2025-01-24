@@ -42,12 +42,11 @@ from .utils import generate_time_slots
 
 from .tasks import send_first_compliment,generate_response_automatic,reschedule
 from .helpers.init_db import init_db
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed,Like,Comment,UnwantedAccount
 from .serializers import (
     AccountSerializer,
     OutSourcedSerializer,
     AddContentSerializer,
-    CommentSerializer,
     HashTagSerializer,
     PhotoSerializer,
     ReelSerializer,
@@ -61,7 +60,9 @@ from .serializers import (
     SendManualMessageSerializer,
     GetAccountSerializer,
     GetSingleAccountSerializer,
-    ScheduleOutreachSerializer
+    ScheduleOutreachSerializer,
+    LikeSerializer,
+    CommentSerializer,
 )
 from django.db.models import Count, Case, When, IntegerField
 
@@ -80,6 +81,109 @@ class OutSourcedViewSet(viewsets.ModelViewSet):
     serializer_class = OutSourcedSerializer
     # import pdb;pdb.set_trace()
     pagination_class = PaginationClass
+
+
+class LikeViewSet(viewsets.ModelViewSet):
+    """
+    A viewset that provides the standard actions
+    """
+
+    queryset = Like.objects.filter(account__isnull=False)
+    serializer_class = LikeSerializer
+    pagination_class = PaginationClass
+    
+    def create(self, request):   
+        title = request.data.get('title')
+        message = request.data.get('message')
+        media_id =  request.data.get('media_id')
+        collapse_key = request.data.get('collapse_key')
+        optional_avatar_url = request.data.get('optional_avatar_url') 
+        push_id =  request.data.get('push_id')
+        push_category = request.data.get('push_category')
+        intended_recipient_user_id = request.data.get('intended_recipient_user_id')
+        source_user_id =  request.data.get('source_user_id')
+        
+        # Get or create account based on title
+        try:
+            account, created = Account.objects.get_or_create(igname=title)
+        except Exception as error:
+            print(error)
+
+        # Create a new comment instance
+        like_data = {
+            'account': account.id,  # Use account ID for ForeignKey
+            'message': message,
+            'media_id': media_id,
+            'collapseKey': collapse_key,
+            'optionalAvatarUrl': optional_avatar_url,
+            'pushId': push_id,
+            'pushCategory': push_category,
+            'intendedRecipientUserId': intended_recipient_user_id,
+            'sourceUserId': source_user_id
+        }
+
+        # Initialize the serializer with the prepared data
+        serializer = LikeSerializer(data=like_data)
+
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CommentViewSet(viewsets.ModelViewSet):
+    """
+    A viewset that provides the standard actions
+    """
+
+    queryset = Comment.objects.filter(account__isnull=False)
+    serializer_class = CommentSerializer
+    pagination_class = PaginationClass
+
+    def create(self, request):
+        title = request.data.get('title')
+        message = request.data.get('message')
+        media_id = request.data.get('media_id')
+        target_comment_id = request.data.get('target_comment_id')
+        collapse_key = request.data.get('collapse_key')
+        optional_avatar_url = request.data.get('optional_avatar_url')
+        push_id = request.data.get('push_id')
+        push_category = request.data.get('push_category')
+        intended_recipient_user_id = request.data.get('intended_recipient_user_id')
+        source_user_id = request.data.get('source_user_id')
+
+        # Get or create account based on title
+        try:
+            account, created = Account.objects.get_or_create(igname=title)
+        except Exception as error:
+            print(error)
+
+        # Create a new comment instance
+        comment_data = {
+            'account': account.id,  # Use account ID for ForeignKey
+            'message': message,
+            'media_id': media_id,
+            'comment_id': target_comment_id,
+            'target_comment_id': target_comment_id,
+            'collapseKey': collapse_key,
+            'optionalAvatarUrl': optional_avatar_url,
+            'pushId': push_id,
+            'pushCategory': push_category,
+            'intendedRecipientUserId': intended_recipient_user_id,
+            'sourceUserId': source_user_id
+        }
+
+        # Initialize the serializer with the prepared data
+        serializer = CommentSerializer(data=comment_data)
+
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     
 class AccountViewSet(viewsets.ModelViewSet):
     """
@@ -667,6 +771,31 @@ class AccountViewSet(viewsets.ModelViewSet):
                 )
             
             
+    @action(detail=False, methods=["get"], url_path="get-comments")
+    def get_mqtt_comments(self, request, pk=None):
+        status_param = request.GET.get('username')
+        media_id = request.GET.get('media_id')
+        data = {"username_from": 'denn_mokaya', "media_id": '1263679849772992148'}
+        response = requests.post(settings.MQTT_BASE_URL+"/fetchComments", data=json.dumps(data))
+        print("hdhdhdh")
+        if response.status_code == 200:
+             return Response(
+                    {
+                        "status": status.HTTP_200_OK,
+                        "data": json.loads(response.content),
+                        "success": True,
+                    }
+                )
+        else:
+            return Response(
+                    {
+                        "status": response.status_code,
+                        "data": [],
+                        "success": False,
+                    }
+                )
+            
+            
 
 
 class HashTagViewSet(viewsets.ModelViewSet):
@@ -1028,13 +1157,6 @@ class ReelViewSet(viewsets.ModelViewSet):
             return Response({"status_code": 500})
 
 
-class CommentViewSet(viewsets.ModelViewSet):
-    """
-    A viewset that provides the standard actions
-    """
-
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
 
 
 class StoryViewSet(viewsets.ModelViewSet):
@@ -1574,11 +1696,12 @@ class DMViewset(viewsets.ModelViewSet):
         # Get the start of yesterday's date
         yesterday = timezone.now().date() - timezone.timedelta(days=1)
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+        unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
 
-        # Filter accounts that are qualified and created from yesterday onwards
+        # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
         accounts = Account.objects.filter(
             Q(qualified=True) & Q(created_at__gte=yesterday_start)
-        )
+        ).exclude(igname__in=unwanted_usernames)
 
         account_messages_sent = []
         

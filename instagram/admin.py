@@ -2,7 +2,7 @@
 import json
 from django.contrib import admin
 
-from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount
+from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount, Comment, Like
 
 admin.site.register(Photo)
 admin.site.register(Video)
@@ -93,4 +93,20 @@ class UnwantedAccountAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
         form = super(UnwantedAccountAdmin, self).get_form(request, obj, **kwargs)
+        return form
+    
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(CommentAdmin, self).get_form(request, obj, **kwargs)
+        return form
+
+
+@admin.register(Like)
+class LikeAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(LikeAdmin, self).get_form(request, obj, **kwargs)
         return form

@@ -621,9 +621,7 @@ def assign_salesrepresentative():
     # Get the list of usernames from the UnwantedAccount table
     unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
 
-    # Get a list of existing usernames to exclude
-    existing_usernames = Account.objects.values_list('igname', flat=True)
-
+    
     # Create the word filters
     word_filters = Q()
     for word in STYLISTS_WORDS:
@@ -633,8 +631,10 @@ def assign_salesrepresentative():
     accounts = Account.objects.filter(
         Q(created_at__gte=yesterday_start) & word_filters
     ).exclude(
-        Q(status__name="sent_compliment") | Q(igname__in=unwanted_usernames) | Q(igname__in=existing_usernames)
-    )
+        status__name="sent_compliment"
+    ).exclude(
+        igname__in=unwanted_usernames
+    ) 
 
     
     for lead in accounts:
@@ -652,6 +652,11 @@ def assign_salesrepresentative():
                 lead.qualified = True
                 lead.save()
                 
+                # pass him over to unwanted accounts
+                try:
+                    UnwantedAccount.objects.create(username=lead.igname)
+                except Exception as err:
+                    print(err)
             except OutSourced.DoesNotExist:
                 print("OutSourced does not exist")
             
