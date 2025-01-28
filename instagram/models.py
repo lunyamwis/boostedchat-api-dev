@@ -136,7 +136,7 @@ class Comment(BaseModel):
     sourceUserId=  models.CharField(max_length=50, null=True, blank=True)
 
     def __str__(self) -> str:
-        return self.message if self.message else self.id
+        return self.message if self.message else self.id 
     
 class Like(BaseModel):
     account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
