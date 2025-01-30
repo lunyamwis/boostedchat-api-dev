@@ -278,10 +278,10 @@ def run_scheduler(target_time,username,message):
     
     :param target_time: The datetime object specifying when to run the task.
     """
-    print(f"Scheduler started. Current time: {datetime.now()}, Target time: {target_time}")
+    print(f"Scheduler started. Current time: {timezone.now()}, Target time: {target_time}")
     
     while True:
-        now = datetime.now()
+        now = timezone.now()
         if now >= target_time:
             send_first_compliment(list(username),message)
             break  # Exit the loop after running the task
