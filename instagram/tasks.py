@@ -3,8 +3,9 @@ import json
 import logging
 import time
 import random
-
 import requests
+from datetime import datetime, timedelta
+
 from celery import shared_task
 from django.conf import settings
 from django_celery_beat.models import PeriodicTask
@@ -270,7 +271,23 @@ def like_and_comment(media_id, media_comment, salesrep, account):
     return like_comment
 
 
+@shared_task()
+def run_scheduler(target_time,username,message):
+    """
+    A custom scheduler to execute a task at the specified target time.
     
+    :param target_time: The datetime object specifying when to run the task.
+    """
+    print(f"Scheduler started. Current time: {datetime.now()}, Target time: {target_time}")
+    
+    while True:
+        now = datetime.now()
+        if now >= target_time:
+            send_first_compliment(list(username),message)
+            break  # Exit the loop after running the task
+        time.sleep(1)  # Sleep for 1 second to avoid busy-waiting
+
+
 
 @shared_task()
 def send_first_compliment(username, message, repeat=True):

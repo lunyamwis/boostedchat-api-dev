@@ -40,7 +40,7 @@ from sales_rep.models import SalesRep
 
 from .utils import generate_time_slots
 
-from .tasks import send_first_compliment,generate_response_automatic,reschedule
+from .tasks import send_first_compliment,generate_response_automatic,reschedule, run_scheduler
 from .helpers.init_db import init_db
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed,Like,Comment,UnwantedAccount
 from .serializers import (
@@ -659,7 +659,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
         return Response({"salesrep": salesrep_data}, status=status.HTTP_200_OK)
         
-            
+    
     @action(detail=True, methods=['post'], url_path="schedule-outreach")
     def schedule_outreach(self, request, pk=None):
         serializer = ScheduleOutreachSerializer(data=request.data)
@@ -1706,7 +1706,7 @@ class DMViewset(viewsets.ModelViewSet):
         account_messages_sent = []
         
         if accounts.exists():
-            for account in accounts:
+            for i,account in enumerate(accounts):
                 # if account.salesrep_set.exists(): # if they are assigned a salesrep
                     threads = Thread.objects.filter(account=account)  
                     if threads.exists():
@@ -1719,32 +1719,11 @@ class DMViewset(viewsets.ModelViewSet):
                                 time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
                                 try:
                                     schedule = None
-                                    for time_slot in time_slots:
-                                        # import pdb;pdb.set_trace()
-                                        if time_slot.account_to_be_assigned:
-                                            pass
-                                        else:
-                                            time_slot.account_to_be_assigned = account
-                                            time_slot.save()
-                                            schedule = CrontabSchedule.objects.create(
-                                                minute=time_slot.time_slot.minute,
-                                                hour=time_slot.time_slot.hour,
-                                                day_of_week="*",
-                                                day_of_month=time_slot.time_slot.day,
-                                                month_of_year=time_slot.time_slot.month,
-                                            )
-                                            break
-                                    try:
-                                        PeriodicTask.objects.update_or_create(
-                                            name=f"SendFirstCompliment-{account.igname}",
-                                            crontab=schedule,
-                                            task="instagram.tasks.send_first_compliment",
-                                            args=json.dumps([[account.igname],thread.last_message_content])
-                                        )
+                                    time_slot = timezone.now()+timezone.timedelta(hours=i/2)
+                                    run_scheduler.delay(target_time=time_slot,username=account.igname,message=thread.last_message_content)
                                         
-                                    except Exception as error:
-                                        logging.warning(error)
-
+                                        
+                                    
                                     # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
                                 except Exception as err:
                                     print(err)
@@ -1753,33 +1732,9 @@ class DMViewset(viewsets.ModelViewSet):
                         # import pdb;pdb.set_trace()
                         time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
                         try:
-                            schedule = None
-                            for time_slot in time_slots:
-                                # import pdb;pdb.set_trace()
-                                if time_slot.account_to_be_assigned:
-                                    pass
-                                else:
-                                    time_slot.account_to_be_assigned = account
-                                    time_slot.save()
-                                    schedule = CrontabSchedule.objects.create(
-                                        minute=time_slot.time_slot.minute,
-                                        hour=time_slot.time_slot.hour,
-                                        day_of_week="*",
-                                        day_of_month=time_slot.time_slot.day,
-                                        month_of_year=time_slot.time_slot.month,
-                                    )
-                                    break
-                            try:
-                                PeriodicTask.objects.update_or_create(
-                                    name=f"SendFirstCompliment-{account.igname}",
-                                    crontab=schedule,
-                                    task="instagram.tasks.send_first_compliment",
-                                    args=json.dumps([[account.igname],""])
-                                )
-                                
-                            except Exception as error:
-                                logging.warning(error)
-
+                            time_slot = timezone.now()+timezone.timedelta(hours=i/2)
+                            run_scheduler.delay(target_time=time_slot,username=account.igname,message="")
+                            
                             # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
                         except Exception as err:
                             print(err)
