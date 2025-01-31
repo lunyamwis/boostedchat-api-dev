@@ -283,14 +283,14 @@ def run_scheduler(target_time,username,message):
     while True:
         now = timezone.now()
         if now >= target_time:
-            send_first_compliment(list(username),message,target_time)
+            send_first_compliment(list(username),message)
             break  # Exit the loop after running the task
         time.sleep(1)  # Sleep for 1 second to avoid busy-waiting
 
 
 
 @shared_task()
-def send_first_compliment(username, message, target_time, repeat=True):
+def send_first_compliment(username, message, repeat=True):
     # check if now is within working hours
     # if not_in_interval():
     #     err_str = f"{username} scheduled at wrong time"
@@ -301,7 +301,7 @@ def send_first_compliment(username, message, target_time, repeat=True):
     thread_obj = None
     account = get_account(username)
     account.status_param = 'Prequalified'
-    account.outreach_time = target_time
+    # account.outreach_time = target_time
     account.save()
 
     if account is None:
