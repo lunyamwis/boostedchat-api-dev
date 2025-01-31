@@ -1701,8 +1701,11 @@ class DMViewset(viewsets.ModelViewSet):
         # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
         accounts = Account.objects.filter(
             Q(qualified=True) & Q(created_at__gte=yesterday_start)
-        ).exclude(igname__in=unwanted_usernames)
-
+        ).exclude(
+            status__name="sent_compliment"
+        ).exclude(
+            igname__in=unwanted_usernames
+        ) 
         account_messages_sent = []
         
         if accounts.exists():

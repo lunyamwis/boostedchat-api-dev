@@ -411,6 +411,10 @@ def send_first_compliment(username, message, target_time, repeat=True):
                 print(error)
         print(response.status_code)
         if response.status_code == 200:
+            try:
+                UnwantedAccount.objects.create(username=account.igname)
+            except Exception as err:
+                print(err)
             sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
             account.status = sent_compliment_status
             account.outreach_success = True
@@ -672,10 +676,6 @@ def assign_salesrepresentative():
                 lead.save()
                 
                 # pass him over to unwanted accounts
-                try:
-                    UnwantedAccount.objects.create(username=lead.igname)
-                except Exception as err:
-                    print(err)
             except OutSourced.DoesNotExist:
                 print("OutSourced does not exist")
             
