@@ -1738,7 +1738,7 @@ class DMViewset(viewsets.ModelViewSet):
                             # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
                         except Exception as err:
                             print(err)
-            return Response(account_messages_sent,status=status.HTTP_200_OK)
+            return Response({'message':'succesfully scheduled reponses'},status=status.HTTP_200_OK)
         else:
             return Response({'message': 'accounts do not exist'})
 
