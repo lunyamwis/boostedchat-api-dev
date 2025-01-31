@@ -4,6 +4,7 @@ from django.contrib import admin
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.contrib.admin import DateFieldListFilter
 
 from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount, Comment, Like
 
@@ -32,15 +33,31 @@ def get_cut_info_action(modeladmin, request, queryset):
 
 
 
+class YesterdayFilter(DateFieldListFilter):
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super().__init__(field, request, params, model, model_admin, field_path)
+        yesterday = timezone.now() - timezone.timedelta(days=1)
+        self.links += (
+            (_('Added from yesterday'), {
+                self.field_path + '__gte': yesterday.strftime('%Y-%m-%d'),
+                self.field_path + '__lt': timezone.now().strftime('%Y-%m-%d'),
+            }),
+        )
+
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    search_fields = ['igname__icontains',]
+    search_fields = ['igname__icontains']
     actions = [get_cut_info_action]
+    list_filter = [
+        'qualified',  # Filter for unqualified accounts
+        ('created_at', YesterdayFilter),  # Custom filter for created_at
+    ]
 
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
         form = super(AccountAdmin, self).get_form(request, obj, **kwargs)
         return form
+
     
 class RecentAccountsFilter(admin.SimpleListFilter):
     title = _('Recent Accounts')  # Displayed in the admin sidebar
