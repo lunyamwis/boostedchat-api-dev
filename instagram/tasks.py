@@ -283,14 +283,14 @@ def run_scheduler(target_time,username,message):
     while True:
         now = timezone.now()
         if now >= target_time:
-            send_first_compliment(list(username),message)
+            send_first_compliment(list(username),message,target_time)
             break  # Exit the loop after running the task
         time.sleep(1)  # Sleep for 1 second to avoid busy-waiting
 
 
 
 @shared_task()
-def send_first_compliment(username, message, repeat=True):
+def send_first_compliment(username, message, target_time, repeat=True):
     # check if now is within working hours
     # if not_in_interval():
     #     err_str = f"{username} scheduled at wrong time"
@@ -301,6 +301,7 @@ def send_first_compliment(username, message, repeat=True):
     thread_obj = None
     account = get_account(username)
     account.status_param = 'Prequalified'
+    account.outreach_time = target_time
     account.save()
 
     if account is None:
@@ -412,6 +413,7 @@ def send_first_compliment(username, message, repeat=True):
         if response.status_code == 200:
             sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
             account.status = sent_compliment_status
+            account.outreach_success = True
             account.save()
             print(f"response============{response}")
             try:
@@ -666,7 +668,7 @@ def assign_salesrepresentative():
                 except Exception as err:
                     print(err)
                 lead.relevant_information = oso.results
-                lead.qualified = True
+                lead.qualified = False
                 lead.save()
                 
                 # pass him over to unwanted accounts
@@ -696,35 +698,35 @@ def assign_salesrepresentative():
             best_sales_rep.save()
             # Record the assignment in the history
             LeadAssignmentHistory.objects.create(sales_rep=best_sales_rep, lead=lead)
-            endpoint = "https://mqtt.booksy.us.boostedchat.com"
+    #         endpoint = "https://mqtt.booksy.us.boostedchat.com"
 
-            srep_username = best_sales_rep.ig_username
-            if lead.thread_set.exists():
-                thread = lead.thread_set.latest('created_at')
-                response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
+    #         srep_username = best_sales_rep.ig_username
+    #         if lead.thread_set.exists():
+    #             thread = lead.thread_set.latest('created_at')
+    #             response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
                 
-                # Check the status code of the response
-                if response.status_code == 200:
-                    print('Request approved')
-                else:
-                    print(f'Request failed with status code {response.status_code}')
+    #             # Check the status code of the response
+    #             if response.status_code == 200:
+    #                 print('Request approved')
+    #             else:
+    #                 print(f'Request failed with status code {response.status_code}')
 
-            # send first compliment
-            # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
-            # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
-            # # import pdb;pdb.set_trace()
-            # response = requests.post(send_compliment_endpoint)
-            # if response.status_code in [200,201]:
-            #     print("Successfully set outreach time for compliment and will send at appropriate time")
+    #         # send first compliment
+    #         # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+    #         # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
+    #         # # import pdb;pdb.set_trace()
+    #         # response = requests.post(send_compliment_endpoint)
+    #         # if response.status_code in [200,201]:
+    #         #     print("Successfully set outreach time for compliment and will send at appropriate time")
 
-            else:
-                logging.warning("not going through")
-    send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
-    # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
-    # import pdb;pdb.set_trace()
-    response = requests.post(send_compliment_endpoint)
-    if response.status_code in [200,201]:
-        print("Successfully set outreach time for compliment and will send at appropriate time")
+    #         else:
+    #             logging.warning("not going through")
+    # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+    # # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
+    # # import pdb;pdb.set_trace()
+    # response = requests.post(send_compliment_endpoint)
+    # if response.status_code in [200,201]:
+    #     print("Successfully set outreach time for compliment and will send at appropriate time")
 
     return {"message":"Successfully assigned salesrep","status": 200}
 
@@ -739,7 +741,7 @@ def reschedule():
     #reassign tasks
 
     # Step 1: Fetch tasks
-    batch_size = 40  
+    batch_size = 300  
     tasks = PeriodicTask.objects.filter(enabled=True).order_by('-id')[:batch_size*2]
 
     # Step 2: Initialize variables for scheduling

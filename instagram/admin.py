@@ -2,6 +2,9 @@
 import json
 from django.contrib import admin
 
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
 from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount, Comment, Like
 
 admin.site.register(Photo)
@@ -27,12 +30,6 @@ def get_cut_info_action(modeladmin, request, queryset):
     # Redirect to the admin page after the action is done
     return HttpResponseRedirect(reverse('admin:app_list', args=('instagram',)))
 
-@admin.register(OutreachTime)
-class OutreachTimeAdmin(admin.ModelAdmin):
-    def get_form(self, request, obj=None, **kwargs):
-        self.exclude = ("id",)
-        form = super(OutreachTimeAdmin, self).get_form(request, obj, **kwargs)
-        return form
 
 
 @admin.register(Account)
@@ -44,7 +41,47 @@ class AccountAdmin(admin.ModelAdmin):
         self.exclude = ("id",)
         form = super(AccountAdmin, self).get_form(request, obj, **kwargs)
         return form
+    
+class RecentAccountsFilter(admin.SimpleListFilter):
+    title = _('Recent Accounts')  # Displayed in the admin sidebar
+    parameter_name = 'recent_accounts'  # URL parameter for the filter
 
+    def lookups(self, request, model_admin):
+        # Define the filter options
+        return (
+            ('recent', _('Added from yesterday')),
+        )
+
+    def queryset(self, request, queryset):
+        # Apply the filter logic
+        if self.value() == 'recent':
+            yesterday = timezone.now() - timezone.timedelta(days=1)
+            return queryset.filter(outreach_time__gte=yesterday)
+        return queryset
+
+
+class UnqualifiedAccountsFilter(admin.SimpleListFilter):
+    title = _('Unqualified Accounts')  # Displayed in the admin sidebar
+    parameter_name = 'unqualified_accounts'  # URL parameter for the filter
+
+    def lookups(self, request, model_admin):
+        # Define the filter options
+        return (
+            ('unqualified', _('Unqualified Accounts')),
+        )
+
+    def queryset(self, request, queryset):
+        # Apply the filter logic
+        if self.value() == 'unqualified':
+            return queryset.filter(qualified=False)
+        return queryset
+
+@admin.register(OutreachTime)
+class OutreachTimeAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(OutreachTimeAdmin, self).get_form(request, obj, **kwargs)
+        return form
 
 @admin.register(StatusCheck)
 class StatusAdmin(admin.ModelAdmin):
