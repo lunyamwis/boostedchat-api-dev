@@ -2,7 +2,11 @@
 import json
 from django.contrib import admin
 
-from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from django.contrib.admin import DateFieldListFilter
+
+from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount, Comment, Like
 
 admin.site.register(Photo)
 admin.site.register(Video)
@@ -27,24 +31,74 @@ def get_cut_info_action(modeladmin, request, queryset):
     # Redirect to the admin page after the action is done
     return HttpResponseRedirect(reverse('admin:app_list', args=('instagram',)))
 
-@admin.register(OutreachTime)
-class OutreachTimeAdmin(admin.ModelAdmin):
-    def get_form(self, request, obj=None, **kwargs):
-        self.exclude = ("id",)
-        form = super(OutreachTimeAdmin, self).get_form(request, obj, **kwargs)
-        return form
 
+
+class YesterdayFilter(DateFieldListFilter):
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super().__init__(field, request, params, model, model_admin, field_path)
+        yesterday = timezone.now() - timezone.timedelta(days=1)
+        self.links += (
+            (_('Added from yesterday'), {
+                self.field_path + '__gte': yesterday.strftime('%Y-%m-%d'),
+                self.field_path + '__lt': timezone.now().strftime('%Y-%m-%d'),
+            }),
+        )
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
-    search_fields = ['igname__icontains',]
+    search_fields = ['igname__icontains']
     actions = [get_cut_info_action]
+    list_filter = [
+        'qualified',  # Filter for unqualified accounts
+        ('created_at', YesterdayFilter),  # Custom filter for created_at
+    ]
 
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
         form = super(AccountAdmin, self).get_form(request, obj, **kwargs)
         return form
 
+    
+class RecentAccountsFilter(admin.SimpleListFilter):
+    title = _('Recent Accounts')  # Displayed in the admin sidebar
+    parameter_name = 'recent_accounts'  # URL parameter for the filter
+
+    def lookups(self, request, model_admin):
+        # Define the filter options
+        return (
+            ('recent', _('Added from yesterday')),
+        )
+
+    def queryset(self, request, queryset):
+        # Apply the filter logic
+        if self.value() == 'recent':
+            yesterday = timezone.now() - timezone.timedelta(days=1)
+            return queryset.filter(outreach_time__gte=yesterday)
+        return queryset
+
+
+class UnqualifiedAccountsFilter(admin.SimpleListFilter):
+    title = _('Unqualified Accounts')  # Displayed in the admin sidebar
+    parameter_name = 'unqualified_accounts'  # URL parameter for the filter
+
+    def lookups(self, request, model_admin):
+        # Define the filter options
+        return (
+            ('unqualified', _('Unqualified Accounts')),
+        )
+
+    def queryset(self, request, queryset):
+        # Apply the filter logic
+        if self.value() == 'unqualified':
+            return queryset.filter(qualified=False)
+        return queryset
+
+@admin.register(OutreachTime)
+class OutreachTimeAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(OutreachTimeAdmin, self).get_form(request, obj, **kwargs)
+        return form
 
 @admin.register(StatusCheck)
 class StatusAdmin(admin.ModelAdmin):
@@ -93,4 +147,20 @@ class UnwantedAccountAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
         form = super(UnwantedAccountAdmin, self).get_form(request, obj, **kwargs)
+        return form
+    
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(CommentAdmin, self).get_form(request, obj, **kwargs)
+        return form
+
+
+@admin.register(Like)
+class LikeAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(LikeAdmin, self).get_form(request, obj, **kwargs)
         return form

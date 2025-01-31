@@ -28,7 +28,7 @@ class StatusCheck(BaseModel):
 
 
 class UnwantedAccount(BaseModel):
-    username = models.CharField(max_length=255, null=True, blank=True, unique=True)
+    username = models.CharField(max_length=255, null=True, blank=True, unique=False)
 
     def __str__(self) -> str:
         return self.username if self.username else self.id
@@ -57,6 +57,9 @@ class Account(BaseModel):
     relevant_information = models.JSONField(null=True,blank=True)
     is_manually_triggered = models.BooleanField(default=False)
     index = models.IntegerField(default=1)
+    notes = models.TextField(null=True, blank=True)  # New notes field
+    outreach_time = models.DateTimeField(null=True, blank=True)
+    outreach_success = models.BooleanField(default=False)
     
     def __str__(self) -> str:
         return self.igname if self.igname else self.id
@@ -103,6 +106,11 @@ class Message(BaseModel):
     sent_by = models.CharField(max_length=255, null=True, blank=True)
     sent_on = models.DateTimeField()
     thread = models.ForeignKey(Thread, on_delete=models.CASCADE, null=True, blank=True)
+    # New fields
+    content_type = models.CharField(max_length=255, null=True, blank=True)
+    content_link = models.CharField(max_length=255, null=True, blank=True)
+    content_data = models.JSONField(null=True, blank=True)  # Use JSONField for storing JSON data 
+    message_id = models.CharField(max_length=50, null=True, blank=True)
 
 
 class Video(BaseModel):
@@ -115,11 +123,38 @@ class Reel(BaseModel):
     reel_id = models.CharField(max_length=50)
     link = models.URLField()
     name = models.CharField(max_length=255)
-
-
+    
 class Comment(BaseModel):
     comment_id = models.CharField(max_length=50)
-    text = models.TextField()
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
+    message = models.TextField(null=True, blank=True)
+    media_id =  models.CharField(max_length=255, null=True, blank=True)
+    target_comment_id =  models.CharField(max_length=255, null=True, blank=True)
+    collapseKey =  models.CharField(max_length=50, null=True, blank=True)
+    optionalAvatarUrl = models.URLField(null=True, blank=True,max_length=2048)
+    pushId =  models.CharField(max_length=255, null=True, blank=True)
+    pushCategory = models.CharField(max_length=255, null=True, blank=True)
+    intendedRecipientUserId = models.CharField(max_length=50, null=True, blank=True)
+    sourceUserId=  models.CharField(max_length=50, null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.message if self.message else self.id 
+    
+class Like(BaseModel):
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
+    message = models.TextField(null=True, blank=True)
+    media_id =  models.CharField(max_length=255, null=True, blank=True)
+    collapseKey = models.CharField(max_length=50, null=True, blank=True)
+    optionalAvatarUrl = models.URLField( null=True, blank=True,max_length=2048)
+    pushId =  models.CharField(max_length=50, null=True, blank=True)
+    pushCategory = models.CharField(max_length=255, null=True, blank=True)
+    intendedRecipientUserId = models.CharField(max_length=50, null=True, blank=True)
+    sourceUserId = models.CharField(max_length=50, null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.message if self.message else self.id
+    
+    
 
 
 @receiver(post_save, sender=OutSourcedInfo)

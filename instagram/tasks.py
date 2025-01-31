@@ -3,16 +3,17 @@ import json
 import logging
 import time
 import random
-
 import requests
+from datetime import datetime, timedelta
+
 from celery import shared_task
 from django.conf import settings
 from django_celery_beat.models import PeriodicTask
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.utils import timezone
-
-from instagram.models import Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount
+from django_celery_beat.models import PeriodicTask, CrontabSchedule
+from instagram.models import Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount, OutreachTime
 from sales_rep.models import SalesRep
 from dialogflow.helpers.get_prompt_responses import get_gpt_response
 
@@ -70,15 +71,22 @@ def sales_rep_is_logged_in(account, salesrep):
     return False
 
 def sales_rep_is_available(account):
-    salesrep = account.salesrep_set.first()
-    return salesrep.available
+    salesrep = account.salesrep_set.filter()
+    if salesrep.exists():
+        return salesrep.latest('created_at').available
+    else:
+        srep = SalesRep.objects.get(ig_username="barbersince98")
+        srep.instagram.add(account)
+        return srep.available
 
 def account_has_sales_rep(account):
     salesrep = account.salesrep_set.first()
     if salesrep is not None:
         return salesrep.ig_username
     else:
-        return False
+        srep = SalesRep.objects.get(ig_username="barbersince98")
+        srep.instagram.add(account)
+        return srep.ig_username
 
 def reschedule_last_enabled(salesrep):
     tasks = tasks_by_sales_rep("instagram.tasks.send_first_compliment", salesrep, "enabled", -1, 1, True)
@@ -263,10 +271,26 @@ def like_and_comment(media_id, media_comment, salesrep, account):
     return like_comment
 
 
+@shared_task()
+def run_scheduler(target_time,username,message):
+    """
+    A custom scheduler to execute a task at the specified target time.
     
+    :param target_time: The datetime object specifying when to run the task.
+    """
+    print(f"Scheduler started. Current time: {timezone.now()}, Target time: {target_time}")
+    
+    while True:
+        now = timezone.now()
+        if now >= target_time:
+            send_first_compliment(list(username),message,target_time)
+            break  # Exit the loop after running the task
+        time.sleep(1)  # Sleep for 1 second to avoid busy-waiting
+
+
 
 @shared_task()
-def send_first_compliment(username, message, repeat=True):
+def send_first_compliment(username, message, target_time, repeat=True):
     # check if now is within working hours
     # if not_in_interval():
     #     err_str = f"{username} scheduled at wrong time"
@@ -277,6 +301,7 @@ def send_first_compliment(username, message, repeat=True):
     thread_obj = None
     account = get_account(username)
     account.status_param = 'Prequalified'
+    account.outreach_time = target_time
     account.save()
 
     if account is None:
@@ -295,8 +320,8 @@ def send_first_compliment(username, message, repeat=True):
     if not check_value:
         err_str = f"{username} has no sales rep assigned"
         outreachErrorLogger(account, None, err_str, 404, "ERROR", "Sales Rep", True) # reshedule_next
-        # outreachErrorLogger(err_str)
-        # raise Exception(err_str)
+        outreachErrorLogger(err_str)
+        raise Exception(err_str)
 
     
     account_sales_rep_ig_name = check_value
@@ -353,6 +378,8 @@ def send_first_compliment(username, message, repeat=True):
     else:
         results = outsourced_data.last().results
     print(f"results================{results}")
+    print(f"results================MMM")
+    print(f"results================{message}")
     first_message = get_gpt_response(account,message)
 
     media_id = results.get("media_id", "")
@@ -372,18 +399,25 @@ def send_first_compliment(username, message, repeat=True):
     def send(numTries = 0):
         numTries += 1
         try:
+            # TODO: authenticate this mqtt request
             response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", data=json.dumps(data),headers={"Content-Type": "application/json"})
             print("coming in as data")
         except Exception as error:
             try:
+                # TODO: authenticate this mqtt request
                 response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", json=json.dumps(data), headers={"Content-Type": "application/json"})
                 print("coming in as json")
             except Exception as error:
                 print(error)
         print(response.status_code)
         if response.status_code == 200:
+            try:
+                UnwantedAccount.objects.create(username=account.igname)
+            except Exception as err:
+                print(err)
             sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
             account.status = sent_compliment_status
+            account.outreach_success = True
             account.save()
             print(f"response============{response}")
             try:
@@ -500,6 +534,7 @@ def send_report():
 
 
 
+
 @shared_task
 def generate_response_automatic(query, thread_id):
     thread = Thread.objects.filter(thread_id=thread_id).latest('created_at')
@@ -507,11 +542,11 @@ def generate_response_automatic(query, thread_id):
     print(account.id)
     thread = Thread.objects.filter(account=account).latest('created_at')
 
-    client_messages = query.split("#*eb4*#")
+    client_messages = query.split("#*eb4*#") if query else []
     # existing_messages = Message.objects.filter(thread=thread, content__in=client_messages)
     # if existing_messages.count() == len(client_messages):
     for client_message in client_messages:
-        if not Message.objects.filter(content=client_message, sent_by="Client", thread=thread).exists():
+        if client_message and not Message.objects.filter(content=client_message, sent_by="Client", thread=thread).exists():
             Message.objects.create(
                 content=client_message,
                 sent_by="Client",
@@ -519,19 +554,22 @@ def generate_response_automatic(query, thread_id):
                 thread=thread
             )
         
-    if thread.last_message_content == client_messages[len(client_messages)-1]:
-        return {
-            "text": query,
-            "success": True,
-            "username": thread.account.igname,
-            "generated_comment": "already_responded",
-            "assigned_to": "Robot",
-            "status":200
-        }    
-    thread.last_message_content = client_messages[len(client_messages)-1]
-    thread.unread_message_count = len(client_messages)
-    thread.last_message_at = timezone.now()
-    thread.save()
+    if client_messages:
+        # if thread.last_message_content == client_messages[len(client_messages)-1]:
+        #     return {
+        #         "text": query,
+        #         "success": True,
+        #         "username": thread.account.igname,
+        #         "generated_comment": "already_responded",
+        #         "assigned_to": "Robot",
+        #         "status":200
+        #     }    
+        
+        
+        thread.last_message_content = client_messages[len(client_messages)-1]
+        thread.unread_message_count = len(client_messages)
+        thread.last_message_at = timezone.now()
+        thread.save()
 
     if thread.account.assigned_to == "Robot":
         try:
@@ -541,10 +579,10 @@ def generate_response_automatic(query, thread_id):
             
 
 
-            if last_message.content and last_message.sent_by == "Robot":
-                gpt_resp = "already_responded"
-            else:
-                gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
+            # if last_message.content and last_message.sent_by == "Robot":
+            #     gpt_resp = "already_responded"
+            # else:
+            gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
             
             thread.last_message_content = gpt_resp
             thread.last_message_at = timezone.now()
@@ -582,7 +620,7 @@ def generate_response_automatic(query, thread_id):
             "text": query,
             "success": True,
             "username": thread.account.igname,
-            "generated_comment": "assigned_human",
+            "generated_comment": "",
             "assigned_to": "Human",
             "status":200
         }
@@ -606,6 +644,7 @@ def assign_salesrepresentative():
     # Get the list of usernames from the UnwantedAccount table
     unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
 
+    
     # Create the word filters
     word_filters = Q()
     for word in STYLISTS_WORDS:
@@ -615,11 +654,15 @@ def assign_salesrepresentative():
     accounts = Account.objects.filter(
         Q(created_at__gte=yesterday_start) & word_filters
     ).exclude(
-        Q(status__name="sent_compliment") | Q(igname__in=unwanted_usernames)
-    )
+        status__name="sent_compliment"
+    ).exclude(
+        igname__in=unwanted_usernames
+    ) 
 
     
     for lead in accounts:
+        lead.qualified = False
+        lead.save()
         if not lead.thread_set.exists():
             # first check is the outsourced and relevant information
             try:
@@ -631,9 +674,9 @@ def assign_salesrepresentative():
                 except Exception as err:
                     print(err)
                 lead.relevant_information = oso.results
-                lead.qualified = True
                 lead.save()
                 
+                # pass him over to unwanted accounts
             except OutSourced.DoesNotExist:
                 print("OutSourced does not exist")
             
@@ -656,34 +699,81 @@ def assign_salesrepresentative():
             best_sales_rep.save()
             # Record the assignment in the history
             LeadAssignmentHistory.objects.create(sales_rep=best_sales_rep, lead=lead)
-            endpoint = "https://mqtt.booksy.us.boostedchat.com"
+    #         endpoint = "https://mqtt.booksy.us.boostedchat.com"
 
-            srep_username = best_sales_rep.ig_username
-            if lead.thread_set.exists():
-                thread = lead.thread_set.latest('created_at')
-                response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
+    #         srep_username = best_sales_rep.ig_username
+    #         if lead.thread_set.exists():
+    #             thread = lead.thread_set.latest('created_at')
+    #             response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
                 
-                # Check the status code of the response
-                if response.status_code == 200:
-                    print('Request approved')
-                else:
-                    print(f'Request failed with status code {response.status_code}')
+    #             # Check the status code of the response
+    #             if response.status_code == 200:
+    #                 print('Request approved')
+    #             else:
+    #                 print(f'Request failed with status code {response.status_code}')
 
-            # send first compliment
-            # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
-            # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
-            # # import pdb;pdb.set_trace()
-            # response = requests.post(send_compliment_endpoint)
-            # if response.status_code in [200,201]:
-            #     print("Successfully set outreach time for compliment and will send at appropriate time")
+    #         # send first compliment
+    #         # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+    #         # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
+    #         # # import pdb;pdb.set_trace()
+    #         # response = requests.post(send_compliment_endpoint)
+    #         # if response.status_code in [200,201]:
+    #         #     print("Successfully set outreach time for compliment and will send at appropriate time")
 
-            else:
-                logging.warning("not going through")
-    send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
-    # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
-    # import pdb;pdb.set_trace()
-    response = requests.post(send_compliment_endpoint)
-    if response.status_code in [200,201]:
-        print("Successfully set outreach time for compliment and will send at appropriate time")
+    #         else:
+    #             logging.warning("not going through")
+    # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+    # # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
+    # # import pdb;pdb.set_trace()
+    # response = requests.post(send_compliment_endpoint)
+    # if response.status_code in [200,201]:
+    #     print("Successfully set outreach time for compliment and will send at appropriate time")
 
     return {"message":"Successfully assigned salesrep","status": 200}
+
+
+@shared_task()
+def reschedule():
+    #reassign time slots
+    times = OutreachTime.objects.filter(time_slot__gte=timezone.now()-timezone.timedelta(days=1))
+    for time in times:
+        time.account_to_be_assigned = None
+        time.save()
+    #reassign tasks
+
+    # Step 1: Fetch tasks
+    batch_size = 300  
+    tasks = PeriodicTask.objects.filter(enabled=True).order_by('-id')[:batch_size*2]
+
+    # Step 2: Initialize variables for scheduling
+    current_date = timezone.now()
+    current_day = current_date.day
+    current_month = current_date.month
+
+    # Step 3: Schedule tasks in batches
+    for i in range(0, len(tasks), batch_size):
+        # Get the current batch of tasks
+        batch = tasks[i:i + batch_size]
+        
+        # Calculate the scheduled day for this batch
+        scheduled_day = current_day + (i // batch_size)
+        
+        # Handle month overflow if necessary
+        if scheduled_day > 31:
+            scheduled_day -= 31
+            current_month += 1
+        
+        # If month exceeds December, reset to January and increment year if needed
+        if current_month > 12:
+            current_month = 1
+            # Increment year if necessary (not shown here, but you can track years as needed)
+
+        for task in batch:
+            sched = CrontabSchedule.objects.get(id=task.crontab.id)
+            
+            # Update the schedule with the new day and month
+            sched.day_of_month = str(scheduled_day)
+            sched.month_of_year = str(current_month)
+            
+            # Save the updated schedule
+            sched.save()

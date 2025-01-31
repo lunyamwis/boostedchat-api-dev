@@ -4,6 +4,7 @@ from django.urls import path,include
 from .views import (
     AccountViewSet,
     CommentViewSet,
+    LikeViewSet,
     DMViewset,
     HashTagViewSet,
     MessageViewSet,
@@ -13,12 +14,14 @@ from .views import (
     VideoViewSet,
     OutSourcedViewSet,
     update_thread_details,
+    Reschedule,
 )
 
 router = DefaultRouter()
 router.register(r"outsourced",OutSourcedViewSet,basename="outsourced")
 router.register(r"account", AccountViewSet, basename="account")
 router.register(r"comment", CommentViewSet, basename="comment")
+router.register(r"like",LikeViewSet,basename="like")
 router.register(r"hashtag", HashTagViewSet, basename="hashtag")
 router.register(r"photo", PhotoViewSet, basename="photo")
 router.register(r"video", VideoViewSet, basename="video")
@@ -77,8 +80,13 @@ urlpatterns = [
     ),
     path(
         'has-client-responded/',
-        DMViewset.as_view({'post': 'has_client_responded'}),
+        DMViewset.as_view({'get': 'has_client_responded'}),
         name='has_client_responded',
+    ),
+    path(
+        'send-follow-up-responses/',
+        DMViewset.as_view({'post': 'generate_followup_response'}),
+        name='generate_followup_response',
     ),
     path(
         'account/account-by-ig-thread/<str:ig_thread_id>/',
@@ -93,7 +101,10 @@ urlpatterns = [
     path(
         'update-thread-details/',
         update_thread_details
+    ),
+    path(
+        'reschedule/',
+        Reschedule.as_view(),
     )
-
 ]
 

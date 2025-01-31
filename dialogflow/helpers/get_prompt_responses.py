@@ -8,6 +8,7 @@ from dialogflow.helpers.conversations import get_conversation_so_far
 from django.core.mail import send_mail
 from instagram.models import OutSourced
 
+from lunyamwi import get_agent, setup_agent
 
 def get_status_number(val, pattern=r"\d+"):
     list_of_values = re.findall(pattern=pattern, string=val)
@@ -68,18 +69,6 @@ def clean_text(text):
     # Remove non-ASCII characters
     text = re.sub(r'[^\x00-\x7F]+', '', text)
 
-    # Remove all instances of the substring "text"
-    text = re.sub(r'text', '', text)  # Remove all occurrences of "text"
-
-    text = re.sub(r'ex', ' ', text)
-
-    text = re.sub(r'xt', ' ', text)
-    # Remove excessive repetitions of specific substrings like 'ext', 'nxt', etc.
-    text = re.sub(r'\b(ext|nxt)(?:\1){1,}\b', '', text)  # Replace repeated 'ext' or 'nxt' with an empty string
-
-    # Remove excessive repeated characters within a word (e.g., "extextextex" -> "ext")
-    text = re.sub(r'(\w)\1{2,}', r'\1', text)  # Replace 3 or more consecutive identical letters with one
-
     # Normalize whitespace
     text = re.sub(r'\s+', ' ', text).strip()
 
@@ -94,7 +83,6 @@ def get_gpt_response(account, message, thread_id=None):
     except Exception as error:
         print(error)
 
-    url = os.getenv("SCRIPTING_URL") + '/getAgent/'
     conversations = None
     if message:
         conversations = get_conversation_so_far(account.thread_set.latest('created_at').thread_id)
@@ -109,8 +97,7 @@ def get_gpt_response(account, message, thread_id=None):
         "active_stage": account.status_param if account.status_param else ""
     }
     print(get_agent_payload)
-    agent_response= requests.post(url, data=json.dumps(get_agent_payload),headers = {'Content-Type': 'application/json'})
-    agent_json_response = agent_response.json()
+    agent_json_response= get_agent(payload=get_agent_payload)
     print(agent_json_response)
     # print(agent_json_response)
     # confirmed_problems = [
@@ -131,9 +118,9 @@ def get_gpt_response(account, message, thread_id=None):
     
     agent_name = agent_json_response.get("agent_name")
     agent_task = agent_json_response.get("agent_task")
-    if not message:
-        agent_name = "Engagement Persona Influencer Audit Rapport Building Agent"
-        agent_task = "ED_PersonaInfluencerAuditRapportBuildlingA_BuildMessageT"
+    # if not message:
+    #     agent_name = "Engagement Persona Influencer Audit Rapport Building Agent"
+    #     agent_task = "ED_PersonaInfluencerAuditRapportBuildlingA_BuildMessageT"
 
     
 
@@ -169,16 +156,16 @@ def get_gpt_response(account, message, thread_id=None):
             "relevant_information":account.confirmed_problems + relevant_information if account.confirmed_problems else ""
         }
     }
+    
+    print("*******************************************payload")
     print(payload)
+    print("********************************************message")
     print(message)
-    print(url)
-    url = os.getenv("SCRIPTING_URL") + '/agentSetup/'
-    print(url)
     # import pdb;pdb.set_trace()
-    resp = requests.post(url, data=json.dumps(payload),headers = {'Content-Type': 'application/json'})
-    response = resp.json()
+    response = setup_agent(payload=payload)
+    print("**********************************************JSON")
     # response = query_gpt(prompt=payload)
-    print(resp.json())
+    print(response)
     result = response.get('result')
     # Find the index of the opening quote after "text":
     try:

@@ -12,7 +12,20 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 import os
 from datetime import timedelta
 from pathlib import Path
+import sentry_sdk
 
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN_API"),
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for tracing.
+    traces_sample_rate=1.0,
+    _experiments={
+        # Set continuous_profiling_auto_start to True
+        # to automatically start the profiler on when
+        # possible.
+        "continuous_profiling_auto_start": True,
+    },
+)
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
 
@@ -273,6 +286,8 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL_API")
 CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND_API")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_BEAT_SYNC_EVERY = 1  # Sync every 1 minute
+CELERY_WORKER_CONCURRENCY = 10
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 MAILCHIMP_API_KEY = os.getenv("MAILCHIMP_API_KEY").strip()
 MAILCHIMP_DATA_CENTER = os.getenv("MAILCHIMP_DATA_CENTER").strip()

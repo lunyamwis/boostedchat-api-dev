@@ -4,6 +4,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_GET
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 import json
+import os
 import ast
 from django.shortcuts import render
 from rest_framework import viewsets
@@ -14,6 +15,8 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
+# from django_tenants.utils import schema_context
 
 from celery import current_app
 import logging
@@ -22,9 +25,15 @@ import random
 from datetime import time
 import time as timer
 
+
 from instagram.utils import lead_is_for_salesrep, tasks_by_sales_rep
 from instagram.tasks import send_first_compliment
 from .utils import *
+
+class PaginationClass(PageNumberPagination):
+    page_size = 20  # Set the number of items per page
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class TasksViewSet(viewsets.ModelViewSet):
     queryset = PeriodicTask.objects.all()
@@ -470,10 +479,12 @@ class TaskViewSet(viewsets.ModelViewSet):
     
 class PeriodicTaskViewSet(viewsets.ModelViewSet):
     queryset = PeriodicTask.objects.all()
+    pagination_class = PaginationClass
 
-    def list(self, request, *args, **kwargs):
-        # Return an empty response for GET requests to the list endpoint
-        return Response({})
+    # @schema_context(os.getenv('SCHEMA_NAME'))
+    # def list(self, request, *args, **kwargs):
+    #     # Return an empty response for GET requests to the list endpoint
+    #     return Response({})
     
     def get_serializer_class(self):
         if self.action == 'list':  # Use different serializer for list action
