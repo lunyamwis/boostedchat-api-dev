@@ -58,7 +58,7 @@ class Account(BaseModel):
     is_manually_triggered = models.BooleanField(default=False)
     index = models.IntegerField(default=1)
     notes = models.TextField(null=True, blank=True)  # New notes field
-    outreach_time = models.DateTimeField(auto_now=True)
+    outreach_time = models.DateTimeField()
     outreach_success = models.BooleanField(default=False)
     
     def __str__(self) -> str:
