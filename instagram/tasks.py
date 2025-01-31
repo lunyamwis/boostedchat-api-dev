@@ -661,6 +661,8 @@ def assign_salesrepresentative():
 
     
     for lead in accounts:
+        lead.qualified = False
+        lead.save()
         if not lead.thread_set.exists():
             # first check is the outsourced and relevant information
             try:
@@ -672,7 +674,6 @@ def assign_salesrepresentative():
                 except Exception as err:
                     print(err)
                 lead.relevant_information = oso.results
-                lead.qualified = False
                 lead.save()
                 
                 # pass him over to unwanted accounts
