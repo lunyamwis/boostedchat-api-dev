@@ -1701,8 +1701,11 @@ class DMViewset(viewsets.ModelViewSet):
         # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
         accounts = Account.objects.filter(
             Q(qualified=True) & Q(created_at__gte=yesterday_start)
-        ).exclude(igname__in=unwanted_usernames)
-
+        ).exclude(
+            status__name="sent_compliment"
+        ).exclude(
+            igname__in=unwanted_usernames
+        ) 
         account_messages_sent = []
         
         if accounts.exists():
@@ -1720,7 +1723,8 @@ class DMViewset(viewsets.ModelViewSet):
                                 try:
                                     schedule = None
                                     time_slot = timezone.now()+timezone.timedelta(hours=i/2)
-                                    run_scheduler.delay(target_time=time_slot,username=account.igname,message=thread.last_message_content)
+                                    send_first_compliment.apply_async(args=[[account.igname],thread.last_message_content], eta=time_slot)
+                                    # run_scheduler.delay(target_time=time_slot,username=account.igname,message=thread.last_message_content)
                                         
                                         
                                     
@@ -1733,12 +1737,15 @@ class DMViewset(viewsets.ModelViewSet):
                         time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
                         try:
                             time_slot = timezone.now()+timezone.timedelta(hours=i/2)
-                            run_scheduler.delay(target_time=time_slot,username=account.igname,message="")
-                            
+                            # run_scheduler.delay(target_time=time_slot,username=account.igname,message="")
+                            # time_slot = timezone.now()+timezone.timedelta(hours=i/2)
+                            send_first_compliment.apply_async(args=[[account.igname],""], eta=time_slot)
+                                    
+                            # send_first_compliment.delay(username=account.igname,message="")
                             # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
                         except Exception as err:
                             print(err)
-            return Response(account_messages_sent,status=status.HTTP_200_OK)
+            return Response({'message':'succesfully scheduled reponses'},status=status.HTTP_200_OK)
         else:
             return Response({'message': 'accounts do not exist'})
 

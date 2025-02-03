@@ -301,6 +301,7 @@ def send_first_compliment(username, message, repeat=True):
     thread_obj = None
     account = get_account(username)
     account.status_param = 'Prequalified'
+    # account.outreach_time = target_time
     account.save()
 
     if account is None:
@@ -410,8 +411,13 @@ def send_first_compliment(username, message, repeat=True):
                 print(error)
         print(response.status_code)
         if response.status_code == 200:
+            try:
+                UnwantedAccount.objects.create(username=account.igname)
+            except Exception as err:
+                print(err)
             sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
             account.status = sent_compliment_status
+            account.outreach_success = True
             account.save()
             print(f"response============{response}")
             try:
@@ -655,6 +661,8 @@ def assign_salesrepresentative():
 
     
     for lead in accounts:
+        lead.qualified = False
+        lead.save()
         if not lead.thread_set.exists():
             # first check is the outsourced and relevant information
             try:
@@ -666,14 +674,9 @@ def assign_salesrepresentative():
                 except Exception as err:
                     print(err)
                 lead.relevant_information = oso.results
-                lead.qualified = True
                 lead.save()
                 
                 # pass him over to unwanted accounts
-                try:
-                    UnwantedAccount.objects.create(username=lead.igname)
-                except Exception as err:
-                    print(err)
             except OutSourced.DoesNotExist:
                 print("OutSourced does not exist")
             
@@ -696,35 +699,35 @@ def assign_salesrepresentative():
             best_sales_rep.save()
             # Record the assignment in the history
             LeadAssignmentHistory.objects.create(sales_rep=best_sales_rep, lead=lead)
-            endpoint = "https://mqtt.booksy.us.boostedchat.com"
+    #         endpoint = "https://mqtt.booksy.us.boostedchat.com"
 
-            srep_username = best_sales_rep.ig_username
-            if lead.thread_set.exists():
-                thread = lead.thread_set.latest('created_at')
-                response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
+    #         srep_username = best_sales_rep.ig_username
+    #         if lead.thread_set.exists():
+    #             thread = lead.thread_set.latest('created_at')
+    #             response = requests.post(f'{endpoint}/approve', json={'username_from': srep_username,'thread_id':thread.thread_id})
                 
-                # Check the status code of the response
-                if response.status_code == 200:
-                    print('Request approved')
-                else:
-                    print(f'Request failed with status code {response.status_code}')
+    #             # Check the status code of the response
+    #             if response.status_code == 200:
+    #                 print('Request approved')
+    #             else:
+    #                 print(f'Request failed with status code {response.status_code}')
 
-            # send first compliment
-            # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
-            # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
-            # # import pdb;pdb.set_trace()
-            # response = requests.post(send_compliment_endpoint)
-            # if response.status_code in [200,201]:
-            #     print("Successfully set outreach time for compliment and will send at appropriate time")
+    #         # send first compliment
+    #         # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+    #         # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
+    #         # # import pdb;pdb.set_trace()
+    #         # response = requests.post(send_compliment_endpoint)
+    #         # if response.status_code in [200,201]:
+    #         #     print("Successfully set outreach time for compliment and will send at appropriate time")
 
-            else:
-                logging.warning("not going through")
-    send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
-    # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
-    # import pdb;pdb.set_trace()
-    response = requests.post(send_compliment_endpoint)
-    if response.status_code in [200,201]:
-        print("Successfully set outreach time for compliment and will send at appropriate time")
+    #         else:
+    #             logging.warning("not going through")
+    # send_compliment_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/sendFirstResponses/"
+    # # send_compliment_endpoint = "http://127.0.0.1:8000/v1/instagram/sendFirstResponses/"
+    # # import pdb;pdb.set_trace()
+    # response = requests.post(send_compliment_endpoint)
+    # if response.status_code in [200,201]:
+    #     print("Successfully set outreach time for compliment and will send at appropriate time")
 
     return {"message":"Successfully assigned salesrep","status": 200}
 
@@ -739,7 +742,7 @@ def reschedule():
     #reassign tasks
 
     # Step 1: Fetch tasks
-    batch_size = 40  
+    batch_size = 300  
     tasks = PeriodicTask.objects.filter(enabled=True).order_by('-id')[:batch_size*2]
 
     # Step 2: Initialize variables for scheduling

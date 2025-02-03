@@ -1,6 +1,6 @@
 import random
 import requests
-from instagram.models import Account, Message, OutSourced, StatusCheck, Thread
+from instagram.models import Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 from rest_framework.response import Response
 from outreaches.serializers import PeriodicTaskGetSerializer
@@ -23,6 +23,9 @@ def assign_salesrep(account):
 
 def get_account(username):
     account = None
+    check_unwanted = UnwantedAccount.objects.filter(igname__icontains=''.join(username).split('-')[0])
+    if check_unwanted.exists():
+        return 
     try:
         accounts = Account.objects.filter(igname__icontains=''.join(username).split('-')[0]).exclude(status__name='sent_compliment') 
         account = accounts.latest('created_at')
