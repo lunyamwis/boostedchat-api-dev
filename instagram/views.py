@@ -1723,7 +1723,8 @@ class DMViewset(viewsets.ModelViewSet):
                                 try:
                                     schedule = None
                                     time_slot = timezone.now()+timezone.timedelta(hours=i/2)
-                                    run_scheduler.delay(target_time=time_slot,username=account.igname,message=thread.last_message_content)
+                                    send_first_compliment.apply_async(args=[[account.igname],thread.last_message_content], eta=time_slot)
+                                    # run_scheduler.delay(target_time=time_slot,username=account.igname,message=thread.last_message_content)
                                         
                                         
                                     
@@ -1736,8 +1737,11 @@ class DMViewset(viewsets.ModelViewSet):
                         time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
                         try:
                             time_slot = timezone.now()+timezone.timedelta(hours=i/2)
-                            run_scheduler.delay(target_time=time_slot,username=account.igname,message="")
-                            
+                            # run_scheduler.delay(target_time=time_slot,username=account.igname,message="")
+                            # time_slot = timezone.now()+timezone.timedelta(hours=i/2)
+                            send_first_compliment.apply_async(args=[[account.igname],""], eta=time_slot)
+                                    
+                            # send_first_compliment.delay(username=account.igname,message="")
                             # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
                         except Exception as err:
                             print(err)
