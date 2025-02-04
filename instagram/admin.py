@@ -31,7 +31,17 @@ def get_cut_info_action(modeladmin, request, queryset):
     # Redirect to the admin page after the action is done
     return HttpResponseRedirect(reverse('admin:app_list', args=('instagram',)))
 
+@admin.action(description='Qualify in batch')
+def set_qualified_true_action(modeladmin, request, queryset):
+    # Iterate over the selected objects in the queryset
+    for obj in queryset:
+        # Set the qualified attribute to True
+        obj.qualified = True
+        # Save the changes to the database
+        obj.save()
 
+    # Redirect to the admin page after the action is done
+    return HttpResponseRedirect(reverse('admin:app_list', args=('instagram',)))
 
 class YesterdayFilter(DateFieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
@@ -47,7 +57,7 @@ class YesterdayFilter(DateFieldListFilter):
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
     search_fields = ['igname__icontains']
-    actions = [get_cut_info_action]
+    actions = [get_cut_info_action, set_qualified_true_action]
     list_filter = [
         'qualified',  # Filter for unqualified accounts
         ('created_at', YesterdayFilter),  # Custom filter for created_at
