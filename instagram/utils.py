@@ -23,7 +23,7 @@ def assign_salesrep(account):
 
 def get_account(username):
     account = None
-    check_unwanted = UnwantedAccount.objects.filter(igname__icontains=''.join(username).split('-')[0])
+    check_unwanted = UnwantedAccount.objects.filter(username__icontains=''.join(username).split('-')[0])
     if check_unwanted.exists():
         return 
     try:
