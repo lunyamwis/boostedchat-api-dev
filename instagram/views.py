@@ -132,6 +132,38 @@ class LikeViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def list(self, request, pk=None):
+        paginator = self.pagination_class()
+        queryset = Like.objects.all()
+        result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
+        likes = []
+        
+        for like in result_page:
+            like_ = {
+                "id": like.id,
+                "deleted_at": like.deleted_at,
+                "message": like.message,
+                "media_id": like.media_id,
+                "collapseKey": like.collapseKey,
+                "optionalAvatarUrl": like.optionalAvatarUrl,
+                "pushId": like.pushId,
+                "pushCategory": like.pushCategory,
+                "intendedRecipientUserId": like.intendedRecipientUserId,
+                "sourceUserId": like.sourceUserId,
+                "account": like.account.igname,
+                "created_at": like.created_at
+            }
+            likes.append(like_)
+        
+        response_data = {
+            'count': paginator.page.paginator.count,
+            'next': paginator.get_next_link(),
+            'previous': paginator.get_previous_link(),
+            'results': likes,
+        }
+        
+        return Response(response_data,status=status.HTTP_200_OK)
+    
 class CommentViewSet(viewsets.ModelViewSet):
     """
     A viewset that provides the standard actions
@@ -184,6 +216,38 @@ class CommentViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def list(self, request, pk=None):
+        paginator = self.pagination_class()
+        queryset = Comment.objects.all()
+        result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
+        comments = []
+        
+        for comment in result_page:
+            comment_ = {
+                "id": comment.id,
+                "comment_id": comment.comment_id,
+                "message": comment.message,
+                "media_id": comment.media_id,
+                "target_comment_id": comment.target_comment_id,
+                "collapseKey": comment.collapseKey,
+                "optionalAvatarUrl": comment.optionalAvatarUrl,
+                "pushId": comment.pushId,
+                "pushCategory": comment.pushCategory,
+                "intendedRecipientUserId": comment.intendedRecipientUserId,
+                "sourceUserId": comment.sourceUserId,
+                "account": comment.account.igname,
+                "created_at":comment.created_at
+            }
+            comments.append(comment_)
+        
+        response_data = {
+            'count': paginator.page.paginator.count,
+            'next': paginator.get_next_link(),
+            'previous': paginator.get_previous_link(),
+            'results': comments,
+        }
+        
+        return Response(response_data,status=status.HTTP_200_OK)
     
 class AccountViewSet(viewsets.ModelViewSet):
     """
