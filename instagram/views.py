@@ -466,6 +466,24 @@ class AccountViewSet(viewsets.ModelViewSet):
             }
         )
 
+    @action(detail=False,methods=["post"],url_path="get-id")
+    def get_id(self,request,pk=None):
+        username = request.data.get("username")
+        account = Account.objects.filter(igname = username).latest('created_at')
+        if account.outsourced_set.exists():
+            return Response(
+                {
+                    "id": account.id,
+                    "outsourced_id": account.outsourced_set.latest('created_at').id
+                }
+            )
+        else:
+            return Response(
+                {
+                    "id": account.id
+                }
+            )
+
 
     @action(detail=False,methods=['post'],url_path='qualify-account')
     def qualify_account(self, request, pk=None):
