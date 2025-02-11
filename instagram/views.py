@@ -914,11 +914,12 @@ class AccountViewSet(viewsets.ModelViewSet):
             test_account.status_param = 'Prequalified'
             test_account.assigned_to = 'Robot'
             test_account.save()
-            thread = test_account.thread_set.latest('created_at')
-            thread.message_set.clear()
+            if test_account.thread_set.exists():
+                thread = test_account.thread_set.latest('created_at')
+                thread.message_set.clear()
         except Exception as error:
             return Response({"error": str(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        test_account.save() 
+        
         return Response({"status": status.HTTP_200_OK, "message": "Test account successfully qualified."})
 
 
