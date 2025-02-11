@@ -896,11 +896,16 @@ class AccountViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=["post"], url_path="qualify-test-accounts")
     def qualify_test_accounts(self, request):
-        test_account = Account.objects.filter(igname__icontains=request.data.get("igname")).latest('created_at')
+        # test_account = Account.objects.filter(igname__icontains=request.data.get("igname")).latest('created_at')
+        try:
+            test_account = Account.objects.filter(igname__icontains=request.data.get("igname")).latest('created_at')
+        except Account.DoesNotExist:
+            return Response({"error": "No matching test account found."}, status=status.HTTP_404_NOT_FOUND)
+
         try:
             UnwantedAccount.objects.filter(username__icontains=test_account.igname).delete()
         except Exception as error:
-            return Response({"error": error}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": str(error)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         try:
             # reset lead
             test_account.qualified = True
