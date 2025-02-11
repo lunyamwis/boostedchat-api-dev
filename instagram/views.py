@@ -893,6 +893,13 @@ class AccountViewSet(viewsets.ModelViewSet):
             "handled":True,
             "found": len(duplicate_igname_list)
         }, status = status.HTTP_202_ACCEPTED)
+    
+    @action(detail=False, methods=["post"], url_path="qualify-test-accounts")
+    def qualify_test_accounts(self, request):
+        test_account = Account.objects.filter(igname__icontains=request.data.get("igname")).latest('created_at')
+        test_account.qualified = True
+        test_account.save()
+        return Response({"status": status.HTTP_200_OK, "message": "Test account successfully qualified."})
 
 
 class HashTagViewSet(viewsets.ModelViewSet):
