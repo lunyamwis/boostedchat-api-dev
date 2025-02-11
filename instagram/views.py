@@ -897,8 +897,23 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"], url_path="qualify-test-accounts")
     def qualify_test_accounts(self, request):
         test_account = Account.objects.filter(igname__icontains=request.data.get("igname")).latest('created_at')
-        test_account.qualified = True
-        test_account.save()
+        try:
+            UnwantedAccount.objects.filter(username__icontains=test_account.igname).delete()
+        except Exception as error:
+            return Response({"error": error}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            # reset lead
+            test_account.qualified = True
+            test_account.created_at = timezone.now()
+            test_account.status = None
+            test_account.status_param = 'Prequalified'
+            test_account.assigned_to = 'Robot'
+            test_account.save()
+            thread = test_account.thread_set.latest('created_at')
+            thread.message_set.clear()
+        except Exception as error:
+            return Response({"error": error}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        test_account.save() 
         return Response({"status": status.HTTP_200_OK, "message": "Test account successfully qualified."})
 
 
