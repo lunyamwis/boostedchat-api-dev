@@ -40,7 +40,7 @@ from sales_rep.models import SalesRep
 
 from .utils import generate_time_slots
 
-from .tasks import send_first_compliment,generate_response_automatic,reschedule, run_scheduler
+from .tasks import send_first_compliment,generate_response_automatic,reschedule, run_scheduler, delete_accounts
 from .helpers.init_db import init_db
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed,Like,Comment,UnwantedAccount
 from .serializers import (
@@ -885,19 +885,12 @@ class AccountViewSet(viewsets.ModelViewSet):
             .values_list('igname', flat=True)
         )
         print(f"How many duplicates? {len(duplicate_igname_list)}")
-        deleted_accounts = 0
         if len(duplicate_igname_list) > 0:
-            for igname in duplicate_igname_list:
-                accounts = Account.objects.filter(igname=igname).order_by('-created_at')
-                accounts_to_delete = accounts[1:]  # Keep the latest one, delete the rest
-                delete_count = Account.objects.filter(id__in=[acc.id for acc in accounts_to_delete]).delete()
-                deleted_accounts = delete_count
-                print(f"Deleted {delete_count} duplicate(s) for igname: {igname}")
+            delete_accounts.delay(duplicate_igname_list)
         else:
             print("No duplicates have been found in the system.")
         return Response({
             "handled":True,
-            "removed": deleted_accounts,
             "found": len(duplicate_igname_list)
         }, status = status.HTTP_202_ACCEPTED)
 

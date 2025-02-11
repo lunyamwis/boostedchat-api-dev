@@ -287,6 +287,14 @@ def run_scheduler(target_time,username,message):
             break  # Exit the loop after running the task
         time.sleep(1)  # Sleep for 1 second to avoid busy-waiting
 
+@shared_task()
+def delete_accounts(duplicate_igname_list):
+    for igname in duplicate_igname_list:
+        accounts = Account.objects.filter(igname=igname).order_by('-created_at')
+        accounts_to_delete = accounts[1:]  # Keep the latest one, delete the rest
+        delete_count = Account.objects.filter(id__in=[acc.id for acc in accounts_to_delete]).delete()
+        deleted_accounts = delete_count
+        print(f"Deleted {delete_count} duplicate(s) for igname: {igname}")
 
 
 @shared_task()
