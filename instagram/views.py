@@ -852,7 +852,6 @@ class AccountViewSet(viewsets.ModelViewSet):
                     }
                 )
             
-            
     @action(detail=False, methods=["get"], url_path="get-comments")
     def get_mqtt_comments(self, request, pk=None):
         status_param = request.GET.get('username')
@@ -877,7 +876,30 @@ class AccountViewSet(viewsets.ModelViewSet):
                     }
                 )
             
-            
+    @action(detail=False, methods=["get"], url_path="handle-duplicates")
+    def find_handle_duplicates(self, request):
+        duplicate_igname_list = (
+            Account.objects.values('igname')
+            .annotate(igname_count=Count('igname'))
+            .filter(igname_count__gt=1)
+            .values_list('igname', flat=True)
+        )
+        print(f"How many duplicates? {len(duplicate_igname_list)}")
+        deleted_accounts = 0
+        if len(duplicate_igname_list) > 0:
+            for igname in duplicate_igname_list:
+                accounts = Account.objects.filter(igname=igname).order_by('-created_at')
+                accounts_to_delete = accounts[1:]  # Keep the latest one, delete the rest
+                delete_count = Account.objects.filter(id__in=[acc.id for acc in accounts_to_delete]).delete()
+                deleted_accounts = delete_count
+                print(f"Deleted {delete_count} duplicate(s) for igname: {igname}")
+        else:
+            print("No duplicates have been found in the system.")
+        return Response({
+            "handled":True,
+            "removed": deleted_accounts,
+            "found": len(duplicate_igname_list)
+        }, status = status.HTTP_202_ACCEPTED)
 
 
 class HashTagViewSet(viewsets.ModelViewSet):
@@ -1479,13 +1501,10 @@ class DMViewset(viewsets.ModelViewSet):
         print(f"How many duplicates? {len(duplicate_igname_list)}")
         if len(duplicate_igname_list) > 0:
             for igname in duplicate_igname_list:
-                accounts = Account.objects.filter(igname=igname)
-                indexes = []
-                for account in accounts:
-                    indexes.append(account.index)
-                minimum_index = min(indexes)
-                print(f"account to delete --------> {accounts.filter(index=minimum_index).last().igname}")
-                accounts.filter(index=minimum_index).last().delete()
+                accounts = Account.objects.filter(igname=igname).order_by('-created_at')
+                accounts_to_delete = accounts[1:]  # Keep the latest one, delete the rest
+                delete_count = Account.objects.filter(id__in=[acc.id for acc in accounts_to_delete]).delete()
+                print(f"Deleted {delete_count} duplicate(s) for igname: {igname}")
         else:
             print("No duplicates have been found in the system.")
         return Response({
