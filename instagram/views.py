@@ -43,7 +43,7 @@ from .utils import generate_time_slots
 
 from .tasks import send_first_compliment,generate_response_automatic,reschedule, run_scheduler, delete_accounts
 from .helpers.init_db import init_db
-from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed,Like,Comment,UnwantedAccount
+from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed,Like,Comment,UnwantedAccount,StatusCheck
 from .serializers import (
     AccountSerializer,
     OutSourcedSerializer,
@@ -66,6 +66,7 @@ from .serializers import (
     CommentSerializer,
 )
 from django.db.models import Count, Case, When, IntegerField
+
 
 
 class PaginationClass(PageNumberPagination):
@@ -1739,7 +1740,29 @@ class DMViewset(viewsets.ModelViewSet):
             # if not skip this guy
             print("Thread NOT FOUND! creating ONE")
             # account = Account.objects.get(igname=igname)
-            account = Account.objects.filter(igname=igname).first()
+
+            accounts = Account.objects.filter(igname=igname)
+            account = None
+            # check if account exists
+            if accounts.exists():
+                account = accounts.latest('created_at')
+                print("ACCOUNT EXISTS!")
+            else: # if not create one
+                account = Account()
+                account.igname = igname
+                account.created_at = timezone.now() - timezone.timedelta(days=5)
+                account.qualified = True
+                account.scraped = True
+                account.status = StatusCheck.objects.get(name="sent_compliment")
+                account.relevant_information = {"username":igname}
+                account.save()
+                try: # generate new outsourced information for it
+                    OutSourced.objects.create(results={"username":igname},account=account)
+                except Exception as err:
+                    logging.warning(err)
+
+                
+
             if account:
                 print("LEAD EXISTS CREATING A NEW THREAD!")
                 thread = Thread()
