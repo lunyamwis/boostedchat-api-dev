@@ -220,7 +220,7 @@ def get_gpt_response(account, message, thread_id=None):
                     subject = 'Hello Team'
                     message = f'Hello please address the account {account.igname} it has been handed over to you'
                     from_email = 'lutherlunyamwi@gmail.com'
-                    recipient_list = ['eyadhussein99@gmail.com','lutherlunyamwi@gmail.com','tomek@boostedchat.com',"tech-notifications-aaaalfvmpt4blxn4bjxku3hag4@boostedchat.slack.com"]
+                    recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com',"tech-notifications-aaaalfvmpt4blxn4bjxku3hag4@boostedchat.slack.com"]
                     send_mail(subject, message, from_email, recipient_list)
                 except Exception as error:
                     print(error)
@@ -317,7 +317,7 @@ def get_gpt_response(account, message, thread_id=None):
         except Exception as err:
             print("Error in extracting text: ",err) 
             try:
-                extract_text = result.split('"text": "')[1].split('",')[0]
+                extracted_text = result.split('"text": "')[1].split('",')[0]
             except Exception as err:
                 print("Error in extracting text: ",err)
                 try:
