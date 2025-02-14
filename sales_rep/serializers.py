@@ -17,11 +17,19 @@ class SalesRepSerializer(serializers.ModelSerializer):
                 "model",
                 "cpu",
                 "version_code",
-                "status"
+                "status",
+                "city",
+                "country",
+                "zip",
+                "available",
                 ]
         extra_kwargs = {
             "id": {"required": False, "allow_null": True},
             "instagram": {"required": False, "allow_null": True},
+            "zip": {"required": False, "allow_null": True},
+            "city": {"required": False, "allow_null": True},
+            "country": {"required": False, "allow_null": True},
+            "available": {"required": False, "allow_null": True},
         }
 
 
