@@ -30,6 +30,7 @@ class SalesRep(BaseModel):
     available = models.BooleanField(default=True)
     country = models.TextField(default="US")
     city = models.TextField(default="Pasadena")
+    zip = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self) -> str:
         return self.ig_username
