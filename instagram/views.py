@@ -1726,6 +1726,7 @@ class DMViewset(viewsets.ModelViewSet):
         thread_id = request.data.get("threadId")
         messages = request.data.get('messages')
         igname = request.data.get('igname')
+        number_of_messages_prior = Message.objects.count()
         
         if not thread_id or not messages:
             return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
@@ -1845,7 +1846,21 @@ class DMViewset(viewsets.ModelViewSet):
                     )
                     
                     print(f"Influener Message created: {message_id}")
-            return Response({"success": True}, status=status.HTTP_201_CREATED)
+            if Message.objects.count() > number_of_messages_prior:
+                try:
+                    subject = 'Hello Team'
+                    message = f'Hooray! New messages have been synced. {Message.objects.count() - number_of_messages_prior} new messages have been added to the database.'
+                    from_email = 'lutherlunyamwi@gmail.com'
+                    recipient_list = ['dennorina@gmail.com','lutherlunyamwi@gmail.com','tomek@boostedchat.com',"tech-notifications-aaaalfvmpt4blxn4bjxku3hag4@boostedchat.slack.com"]
+                    send_mail(subject, message, from_email, recipient_list)
+                except Exception as error:
+                    logging.warning(error)
+
+                return Response({"success": True}, status=status.HTTP_201_CREATED)
+                
+            else:
+                return Response({"message": "No new messages"}, status=status.HTTP_201_CREATED)
+            
         except Exception as e:  
             return Response({"success": False, "message": e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
