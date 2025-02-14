@@ -1851,7 +1851,7 @@ class DMViewset(viewsets.ModelViewSet):
                     subject = 'Hello Team'
                     message = f'Hooray! New messages have been synced. {Message.objects.count() - number_of_messages_prior} new messages have been added to the database.'
                     from_email = 'lutherlunyamwi@gmail.com'
-                    recipient_list = ['dennorina@gmail.com','lutherlunyamwi@gmail.com','tomek@boostedchat.com',"tech-notifications-aaaalfvmpt4blxn4bjxku3hag4@boostedchat.slack.com"]
+                    recipient_list = ['dennorina@gmail.com','lutherlunyamwi@gmail.com','tomek@boostedchat.com']
                     send_mail(subject, message, from_email, recipient_list)
                 except Exception as error:
                     logging.warning(error)
