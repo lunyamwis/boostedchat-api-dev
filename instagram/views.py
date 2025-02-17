@@ -1740,27 +1740,25 @@ class DMViewset(viewsets.ModelViewSet):
             # if so create the thread and save the messages 
             # if not skip this guy
             print("Thread NOT FOUND! creating ONE")
-            # account = Account.objects.get(igname=igname)
-
             accounts = Account.objects.filter(igname=igname)
             account = None
             # check if account exists
             if accounts.exists():
                 account = accounts.latest('created_at')
                 print("ACCOUNT EXISTS!")
-            else: # if not create one
-                account = Account()
-                account.igname = igname
-                account.created_at = timezone.now() - timezone.timedelta(days=5)
-                account.qualified = True
-                account.scraped = True
-                account.status = StatusCheck.objects.get(name="sent_compliment")
-                account.relevant_information = {"username":igname}
-                account.save()
-                try: # generate new outsourced information for it
-                    OutSourced.objects.create(results={"username":igname},account=account)
-                except Exception as err:
-                    logging.warning(err)
+            # else: # if not create one
+            #     account = Account()
+            #     account.igname = igname
+            #     account.created_at = timezone.now() - timezone.timedelta(days=5)
+            #     account.qualified = True
+            #     account.scraped = True
+            #     account.status = StatusCheck.objects.get(name="sent_compliment")
+            #     account.relevant_information = {"username":igname}
+            #     account.save()
+            #     try: # generate new outsourced information for it
+            #         OutSourced.objects.create(results={"username":igname},account=account)
+            #     except Exception as err:
+            #         logging.warning(err)
 
                 
 
