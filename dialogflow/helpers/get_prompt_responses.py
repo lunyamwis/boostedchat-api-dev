@@ -2,7 +2,7 @@ import re
 import os
 import json
 import requests
-from dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications
+from dialogflow.helpers.notify_click_up import create_click_up_task, notify_click_up_tech_notifications
 from instagram.helpers.llm import query_gpt
 from urllib.parse import urlparse
 from dialogflow.helpers.conversations import get_conversation_so_far
@@ -181,6 +181,8 @@ def get_gpt_response(account, message, thread_id=None):
                 prepended_result = json.loads(prepended_result_.replace(to_be_replaced,""))
             except Exception as err:
                 print("Both trials have failed to repair the json: ",err)
+                message = f"Both trials have failed to repair the json: {err} "
+                notify_click_up_tech_notifications(comment_text=message,notify_all=True)
         try:
 
             active_stage_res = prepended_result['active_stage']
@@ -203,14 +205,14 @@ def get_gpt_response(account, message, thread_id=None):
             account.save()
         except Exception as err:
             print("Problems not confirmed: ",err)
-        
+            create_click_up_task("Problems not confirmed: ",err, notify_all=False)
         try:
             solution_presented_res = prepended_result['solution_presented']
             account.solution_presented = bool(int(solution_presented_res))
             account.save()
         except Exception as err:
             print("Solution not presented: ",err) 
-
+            create_click_up_task("Solution not presented: ",err, notify_all=False)
         try:
             human_takeover = prepended_result['human_takeover']
             print("human_takeover: ",human_takeover)
@@ -226,10 +228,17 @@ def get_gpt_response(account, message, thread_id=None):
                     notify_click_up_tech_notifications(comment_text=message,notify_all=True)
                 except Exception as error:
                     print(error)
+                    task_name = "Error seding error notification"
+                    task_desc = error
+                    create_click_up_task(task_name,task_desc, notify_all=False)
             else:
                 print(f"Human takeover not set well {human_takeover}")
+                task_name = f"Human takeover not set  properly"
+                task_desc = f"Wrong humann take onver variable. The variable returne is {human_takeover}"
+                create_click_up_task(task_name,task_desc, notify_all=False)
         except Exception as err:
             print("Human takeover not set: ",err)   
+            create_click_up_task("Human takeover not set", err, notify_all=False)
         # index = result.find('"question_asked":')
         # if index != -1:
         #     # Extract the value of 'solution_presented'
@@ -324,8 +333,12 @@ def get_gpt_response(account, message, thread_id=None):
                 print("Error in extracting text: ",err)
                 try:
                     extracted_text = "Just a minute"
+                    notify_click_up_tech_notifications(comment_text="Error in extracting text, sending just a minute",notify_all=True)
+                    create_click_up_task("Error in extracting text", err, notify_all=False)
                 except Exception as err:
                     print("Error in extracting text: ",err)
+                    notify_click_up_tech_notifications(comment_text="Error in extracting text",notify_all=True)
+                    create_click_up_task("Error in extracting text", err, notify_all=False)
     # extracted_text = extracted_text.replace('\n\n', ' ').replace('\n', ' ')
     print(extracted_text)
 
