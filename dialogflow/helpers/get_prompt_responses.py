@@ -2,6 +2,7 @@ import re
 import os
 import json
 import requests
+from dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications
 from instagram.helpers.llm import query_gpt
 from urllib.parse import urlparse
 from dialogflow.helpers.conversations import get_conversation_so_far
@@ -220,8 +221,9 @@ def get_gpt_response(account, message, thread_id=None):
                     subject = 'Hello Team'
                     message = f'Hello please address the account {account.igname} it has been handed over to you'
                     from_email = 'lutherlunyamwi@gmail.com'
-                    recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com',"tech-notifications-aaaalfvmpt4blxn4bjxku3hag4@boostedchat.slack.com"]
+                    recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
                     send_mail(subject, message, from_email, recipient_list)
+                    notify_click_up_tech_notifications(comment_text=message,notify_all=True)
                 except Exception as error:
                     print(error)
             else:
