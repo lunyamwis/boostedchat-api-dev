@@ -102,9 +102,10 @@ class UnscheduledFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         """Applies filtering logic."""
-        today = timezone.now().date()  # Get today's date
+        # today = timezone.now().date()  # Get today's date
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
         if self.value() == 'yes':
-            return queryset.filter(outreach_time__isnull=True,created_at__date__gt=today)  # Filter where outreach_time is NULL
+            return queryset.filter(outreach_time__isnull=True,created_at__date__gt=yesterday)  # Filter where outreach_time is NULL
         return queryset
     
   
