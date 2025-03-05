@@ -90,6 +90,24 @@ class StatusFilter(admin.SimpleListFilter):
             return queryset.filter(status_id=self.value())  # Filter by specific status ID
         return queryset  # Default: No filtering
 
+class UnscheduledFilter(admin.SimpleListFilter):
+    title = _('Unscheduled')  # Display title in the admin filter sidebar
+    parameter_name = 'outreach_time_null'  # Query parameter in the URL
+
+    def lookups(self, request, model_admin):
+        """Defines filter choices in the sidebar."""
+        return [
+            ('yes', _('Unscheduled')),  # Option to filter accounts with outreach_time null
+        ]
+
+    def queryset(self, request, queryset):
+        """Applies filtering logic."""
+        today = timezone.now().date()  # Get today's date
+        if self.value() == 'yes':
+            return queryset.filter(outreach_time__isnull=True,created_at__date__gt=today)  # Filter where outreach_time is NULL
+        return queryset
+    
+  
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
@@ -99,6 +117,7 @@ class AccountAdmin(admin.ModelAdmin):
         'qualified',  # Filter for unqualified accounts
         ('created_at', YesterdayFilter),  # Custom filter for created_at
         ('created_at', TomorrowFilter),  # ✅ Tomorrow's filter
+        UnscheduledFilter,  # New filter for outreach_time NULL
         StatusFilter
     ]
 
