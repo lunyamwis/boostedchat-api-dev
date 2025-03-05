@@ -53,6 +53,43 @@ class YesterdayFilter(DateFieldListFilter):
                 self.field_path + '__lt': timezone.now().strftime('%Y-%m-%d'),
             }),
         )
+        
+class TomorrowFilter(DateFieldListFilter):
+    def __init__(self, field, request, params, model, model_admin, field_path):
+        super().__init__(field, request, params, model, model_admin, field_path)
+        tomorrow = timezone.now() + timezone.timedelta(days=1)
+        self.links += (
+            (_('Added for tomorrow'), {
+                self.field_path + '__gte': tomorrow.strftime('%Y-%m-%d'),
+                self.field_path + '__lt': (tomorrow + timezone.timedelta(days=1)).strftime('%Y-%m-%d'),
+            }),
+        )
+
+class StatusFilter(admin.SimpleListFilter):
+    title = _("Status")  # Display name in the admin filter sidebar
+    parameter_name = "status"  # Query parameter in the URL
+
+    def lookups(self, request, model_admin):
+        """Defines filter choices in the sidebar."""
+        statuses = StatusCheck.objects.all()
+        status_options = [(status.id, status.name) for status in statuses]
+
+        # Add extra options for NULL filtering
+        status_options.insert(0, ("null", _("No Status (NULL)")))
+        status_options.insert(1, ("not_null", _("Has Status")))
+
+        return status_options
+
+    def queryset(self, request, queryset):
+        """Filters the queryset based on the selected value."""
+        if self.value() == "null":
+            return queryset.filter(status__isnull=True)  # Show only accounts with NULL status
+        elif self.value() == "not_null":
+            return queryset.filter(status__isnull=False)  # Show only accounts with a status
+        elif self.value():
+            return queryset.filter(status_id=self.value())  # Filter by specific status ID
+        return queryset  # Default: No filtering
+
 
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
@@ -61,6 +98,8 @@ class AccountAdmin(admin.ModelAdmin):
     list_filter = [
         'qualified',  # Filter for unqualified accounts
         ('created_at', YesterdayFilter),  # Custom filter for created_at
+        ('created_at', TomorrowFilter),  # ✅ Tomorrow's filter
+        StatusFilter
     ]
 
     def get_form(self, request, obj=None, **kwargs):
