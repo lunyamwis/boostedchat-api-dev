@@ -420,6 +420,10 @@ def send_first_compliment(username, message, repeat=True):
                 print(error)
         print(response.status_code)
         if response.status_code == 200:
+            # add user to unwanted accounts to avoid sending them messages again
+            # set the status to sent_compliment to show they have been reached out to
+            # create a thread if it does not exist and then create the message
+            # if the thread exists filter it out and then add the appropriate message
             try:
                 UnwantedAccount.objects.create(username=account.igname)
             except Exception as err:
