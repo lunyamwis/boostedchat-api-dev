@@ -47,11 +47,16 @@ class YesterdayFilter(DateFieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         super().__init__(field, request, params, model, model_admin, field_path)
         yesterday = timezone.now() - timezone.timedelta(days=1)
+        tomorrow = timezone.now() + timezone.timedelta(days=1)
         self.links += (
             (_('Added from yesterday'), {
                 self.field_path + '__gte': yesterday.strftime('%Y-%m-%d'),
                 self.field_path + '__lt': timezone.now().strftime('%Y-%m-%d'),
             }),
+            (_('Added for tomorrow'), {
+                self.field_path + '__gte': tomorrow.strftime('%Y-%m-%d'),
+                self.field_path + '__lt': (tomorrow + timezone.timedelta(days=1)).strftime('%Y-%m-%d'),
+            })
         )
         
 class TomorrowFilter(DateFieldListFilter):
@@ -117,7 +122,6 @@ class AccountAdmin(admin.ModelAdmin):
     list_filter = [
         'qualified',  # Filter for unqualified accounts
         ('created_at', YesterdayFilter),  # Custom filter for created_at
-        ('created_at', TomorrowFilter),  # ✅ Tomorrow's filter
         UnscheduledFilter,  # New filter for outreach_time NULL
         StatusFilter
     ]
