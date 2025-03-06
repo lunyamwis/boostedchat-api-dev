@@ -8,6 +8,7 @@ import time
 import json
 import requests
 import random
+import pytz
 from urllib.parse import urlparse
 from auditlog.models import LogEntry
 from celery.result import AsyncResult
@@ -1891,6 +1892,23 @@ class DMViewset(viewsets.ModelViewSet):
         else:
             return Response({"exists":False})
 
+    
+    def is_time_slot_within_window(self, time_slot):
+        # Set the Miami timezone (UTC-4)
+        miami_tz = pytz.timezone('US/Eastern')  # Adjusts for DST
+        
+        # Convert time_slot to Miami timezone if it's not already
+        if time_slot.tzinfo != miami_tz:
+            time_slot = time_slot.astimezone(miami_tz)
+        
+        # Define the desired time window in Miami time
+        start_time = time_slot.replace(hour=7, minute=0, second=0, microsecond=0)
+        end_time = time_slot.replace(hour=20, minute=59, second=0, microsecond=0)
+        
+        # Check if time_slot is within the window
+        return start_time <= time_slot <= end_time
+
+
     def get_qualified_threads_and_respond(self, request, *args, **kwargs):
         
         # Get the start of yesterday's date
@@ -1917,13 +1935,16 @@ class DMViewset(viewsets.ModelViewSet):
                             client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
                             robot_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Robot")).order_by("-sent_on")
                             if client_messages.count() > 0 and robot_messages.count() == 0:
-                                print("inbound sales")
+                                print("outbound sales")
                                 # import pdb;pdb.set_trace()
                                 time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
                                 try:
                                     schedule = None
+                                    # set a window to which it cannot by pass
+                                    
                                     time_slot = timezone.now()+timezone.timedelta(hours=i/2)
-                                    send_first_compliment.apply_async(args=[[account.igname],thread.last_message_content], eta=time_slot)
+                                    if self.is_time_slot_within_window(time_slot):
+                                        send_first_compliment.apply_async(args=[[account.igname],thread.last_message_content], eta=time_slot)
                                     # run_scheduler.delay(target_time=time_slot,username=account.igname,message=thread.last_message_content)
                                         
                                         
@@ -1932,14 +1953,16 @@ class DMViewset(viewsets.ModelViewSet):
                                 except Exception as err:
                                     print(err)
                     else:
-                        print("outbound sales")
+                        print("inbound sales")
                         # import pdb;pdb.set_trace()
                         time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
                         try:
                             time_slot = timezone.now()+timezone.timedelta(hours=i/2)
                             # run_scheduler.delay(target_time=time_slot,username=account.igname,message="")
                             # time_slot = timezone.now()+timezone.timedelta(hours=i/2)
-                            send_first_compliment.apply_async(args=[[account.igname],""], eta=time_slot)
+                            if self.is_time_slot_within_window(time_slot):
+                                send_first_compliment.apply_async(args=[[account.igname],""], eta=time_slot)
+                            
                                     
                             # send_first_compliment.delay(username=account.igname,message="")
                             # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
