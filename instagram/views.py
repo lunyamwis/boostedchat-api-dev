@@ -1949,7 +1949,7 @@ class DMViewset(viewsets.ModelViewSet):
                                             account.outreach_time = time_slot
                                             account.save()
                                         except Exception as error:
-                                            logging.warning(error)
+                                            logging.warning(f"Failed to save outreach time - {error}")
                                     # run_scheduler.delay(target_time=time_slot,username=account.igname,message=thread.last_message_content)
                                         
                                         
@@ -1972,7 +1972,7 @@ class DMViewset(viewsets.ModelViewSet):
                                     account.outreach_time = time_slot
                                     account.save()
                                 except Exception as error:
-                                    logging.warning(error)
+                                    logging.warning(f"Failed to save outreach time - {error}")
 
                             # send_first_compliment.delay(username=account.igname,message="")
                             # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)
