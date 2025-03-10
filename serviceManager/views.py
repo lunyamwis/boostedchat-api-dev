@@ -16,7 +16,7 @@ class ForceRecreateApi(APIView):
             client = docker.from_env()
 
             # Get the specified container
-            container = client.containers.get(container_id)
+            container = client.containers.get(request.data.get('container_id'))
 
             # Stop the container
             container.stop()
@@ -25,11 +25,12 @@ class ForceRecreateApi(APIView):
             container.remove()
 
             # Pull the latest image
-            client.images.pull('lunyamwimages/boostedchatapi-dev:latest')
+            container_image = request.data.get('container_image')
+            client.images.pull(container_image)
 
             # Create a new container
             container = client.containers.run(
-                'lunyamwimages/boostedchatapi-dev:latest',
+                container_image,
                 detach=True,
                 name=container_id,
                 ports={'8000/tcp': 8000},
