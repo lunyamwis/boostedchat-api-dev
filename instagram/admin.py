@@ -46,15 +46,16 @@ def set_qualified_true_action(modeladmin, request, queryset):
 class YesterdayFilter(DateFieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         super().__init__(field, request, params, model, model_admin, field_path)
-        yesterday = timezone.now() - timezone.timedelta(days=1)
-        tomorrow = timezone.now() + timezone.timedelta(days=1)
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        tomorrow = timezone.now().date() + timezone.timedelta(days=1)
+        today = timezone.now().date()
         self.links += (
             (_('Added from yesterday'), {
                 self.field_path + '__gte': yesterday.strftime('%Y-%m-%d'),
-                self.field_path + '__lt': timezone.now().strftime('%Y-%m-%d'),
+                self.field_path + '__lt': tomorrow.strftime('%Y-%m-%d'),
             }),
             (_('Added for tomorrow'), {
-                self.field_path + '__gte': tomorrow.strftime('%Y-%m-%d'),
+                self.field_path + '__gte': today.strftime('%Y-%m-%d'),
                 self.field_path + '__lt': (tomorrow + timezone.timedelta(days=1)).strftime('%Y-%m-%d'),
             })
         )
