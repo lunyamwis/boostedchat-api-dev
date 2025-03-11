@@ -297,7 +297,8 @@ class AccountViewSet(viewsets.ModelViewSet):
         end_date_parsed = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None
         
         created_at_gte_parsed = datetime.strptime(created_at_gte, '%Y-%m-%d').date() if created_at_gte else None
-        created_at_lt_parsed = datetime.strptime(created_at_lt, '%Y-%m-%d').date() if created_at_lt else None
+        # we have to add one day to the created_at_lt to get the correct date, because >= Today but less than tomorrow does not work
+        created_at_lt_parsed = datetime.strptime(created_at_lt, '%Y-%m-%d').date() + timezone.timedelta(days=1) if created_at_lt else None
         
         
         queryset = Account.objects.filter(salesrep__isnull=False).annotate(
@@ -356,14 +357,23 @@ class AccountViewSet(viewsets.ModelViewSet):
                 # print("After filter",queryset.count())
         if created_at_gte:
              #  messages = queryset.filter(last_message_at__gte=datetime(2024, 10, 7).date(), last_message_at__lte=datetime(2024, 11, 7).date())
-                queryset = queryset.filter(
-                    created_at__gte= created_at_gte_parsed,
-                    created_at__lt = created_at_lt_parsed
-                )
+                if created_at_lt:
+                    queryset = queryset.filter(
+                        created_at__gte= created_at_gte_parsed,
+                        created_at__lt = created_at_lt_parsed
+                    ).order_by('created_at')
+                else:
+                     queryset = queryset.filter(
+                        created_at__gte= created_at_gte_parsed,
+                        # created_at__lt = created_at_lt_parsed
+                    ).order_by('created_at')
+                    
+
         if qualified:
             queryset = queryset.filter(qualified=True) if qualified == "true" else queryset.filter(qualified=False) 
+            
         if outreachSuccess:
-            queryset = queryset.filter(outreach_success=True) if outreachSuccess == "true" else queryset.filter(outreach_success=False) 
+            queryset = queryset.filter(outreach_success=True).order_by('created_at') if outreachSuccess == "true" else queryset.filter(outreach_success=False) 
             
         if search_query is not None:
             queryset = queryset.filter(igname__icontains=search_query.strip())
@@ -371,12 +381,6 @@ class AccountViewSet(viewsets.ModelViewSet):
         result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
         
         for account in result_page:
-            # periodic_task = None
-            # try:
-            #     periodic_task = PeriodicTask.objects.get(name=f"SendFirstCompliment-{account.igname}")
-            # except PeriodicTask.DoesNotExist:
-            #     pass
-
             account_ = {
                 "id": account.id,
                 "assigned_to": account.assigned_to,
