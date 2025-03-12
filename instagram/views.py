@@ -970,7 +970,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             for account in accounts:
                 try:
                     payload = {
-                        "department":"Qualifying Department",
+                        "department":"Prequalifying",
                         "agent_name":"Qualifying Agent",
                         "agent_task":"QD_QualifyingA_CalculatePersonaInfluencerAuditQualifyingScoreT",
                         "converstations":"",
@@ -984,8 +984,8 @@ class AccountViewSet(viewsets.ModelViewSet):
                     }
                     
                     response = setup_agent(payload=payload)
-                    account.qualified = response.get("prequalified")
-                    account.relevant_information = response.get("relevant_information")
+                    account.qualified = response["result"]["output"]["prequalified"]
+                    account.relevant_information = response["result"]["output"]
                     account.save()
                 except Exception as error:
                     logging.warning(error)
