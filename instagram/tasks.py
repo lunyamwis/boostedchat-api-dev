@@ -7,6 +7,7 @@ import requests
 from datetime import datetime, timedelta
 
 from celery import shared_task
+from lunyamwi.model_setup import setup_agent_workflow
 from django.conf import settings
 from dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications
 from django_celery_beat.models import PeriodicTask
@@ -792,3 +793,54 @@ def reschedule():
             
             # Save the updated schedule
             sched.save()
+
+
+@shared_task()
+def prequalify_task():
+    yesterday = timezone.now().date() - timezone.timedelta(days=1)
+    yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+    unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+
+    # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
+    accounts = Account.objects.filter(
+        Q(qualified=False) & Q(created_at__gte=yesterday_start)
+    ).exclude(
+        status__name="sent_compliment"
+    ).exclude(
+        igname__in=unwanted_usernames
+    )
+    if accounts.exists():
+        
+        for account in accounts:
+            try:
+                payload = {
+                    "department":"Prequalifying",
+                    "agent_name":"Qualifying Agent",
+                    "agent_task":"QD_QualifyingA_CalculatePersonaInfluencerAuditQualifyingScoreT",
+                    "converstations":"",
+                    "Scraped":{
+                        "message":"",
+                        "sales_rep":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
+                        "influencer_ig_name":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
+                        "outsourced_info":account.outsourced_set.latest('created_at').results,
+                        "relevant_information":account.relevant_information
+                    }
+                }
+                
+                response = setup_agent_workflow(payload=payload)
+                account.qualified = response["result"]["output"]["prequalified"]
+                account.relevant_information = response["result"]["output"]
+                account.save()
+            except Exception as error:
+                logging.warning(error)
+        
+        try:
+            subject = 'Hello Team'
+            message = f'Finished prequalifying accounts for today {timezone.now()}'
+            from_email = 'lutherlunyamwi@gmail.com'
+            recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
+            send_mail(subject, message, from_email, recipient_list)
+            notify_click_up_tech_notifications(comment_text=message,notify_all=True)
+        except Exception as error:
+            print(error)
+            

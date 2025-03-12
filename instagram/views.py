@@ -24,7 +24,7 @@ from django.utils import timezone
 from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
-from lunyamwi.model_setup import setup_agent
+from lunyamwi.model_setup import setup_agent, setup_agent_workflow
 from django.conf import settings
 from django_celery_beat.models import PeriodicTask
 from django.db.models import F,Value, Subquery, OuterRef
@@ -42,7 +42,7 @@ from sales_rep.models import SalesRep
 
 from .utils import generate_time_slots
 
-from .tasks import send_first_compliment,generate_response_automatic,reschedule, run_scheduler, delete_accounts
+from .tasks import send_first_compliment,generate_response_automatic,reschedule, run_scheduler, delete_accounts,prequalify_task
 from .helpers.init_db import init_db
 from .models import Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed,Like,Comment,UnwantedAccount,StatusCheck
 from .serializers import (
@@ -953,43 +953,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     @action(detail=False,methods=['post'],url_path='prequalify-accounts')
     def prequalify_accounts(self, request, pk=None):
-        yesterday = timezone.now().date() - timezone.timedelta(days=1)
-        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
-        unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
-
-        # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
-        accounts = Account.objects.filter(
-            Q(qualified=True) & Q(created_at__gte=yesterday_start)
-        ).exclude(
-            status__name="sent_compliment"
-        ).exclude(
-            igname__in=unwanted_usernames
-        )
-        if accounts.exists():
-            
-            for account in accounts:
-                try:
-                    payload = {
-                        "department":"Prequalifying",
-                        "agent_name":"Qualifying Agent",
-                        "agent_task":"QD_QualifyingA_CalculatePersonaInfluencerAuditQualifyingScoreT",
-                        "converstations":"",
-                        "Scraped":{
-                            "message":"",
-                            "sales_rep":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
-                            "influencer_ig_name":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
-                            "outsourced_info":account.outsourced_set.latest('created_at').results,
-                            "relevant_information":account.relevant_information
-                        }
-                    }
-                    
-                    response = setup_agent(payload=payload)
-                    account.qualified = response["result"]["output"]["prequalified"]
-                    account.relevant_information = response["result"]["output"]
-                    account.save()
-                except Exception as error:
-                    logging.warning(error)
-                
+        prequalify_task.delay() 
         
         return Response({"message":"Succesfully qualified accounts"}, status=status.HTTP_200_OK)
 
