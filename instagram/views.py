@@ -567,13 +567,15 @@ class AccountViewSet(viewsets.ModelViewSet):
             return Response(
                 {
                     "id": account.id,
-                    "outsourced_id": account.outsourced_set.latest('created_at').id
+                    "outsourced_id": account.outsourced_set.latest('created_at').id,
+                    "qualified": account.qualified
                 }
             )
         else:
             return Response(
                 {
-                    "id": account.id
+                    "id": account.id,
+                    "qualified": account.qualified
                 }
             )
 
@@ -596,6 +598,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     
         return Response(accounts_qualified, status=status.HTTP_200_OK)
     
+
     @action(detail=False,methods=['post'],url_path='manually-trigger')
     def manually_trigger(self, request, pk=None):
         account = Account.objects.filter(igname = request.data.get('username')).latest('created_at')
