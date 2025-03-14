@@ -85,6 +85,7 @@ class GetSingleAccountSerializer(serializers.ModelSerializer):
             outsourced_string = OutSourced.objects.get(account__id=data['id']).results
             data['outsourced'] = ast.literal_eval(outsourced_string)
         except Exception as error:
+            data['outsourced'] = None
             print(error)
         try:
             periodic_task = PeriodicTask.objects.get(name=f"SendFirstCompliment-{instance.igname}")
