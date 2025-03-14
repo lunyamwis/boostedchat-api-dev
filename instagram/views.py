@@ -71,7 +71,7 @@ from django.db.models import Count, Case, When, IntegerField
 
 
 class PaginationClass(PageNumberPagination):
-    page_size = 20  # Set the number of items per page
+    page_size = 100  # Set the number of items per page
     page_size_query_param = 'page_size'
     max_page_size = 100
 
@@ -296,9 +296,9 @@ class AccountViewSet(viewsets.ModelViewSet):
         # end_date_parsed = parse_datetime(end_date) if end_date else None
         end_date_parsed = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None
         
-        created_at_gte_parsed = datetime.strptime(created_at_gte, '%Y-%m-%d').date() if created_at_gte else None
+        created_at_gte_parsed = datetime.strptime(created_at_gte, '%Y-%m-%d') if created_at_gte else None
         # we have to add one day to the created_at_lt to get the correct date, because >= Today but less than tomorrow does not work
-        created_at_lt_parsed = datetime.strptime(created_at_lt, '%Y-%m-%d').date() + timezone.timedelta(days=1) if created_at_lt else None
+        created_at_lt_parsed = datetime.strptime(created_at_lt, '%Y-%m-%d') + timezone.timedelta(days=1) if created_at_lt else None
         
         
         queryset = Account.objects.filter(salesrep__isnull=False).annotate(
