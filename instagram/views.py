@@ -296,9 +296,23 @@ class AccountViewSet(viewsets.ModelViewSet):
         # end_date_parsed = parse_datetime(end_date) if end_date else None
         end_date_parsed = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None
         
-        created_at_gte_parsed = datetime.strptime(created_at_gte, '%Y-%m-%d') if created_at_gte else None
+        if created_at_gte:
+            created_at_gte_date = datetime.strptime(created_at_gte, '%Y-%m-%d').date() 
+            # created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
+            created_at_gte_parsed = created_at_gte_date
+            print("combined time: ",created_at_gte_date)
+            
+        else:
+            created_at_gte_parsed = None
         # we have to add one day to the created_at_lt to get the correct date, because >= Today but less than tomorrow does not work
-        created_at_lt_parsed = datetime.strptime(created_at_lt, '%Y-%m-%d') + timezone.timedelta(days=1) if created_at_lt else None
+        if created_at_lt:
+            created_at_lt_date =  datetime.strptime(created_at_lt, '%Y-%m-%d').date() + timezone.timedelta(days=1) if created_at_lt == created_at_gte else datetime.strptime(created_at_lt, '%Y-%m-%d').date() 
+            created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
+            # created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=1))  # 11 PM UTC
+            print("COmbined less thn: ",created_at_lt_parsed)
+        else: 
+            created_at_lt_parsed = None
+        
         
         
         queryset = Account.objects.filter(salesrep__isnull=False).annotate(
@@ -360,7 +374,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 if created_at_lt:
                     queryset = queryset.filter(
                         created_at__gte= created_at_gte_parsed,
-                        created_at__lt = created_at_lt_parsed
+                        created_at__lte = created_at_lt_parsed
                     ).order_by('created_at')
                 else:
                      queryset = queryset.filter(
