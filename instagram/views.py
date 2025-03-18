@@ -300,18 +300,23 @@ class AccountViewSet(viewsets.ModelViewSet):
             created_at_gte_date = datetime.strptime(created_at_gte, '%Y-%m-%d').date() 
             # created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
             created_at_gte_parsed = created_at_gte_date
-            print("combined time: ",created_at_gte_date)
             
         else:
             created_at_gte_parsed = None
         # we have to add one day to the created_at_lt to get the correct date, because >= Today but less than tomorrow does not work
-        if created_at_lt:
-            created_at_lt_date =  datetime.strptime(created_at_lt, '%Y-%m-%d').date() + timezone.timedelta(days=1) if created_at_lt == created_at_gte else datetime.strptime(created_at_lt, '%Y-%m-%d').date() 
-            created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
-            # created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=1))  # 11 PM UTC
-            print("COmbined less thn: ",created_at_lt_parsed)
-        else: 
-            created_at_lt_parsed = None
+        
+        if (created_at_gte is not None and created_at_lt is not None and created_at_lt == created_at_gte):
+            # Account.objects.filter(created_at__gte=start_datetime, created_at__lte=end_datetime,qualified=True).count()
+            created_at_gte_date = datetime.strptime(created_at_gte, '%Y-%m-%d').date() 
+            created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()))
+            created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.max.time()))
+        else:
+            if created_at_lt:
+                created_at_lt_date =  datetime.strptime(created_at_lt, '%Y-%m-%d').date() + timezone.timedelta(days=1) if created_at_lt == created_at_gte else datetime.strptime(created_at_lt, '%Y-%m-%d').date() 
+                created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
+                # created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=1))  # 11 PM UTC
+            else: 
+                created_at_lt_parsed = None
         
         
         
