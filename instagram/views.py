@@ -1941,7 +1941,12 @@ class DMViewset(viewsets.ModelViewSet):
         
         if accounts.exists():
             for i,account in enumerate(accounts):
-                # if account.salesrep_set.exists(): # if they are assigned a salesrep
+                    identifier = str(uuid.uuid4())
+                    # combined_dict = {
+                    #     identifier:account.igname
+                    # }
+                    # account_messages_sent.append(combined_dict)             
+                    # if account.salesrep_set.exists(): # if they are assigned a salesrep
                     threads = Thread.objects.filter(account=account)  
                     if threads.exists():
                         for thread in threads:  
@@ -1957,7 +1962,7 @@ class DMViewset(viewsets.ModelViewSet):
                                     
                                     time_slot = timezone.now()+timezone.timedelta(hours=i/2)
                                     if self.is_time_slot_within_window(time_slot):
-                                        send_first_compliment.apply_async(args=[[account.igname],thread.last_message_content], eta=time_slot)
+                                        send_first_compliment.apply_async(args=[[account.igname],thread.last_message_content], eta=time_slot,task_id=f"compliment_{account.id}_{time_slot.timestamp()}")
                                         try:
                                             account.outreach_time = time_slot
                                             account.save()
@@ -1979,7 +1984,7 @@ class DMViewset(viewsets.ModelViewSet):
                             # run_scheduler.delay(target_time=time_slot,username=account.igname,message="")
                             # time_slot = timezone.now()+timezone.timedelta(hours=i/2)
                             if self.is_time_slot_within_window(time_slot):
-                                send_first_compliment.apply_async(args=[[account.igname],""], eta=time_slot)
+                                send_first_compliment.apply_async(args=[[account.igname],""], eta=time_slot,task_id=f"compliment_{account.id}_{time_slot.timestamp()}")
 
                                 try:
                                     account.outreach_time = time_slot
