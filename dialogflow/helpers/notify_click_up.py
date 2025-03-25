@@ -50,6 +50,8 @@ CLICK_UP_BASE_URL = os.environ.get('CLICK_UP_BASE_API_URL')
 CLICK_UP_AUTH = os.environ.get('CLICK_UP_DENN_AUTH')
 VIEW_ID = os.environ.get('CLICK_UP_TECH_NOTIFICATIONS_VIEW_ID')
 API_BUG_LIST_ID = os.environ.get('CLICK_UP_API_BUG_LIST_ID')
+CUSTOMER_FACING_LIST_ID = os.environ.get('CLICK_UP_CUSTOMER_FACING_LIST_ID')
+ASSIGNEE_ID = os.environ.get('CLICK_UP_SHANDU_ASSIGNEE_ID')
 
 if not all([CLICK_UP_BASE_URL, CLICK_UP_AUTH, VIEW_ID, API_BUG_LIST_ID]):
     raise EnvironmentError("One or more ClickUp environment variables are missing.")
@@ -90,9 +92,10 @@ def create_click_up_task(name, description, notify_all=False):
     payload = {
         "name": name,
         "description": description,
+        "assignees": [ASSIGNEE_ID],
         "notify_all": notify_all
     }
-    endpoint = f"list/{API_BUG_LIST_ID}/task"
+    endpoint = f"list/{CUSTOMER_FACING_LIST_ID}/task"
     response = click_up_post_request(endpoint, payload)
     
     if response:

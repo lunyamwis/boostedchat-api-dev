@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from celery import shared_task
 from lunyamwi.model_setup import setup_agent_workflow
 from django.conf import settings
-from dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications
+from dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications, create_click_up_task
 from django_celery_beat.models import PeriodicTask
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
@@ -486,6 +486,15 @@ def send_first_compliment(username, message, repeat=True):
                 recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
                 send_mail(subject, message, from_email, recipient_list)
                 notify_click_up_tech_notifications(comment_text=message,notify_all=True)
+                # ADD CLICKUP TASK HERE
+                try:
+                    if not account.question_asked:
+                        create_click_up_task(f"Follow up with {account.igname}", "", True)
+                        account.question_asked = True
+                        account.save()
+                except Exception as error:
+                    print(error)
+                
             except Exception as error:
                 print(error)
 
