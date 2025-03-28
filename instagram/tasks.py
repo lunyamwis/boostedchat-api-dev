@@ -836,9 +836,9 @@ def prequalify_task():
                     }
                 }
                 
-                response = setup_agent_workflow(payload=payload)
-                account.qualified = response["result"]["output"]["prequalified"]
-                account.relevant_information = response["result"]["output"]
+                setup_agent_workflow(payload=payload)
+                if account.qualified:
+                    account.dormant_profile_created = True
                 account.save()
             except Exception as error:
                 logging.warning(error)
