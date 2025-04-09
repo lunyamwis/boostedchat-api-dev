@@ -285,6 +285,9 @@ class AccountViewSet(viewsets.ModelViewSet):
         created_at_lt = request.GET.get("created_at_lt")
         qualified = request.GET.get("qualified")
         outreachSuccess = request.GET.get("outreach_success")
+        total_outreach = None
+        total_scheduled = None
+        
         
         if start_date:
             start_date = start_date.strip('"')
@@ -298,8 +301,8 @@ class AccountViewSet(viewsets.ModelViewSet):
         
         if created_at_gte:
             created_at_gte_date = datetime.strptime(created_at_gte, '%Y-%m-%d').date() 
-            # created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
-            created_at_gte_parsed = created_at_gte_date
+            created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()) )  # 12 PM UTC
+            # created_at_gte_parsed = created_at_gte_date
             
         else:
             created_at_gte_parsed = None
@@ -341,7 +344,6 @@ class AccountViewSet(viewsets.ModelViewSet):
    
         
         if start_date_parsed:
-            print("gOT START DATE")
             if end_date_parsed:
                 print("gOT end DATE")
                 # Both dates are present
@@ -381,21 +383,32 @@ class AccountViewSet(viewsets.ModelViewSet):
                         created_at__gte= created_at_gte_parsed,
                         created_at__lte = created_at_lt_parsed
                     ).order_by('created_at')
+                    total_scheduled = queryset.filter(qualified=True).count()
+                    total_outreach = queryset.filter(outreach_success=True).count()
+            
                 else:
-                     queryset = queryset.filter(
+                    queryset = queryset.filter(
                         created_at__gte= created_at_gte_parsed,
                         # created_at__lt = created_at_lt_parsed
                     ).order_by('created_at')
+                    total_scheduled = queryset.filter(qualified=True).count()
+                    total_outreach = queryset.filter(outreach_success=True).count()
                     
 
         if qualified:
             queryset = queryset.filter(qualified=True) if qualified == "true" else queryset.filter(qualified=False) 
-            
+            total_scheduled = queryset.count()
+            total_outreach = queryset.count()
         if outreachSuccess:
-            queryset = queryset.filter(outreach_success=True).order_by('created_at') if outreachSuccess == "true" else queryset.filter(outreach_success=False) 
+            queryset = queryset.filter(outreach_success=True).order_by('created_at') if outreachSuccess == "true" else queryset.filter(outreach_success=False)
+            print("WAWAAW",queryset.count())
+            total_scheduled = queryset.count()
+            total_outreach = queryset.count()
             
         if search_query is not None:
             queryset = queryset.filter(igname__icontains=search_query.strip())
+            total_scheduled = queryset.count()
+            total_outreach = queryset.count()
             
         result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
         
@@ -427,6 +440,8 @@ class AccountViewSet(viewsets.ModelViewSet):
             'next': paginator.get_next_link(),
             'previous': paginator.get_previous_link(),
             'results': accounts,
+            'total_outreach': total_outreach,
+            'total_scheduled': total_scheduled,
         }
         return Response(response_data,status=status.HTTP_200_OK)
     
