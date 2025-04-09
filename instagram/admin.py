@@ -109,6 +109,8 @@ class StatusFilter(admin.SimpleListFilter):
             return queryset.filter(status_id=self.value())  # Filter by specific status ID
         return queryset  # Default: No filtering
 
+
+
 class UnscheduledFilter(admin.SimpleListFilter):
     title = _('Unscheduled')  # Display title in the admin filter sidebar
     parameter_name = 'outreach_time_null'  # Query parameter in the URL
@@ -137,7 +139,8 @@ class AccountAdmin(admin.ModelAdmin):
         'qualified',  # Filter for unqualified accounts
         ('created_at', YesterdayFilter),  # Custom filter for created_at
         UnscheduledFilter,  # New filter for outreach_time NULL
-        StatusFilter
+        StatusFilter,
+        'dormant_profile_created',
     ]
 
     def get_form(self, request, obj=None, **kwargs):
