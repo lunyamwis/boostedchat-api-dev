@@ -119,7 +119,7 @@ INSTALLED_APPS = [
     "data.apps.DataConfig",
     "leads.apps.LeadsConfig",
     "allauth",
-    "allauth.account",
+    # "allauth.account",
     "dj_rest_auth",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
@@ -141,7 +141,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "auditlog.middleware.AuditlogMiddleware",
-    "allauth.account.middleware.AccountMiddleware",
+    # "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "setup.urls"
