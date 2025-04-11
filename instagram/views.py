@@ -273,7 +273,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         return self.serializer_class
 
     def list(self, request, pk=None):
-        print(request)
+        queryset = Account.objects.all()
         accounts = []
         paginator = self.pagination_class()
         status_param = request.GET.get('status_param')
@@ -322,8 +322,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 created_at_lt_parsed = None
         
         
-        
-        queryset = Account.objects.filter(salesrep__isnull=False).annotate(
+        queryset = queryset.filter(salesrep__isnull=False).annotate(
             last_message_at=F('thread__last_message_at'),
             # Get the latest sent_on from Message model related to the Thread
             last_message_sent_at= Subquery(
@@ -341,7 +340,9 @@ class AccountViewSet(viewsets.ModelViewSet):
                 # Coalesce to get the latest of either last_message_at or last_message_sent_at
                 latest_message_at=Coalesce('last_message_sent_at', 'last_message_at', Value(datetime.min))
         ).order_by('-latest_message_at')  # Sort by the latest message, whichever comes first
-   
+
+        total_scheduled = queryset.filter(qualified=True).exclude(outreach_success=True).count()
+        total_outreach = queryset.filter(outreach_success=True).count()
         
         if start_date_parsed:
             if end_date_parsed:
@@ -383,7 +384,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                         created_at__gte= created_at_gte_parsed,
                         created_at__lte = created_at_lt_parsed
                     ).order_by('created_at')
-                    total_scheduled = queryset.filter(qualified=True).count()
+                    total_scheduled = queryset.filter(qualified=True).exclude(outreach_success=True).count()
                     total_outreach = queryset.filter(outreach_success=True).count()
             
                 else:
@@ -391,24 +392,23 @@ class AccountViewSet(viewsets.ModelViewSet):
                         created_at__gte= created_at_gte_parsed,
                         # created_at__lt = created_at_lt_parsed
                     ).order_by('created_at')
-                    total_scheduled = queryset.filter(qualified=True).count()
+                    total_scheduled = queryset.filter(qualified=True).exclude(outreach_success=True).count()
                     total_outreach = queryset.filter(outreach_success=True).count()
                     
 
         if qualified:
-            queryset = queryset.filter(qualified=True) if qualified == "true" else queryset.filter(qualified=False) 
-            total_scheduled = queryset.count()
-            total_outreach = queryset.count()
+            queryset = queryset.filter(qualified=True).exclude(outreach_success=True) if qualified == "true" else queryset.filter(qualified=False) 
+            total_scheduled = queryset.filter(qualified=True).exclude(outreach_success=True).count()
+            total_outreach = queryset.filter(outreach_success=True).count()
         if outreachSuccess:
+            total_scheduled = queryset.filter(qualified=True).exclude(outreach_success=True).count()
             queryset = queryset.filter(outreach_success=True).order_by('created_at') if outreachSuccess == "true" else queryset.filter(outreach_success=False)
-            print("WAWAAW",queryset.count())
-            total_scheduled = queryset.count()
             total_outreach = queryset.count()
             
         if search_query is not None:
             queryset = queryset.filter(igname__icontains=search_query.strip())
-            total_scheduled = queryset.count()
-            total_outreach = queryset.count()
+            # total_scheduled = queryset.count()
+            # total_outreach = queryset.count()
             
         result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
         
