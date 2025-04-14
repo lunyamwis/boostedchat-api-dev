@@ -421,9 +421,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(qualified=True).exclude(outreach_success=True) if qualified == "true" else queryset.filter(qualified=False) 
             
         if outreachSuccess:
-            print("99999999999999999999")
             total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
-            print(queryset.count())
             queryset = datized_queryset.filter(outreach_success=True).order_by('created_at') if outreachSuccess == "true" else queryset.filter(outreach_success=False)
             total_outreach = queryset.count()
             
