@@ -12,7 +12,7 @@ import pytz
 from urllib.parse import urlparse
 from auditlog.models import LogEntry
 from celery.result import AsyncResult
-from datetime import datetime, timezone as timezone2
+from datetime import datetime, timedelta, timezone as timezone2
 from instagrapi.exceptions import UserNotFound
 from rest_framework.views import APIView
 from rest_framework import status, viewsets
@@ -287,6 +287,11 @@ class AccountViewSet(viewsets.ModelViewSet):
         outreachSuccess = request.GET.get("outreach_success")
         total_outreach = None
         total_scheduled = None
+        datized_queryset = None
+        
+        print("***************************")
+        # print(created_at_gte.split('-'))
+        # print(created_at_lt)
         
         
         if start_date:
@@ -309,15 +314,21 @@ class AccountViewSet(viewsets.ModelViewSet):
         # we have to add one day to the created_at_lt to get the correct date, because >= Today but less than tomorrow does not work
         
         if (created_at_gte is not None and created_at_lt is not None and created_at_lt == created_at_gte):
-            # Account.objects.filter(created_at__gte=start_datetime, created_at__lte=end_datetime,qualified=True).count()
-            created_at_gte_date = datetime.strptime(created_at_gte, '%Y-%m-%d').date() 
-            created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()))
-            created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.max.time()))
+            # created_at_gte_date = datetime.strptime(created_at_gte, '%Y-%m-%d').date() 
+            created_at_gte_date = created_at_gte.split('-')
+            # created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()))
+            created_at_gte_parsed = datetime(int(created_at_gte_date[0]), int(created_at_gte_date[1]),int(created_at_gte_date[2]), tzinfo=timezone.get_current_timezone())
+            # created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.max.time()))
+            created_at_lt_parsed = created_at_gte_parsed + timedelta(days=1)
         else:
             if created_at_lt:
-                created_at_lt_date =  datetime.strptime(created_at_lt, '%Y-%m-%d').date() + timezone.timedelta(days=1) if created_at_lt == created_at_gte else datetime.strptime(created_at_lt, '%Y-%m-%d').date() 
-                created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
-                # created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=1))  # 11 PM UTC
+                # created_at_lt_date =  datetime.strptime(created_at_lt, '%Y-%m-%d').date() + timezone.timedelta(days=1) if created_at_lt == created_at_gte else datetime.strptime(created_at_lt, '%Y-%m-%d').date() 
+                # created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
+                
+                created_at_lt_date = created_at_lt.split('-')
+                created_at_lt_parsed = datetime(int(created_at_lt_date[0]), int(created_at_lt_date[1]),int(created_at_lt_date[2]), tzinfo=timezone.get_current_timezone())
+                if created_at_lt == created_at_gte: 
+                    created_at_lt_parsed = created_at_lt_parsed + timedelta(days=1)
             else: 
                 created_at_lt_parsed = None
         
@@ -380,29 +391,40 @@ class AccountViewSet(viewsets.ModelViewSet):
         if created_at_gte:
              #  messages = queryset.filter(last_message_at__gte=datetime(2024, 10, 7).date(), last_message_at__lte=datetime(2024, 11, 7).date())
                 if created_at_lt:
-                    queryset = queryset.filter(
+                    datized_queryset = queryset.filter(
                         created_at__gte= created_at_gte_parsed,
                         created_at__lte = created_at_lt_parsed
                     ).order_by('created_at')
-                    total_scheduled = queryset.filter(qualified=True).exclude(outreach_success=True).count()
-                    total_outreach = queryset.filter(outreach_success=True).count()
+                    total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
+                    total_outreach = datized_queryset.filter(outreach_success=True).count()
             
                 else:
-                    queryset = queryset.filter(
+                    datized_queryset = queryset.filter(
                         created_at__gte= created_at_gte_parsed,
                         # created_at__lt = created_at_lt_parsed
                     ).order_by('created_at')
-                    total_scheduled = queryset.filter(qualified=True).exclude(outreach_success=True).count()
-                    total_outreach = queryset.filter(outreach_success=True).count()
+                    total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
+                    total_outreach = datized_queryset.filter(outreach_success=True).count()
                     
+       
 
         if qualified:
+            if outreachSuccess == 'true':
+                # qualified_queryset = queryset.filter(qualified=True,outreach_success=True) if qualified == "true" else queryset.filter(qualified=False,outreach_success=True) 
+                # qualified_and_outreach_success = queryset.filter(qualified=True) if qualified == "true" else queryset.filter(qualified=False)  
+                total_scheduled = datized_queryset.filter(qualified=True,outreach_success=True).count()
+                total_outreach = datized_queryset.filter(outreach_success=True).count()
+            else:
+                total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
+                total_outreach = datized_queryset.filter(outreach_success=True).count()
+            
             queryset = queryset.filter(qualified=True).exclude(outreach_success=True) if qualified == "true" else queryset.filter(qualified=False) 
-            total_scheduled = queryset.filter(qualified=True).exclude(outreach_success=True).count()
-            total_outreach = queryset.filter(outreach_success=True).count()
+            
         if outreachSuccess:
-            total_scheduled = queryset.filter(qualified=True).exclude(outreach_success=True).count()
-            queryset = queryset.filter(outreach_success=True).order_by('created_at') if outreachSuccess == "true" else queryset.filter(outreach_success=False)
+            print("99999999999999999999")
+            total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
+            print(queryset.count())
+            queryset = datized_queryset.filter(outreach_success=True).order_by('created_at') if outreachSuccess == "true" else queryset.filter(outreach_success=False)
             total_outreach = queryset.count()
             
         if search_query is not None:
