@@ -383,10 +383,13 @@ def send_first_compliment(username, message, repeat=True):
     # raise Exception("There is something wrong with mqt----t")
     outsourced_data = OutSourced.objects.filter(account=account)
     results = None
-    if isinstance(outsourced_data.last().results, str):
-        results = eval(outsourced_data.last().results)
-    else:
-        results = outsourced_data.last().results
+    try:
+        if isinstance(outsourced_data.last().results, str):
+            results = eval(outsourced_data.last().results)
+        else:
+            results = outsourced_data.last().results
+    except:
+        results = {"media_id": "", "media_comment": ""}
     print(f"results================{results}")
     print(f"results================MMM")
     print(f"results================{message}")
