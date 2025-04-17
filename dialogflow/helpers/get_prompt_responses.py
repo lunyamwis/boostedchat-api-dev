@@ -152,7 +152,7 @@ def get_gpt_response(account, message, thread_id=None):
             "text":message if message else "",
             "sales_rep":account.salesrep_set.first().ig_username,
             "influencer_ig_name":account.salesrep_set.last().ig_username,
-            "outsourced_info":outsourced_object.results,
+            "outsourced_info":outsourced_object.results if outsourced_object else "",
             "conversation_history": conversations if conversations else "",
             "relevant_information":account.confirmed_problems + relevant_information if account.confirmed_problems else ""
         }
