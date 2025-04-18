@@ -429,8 +429,10 @@ class AccountViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(igname__icontains=search_query.strip())
             # total_scheduled = queryset.count()
             # total_outreach = queryset.count()
-            
-        result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
+        if datized_queryset is not None:
+            result_page = paginator.paginate_queryset(datized_queryset, request)  # Apply pagination
+        else:
+            result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
         
         for account in result_page:
             account_ = {
