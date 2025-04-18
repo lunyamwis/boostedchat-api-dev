@@ -23,12 +23,24 @@ class AccountSerializer(serializers.ModelSerializer):
             "is_manually_triggered",
             "relevant_information",
             "qualified",
+            "responded_date",
+            "call_scheduled_date",
+            "closing_date",
+            "won_date",
+            "success_story_date",
+            "lost_date"
         ]
         extra_kwargs = {"id": {"required": False, "allow_null": True},
                         "index": {"required": False, "allow_null": True},
                         "is_manually_triggered": {"required": False, "allow_null": True},
                         "relevant_information": {"required": False, "allow_null": True},
                         "qualified": {"required": False, "allow_null": True},
+                        "responded_date": {"required": False, "allow_null": True},
+                        "call_scheduled_date": {"required": False, "allow_null": True},
+                        "closing_date": {"required": False, "allow_null": True},
+                        "won_date": {"required": False, "allow_null": True},
+                        "success_story_date": {"required": False, "allow_null": True},
+                        "lost_date": {"required": False, "allow_null": True}
                         }
 
 
