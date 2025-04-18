@@ -22,6 +22,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "index",
             "is_manually_triggered",
             "relevant_information",
+            "outreach_success",
             "qualified",
         ]
         extra_kwargs = {"id": {"required": False, "allow_null": True},
