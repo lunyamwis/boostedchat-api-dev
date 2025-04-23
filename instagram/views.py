@@ -1996,8 +1996,8 @@ class DMViewset(viewsets.ModelViewSet):
                                 try:
                                     schedule = None
                                     # set a window to which it cannot by pass
-                                    
-                                    time_slot = timezone.now()+timezone.timedelta(hours=i/2)
+                                    random_number = 1.5 + (2.5 - 1.5) * random.random()
+                                    time_slot = timezone.now()+timezone.timedelta(hours=i/random_number)
                                     if self.is_time_slot_within_window(time_slot):
                                         send_first_compliment.apply_async(args=[[account.igname],thread.last_message_content], eta=time_slot,task_id=f"compliment_{account.id}_{time_slot.timestamp()}")
                                         try:
@@ -2016,8 +2016,9 @@ class DMViewset(viewsets.ModelViewSet):
                         print("inbound sales")
                         # import pdb;pdb.set_trace()
                         time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
+                        random_number = 1.5 + (2.5 - 1.5) * random.random()
                         try:
-                            time_slot = timezone.now()+timezone.timedelta(hours=i/2)
+                            time_slot = timezone.now()+timezone.timedelta(hours=i/random_number)
                             # run_scheduler.delay(target_time=time_slot,username=account.igname,message="")
                             # time_slot = timezone.now()+timezone.timedelta(hours=i/2)
                             if self.is_time_slot_within_window(time_slot):
